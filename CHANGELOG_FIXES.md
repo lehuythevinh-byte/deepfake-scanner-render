@@ -1,0 +1,56 @@
+# DEEPFAKE SCANNER — Bản vá và ghi chú kiểm thử
+
+## Các thay đổi trong bản này
+
+### 1. Sửa lỗi cấu hình và khả năng chạy
+- Đồng bộ `esbuild` lên nhánh phiên bản tương thích với Vite 8 (`^0.27.0`) để xử lý xung đột khai báo dependency đã thấy.
+- Sửa cấu hình alias của Vite, không dùng `__dirname` trực tiếp trong tệp ESM.
+- Bổ sung `node` vào `types` của `tsconfig.json` để các kiểu toàn cục Node.js được nhận diện khi kiểm tra server.
+- Chuyển `tsx` sang `dependencies` để lệnh `npm start` có runtime TypeScript cả trong môi trường triển khai chỉ cài dependencies production.
+- Thêm script dọn dẹp đa nền tảng `scripts/clean.mjs`.
+- Thêm `render.yaml` cho phương án deploy Express + frontend trên dịch vụ Node.js; sửa `netlify.toml` để không chuyển API vào Netlify Functions không tồn tại.
+
+### 2. Sửa lỗi schema và hành vi AI
+- Sửa thuộc tính `sourcesAndEvidence.analyzedLinks` bị lồng trùng trong schema gửi Gemini.
+- Cho phép cấu hình model bằng biến môi trường `GEMINI_MODEL`, với tên mặc định được đặt trong server.
+- Tách chỉ dẫn hệ thống khỏi bằng chứng do người dùng gửi, và chỉ rõ rằng văn bản/ảnh/tên tài khoản/link người dùng cung cấp là dữ liệu cần phân tích, không phải chỉ dẫn cho AI.
+- Khi Gemini không hoạt động, kết quả dự phòng không còn bịa ra quan sát mắt, ánh sáng, ranh giới mặt hoặc pixel. Phần giám định hình ảnh luôn ghi “chưa đủ thông tin/chưa thực hiện được”.
+- Chế độ dự phòng chỉ sàng lọc một số dấu hiệu trong văn bản và hiển thị cảnh báo rõ ràng; không còn tự đánh dấu đáng ngờ chỉ vì đang quét bài đăng mạng xã hội.
+- Từ ngữ chỉ sự gấp gáp không còn tự tạo kịch bản cảnh báo nếu không đi kèm dấu hiệu rủi ro khác.
+- Cảnh báo liên kết mô tả rõ rằng ứng dụng chưa truy cập/kiểm chứng đích đến của URL.
+- Giới hạn số lượng lịch sử tin nhắn và chiều dài hội thoại gửi tới chatbot.
+
+### 3. Kiểm tra đầu vào và bảo mật
+- Giới hạn ảnh ở 20 MB, đồng bộ thông báo giao diện và server.
+- Server kiểm tra MIME type, sự khớp giữa MIME khai báo và data URI, định dạng base64, dung lượng ảnh, loại chế độ quét, và độ dài văn bản trước khi gọi API.
+- Thêm phản hồi JSON dễ hiểu cho request JSON sai hoặc quá lớn.
+- API key tiếp tục chỉ nằm trong biến môi trường phía server; nhãn giao diện được đổi từ “AI ONLINE” sang “AI KEY SET” để không tuyên bố kết nối thành công khi chỉ mới có API key.
+
+### 4. Minh bạch dữ liệu nghiên cứu
+- Gắn nhãn rõ N=320 và các tỷ lệ dựng sẵn là dữ liệu minh họa, không phải kết quả khảo sát đã xác minh.
+- Không tự điền sẵn các lựa chọn trong phiếu khảo sát; yêu cầu người dùng trả lời các câu hỏi trước khi gửi.
+- Sửa xuất CSV để trích dẫn dữ liệu mẫu, phân biệt dữ liệu minh họa với phiếu lưu cục bộ trên trình duyệt.
+- Sửa phần báo cáo nghiên cứu để không khẳng định các tỷ lệ minh họa là sự thật, đồng thời thêm khuyến cáo về quyền riêng tư khi dùng Gemini với dữ liệu học sinh.
+- Cập nhật README về cách chạy, deploy, cấu hình biến môi trường và giới hạn hiện tại.
+
+## Kết quả kiểm tra thực hiện được
+- Đã chạy kiểm tra cú pháp chuyển đổi TypeScript/TSX cho tất cả tệp `.ts` và `.tsx` bằng trình biên dịch TypeScript có sẵn trong môi trường; không có lỗi cú pháp được báo cáo.
+- Đã kiểm tra lại và sửa schema JSON bị lồng trùng trong `server.ts`.
+- Đã kiểm tra cấu hình package, Vite, tsconfig, Netlify và Render ở mức mã nguồn.
+
+## Điều chưa thể xác nhận
+- `npm install` không hoàn tất vì môi trường gặp lỗi DNS/kết nối `EAI_AGAIN` tới npm registry. Vì vậy chưa thể chạy `npm run build`, `npm run lint`, hoặc kiểm thử end-to-end với đầy đủ dependency trong phiên này. Kiểm tra cú pháp không thay thế được build và kiểm thử tích hợp.
+- Model Gemini có thực sự khả dụng còn phụ thuộc vào model được Google hỗ trợ tại thời điểm chạy, API key, quota, khu vực và quyền truy cập của tài khoản. Có thể đổi bằng `GEMINI_MODEL`.
+- Bộ heuristic dự phòng chỉ là kiểm tra từ khóa văn bản, không phải mô hình phát hiện deepfake, không phân tích pixel, không kiểm tra tính an toàn thực tế của URL và không nên dùng làm bằng chứng kết luận.
+- Ứng dụng hiện không có bộ giám định âm thanh/video chuyên sâu; chỉ nên công bố các chức năng thực sự đã triển khai.
+
+## Lệnh cần chạy trên máy có kết nối npm
+
+```bash
+npm install
+npm run lint
+npm run build
+npm run dev
+```
+
+Sau khi cấu hình `GEMINI_API_KEY` trong `.env`, kiểm tra `/api/health`, thử quét ảnh PNG/JPEG/WEBP, thử nội dung văn bản, thử thiếu API key và thử lỗi model/quota. Không đưa `.env` thật lên GitHub.

@@ -1,0 +1,24 @@
+# Netlify serves the Vite frontend and runs the Express API through a Function.
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Keep /api/* ahead of the SPA fallback. The extra /api segment is preserved
+# so Express receives its existing /api/health, /api/scan and /api/chat paths.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
