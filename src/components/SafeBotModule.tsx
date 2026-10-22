@@ -131,9 +131,9 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
         // Fallback to the server's clear fallback notice or the existing offline scripts.
         const serverProvidedFallback = Boolean(data.isFallbackNotice || data.aiFailureCode === 'AI_NOT_CONFIGURED');
         let fallbackReply = typeof data.reply === 'string' && data.isFallbackNotice
-          ? `${data.reply}\n\nMã chẩn đoán AI: ${data.aiFailureCode || 'GEMINI_REQUEST_FAILED'}. Kiểm tra Netlify Function logs.`
+          ? `${data.reply}\n\nMã chẩn đoán AI: ${data.aiFailureCode || 'GEMINI_REQUEST_FAILED'}. Kiểm tra Render Logs.`
           : data.aiFailureCode === 'AI_NOT_CONFIGURED'
-            ? `${data.message || 'Gemini AI chưa được cấu hình trên máy chủ.'}\n\nMã chẩn đoán AI: AI_NOT_CONFIGURED. Thêm GEMINI_API_KEY trong Netlify Environment Variables rồi deploy lại.`
+            ? `${data.message || 'Gemini AI chưa được cấu hình trên máy chủ.'}\n\nMã chẩn đoán AI: AI_NOT_CONFIGURED. Thêm GEMINI_API_KEY trong Render → Environment rồi deploy lại.`
             : 'Thầy/cô và SafeBot khuyên em luôn giữ bình tĩnh. Hãy áp dụng quy trình 4 bước: DỪNG LẠI (không chuyển tiền/không gửi mã) → KIỂM CHỨNG (gọi điện thoại trực tiếp) → BẢO VỆ (đổi mật khẩu) → BÁO CÁO (nói với bố mẹ hoặc gọi Tổng đài 111).';
 
         const lowerText = text.toLowerCase();

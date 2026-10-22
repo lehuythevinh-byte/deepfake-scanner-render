@@ -26,7 +26,7 @@
 - **Backend & Full-stack:** Node.js, Express, `tsx` (TypeScript Execution).
 - **Trí tuệ nhân tạo (AI Engine):** Google GenAI SDK (`@google/genai`) với mô hình `gemini-3.8-flash`.
 - **Đóng gói & Build:** Vite 8.
-- **Triển khai:** Netlify phục vụ frontend tĩnh và chạy API Express qua Netlify Function tại `netlify/functions/api.ts`.
+- **Triển khai hiện tại:** Render chạy ứng dụng Node.js/Express và phục vụ frontend đã build từ cùng một web service.
 
 ---
 
@@ -62,25 +62,25 @@ npm start
 
 ---
 
-## 5. Triển khai trực tiếp trên Netlify (frontend + Gemini API)
+## 5. Triển khai trên Render (frontend + Gemini API)
 
-Dự án đã được cấu hình để Netlify phục vụ giao diện Vite và chạy API bằng Netlify Functions. Bạn không cần triển khai backend lên Render riêng.
+Dự án có sẵn `render.yaml` để triển khai giao diện React và backend Express trong cùng một Web Service.
 
-1. Đẩy **toàn bộ source code** lên GitHub, bao gồm `server.ts`, `netlify.toml` và thư mục `netlify/functions/`.
-2. Trong Netlify, chọn **Add new site → Import an existing project** và kết nối repository.
-3. Build command: `npm run build`; Publish directory: `dist`. Netlify tự cài dependencies từ `package.json`; file `netlify.toml` đã chứa các cài đặt này nên Netlify thường tự nhận.
-4. Trong cấu hình site, mở **Environment variables** và thêm:
-   - `GEMINI_API_KEY` = API Key được tạo trong Google AI Studio.
-   - `GEMINI_MODEL` = `gemini-3.8-flash` hoặc model khác đang được Gemini API hỗ trợ.
-5. Lưu biến môi trường rồi chọn **Trigger deploy → Clear cache and deploy site** để Function nhận biến mới.
-6. Mở `https://TEN-SITE-CUA-BAN.netlify.app/api/health`. Kết quả cần có `status: "ok"` và `aiConfigured: true`.
-7. Thử AI Scanner và SafeBot. Nếu AI Scanner vẫn hiện “Chế độ dự phòng”, hãy mở **Netlify → Functions → api → Logs** để xem lỗi Gemini. `aiConfigured: true` chỉ xác nhận biến key tồn tại, không đảm bảo key còn hạn mức hoặc model gọi thành công.
+1. Đẩy toàn bộ source code lên GitHub; không đưa tệp `.env` có API key thật vào repository.
+2. Trong [Render Dashboard](https://dashboard.render.com/), tạo **New → Web Service** và kết nối repository.
+3. Thiết lập:
+   - **Build Command:** `npm install --include=dev --no-audit --no-fund && npm run build`
+   - **Start Command:** `npm start`
+   - **Health Check Path:** `/api/health`
+4. Trong **Environment**, thêm `GEMINI_API_KEY` với API key từ Google AI Studio. Giữ `GEMINI_MODEL` là `gemini-3.8-flash` hoặc chọn model đang được Gemini API hỗ trợ.
+5. Lưu thay đổi và deploy lại. Mở `https://TEN-DICH-VU.onrender.com/api/health`; `status: "ok"` xác nhận server khởi động, còn `aiConfigured: true` chỉ xác nhận key có mặt, không đảm bảo Gemini đang sẵn sàng.
+6. Thử AI Scanner và SafeBot. Nếu có lỗi, mở **Render → Logs** để đọc mã HTTP và nguyên nhân của Gemini.
 
-**Ảnh lớn:** Netlify Functions giới hạn kích thước request. Ảnh lớn hơn khoảng 3,2 MB sẽ được trình duyệt thu nhỏ/nén trước khi gửi để giảm khả năng vượt giới hạn payload. API Key chỉ được đọc ở phía Function, không đưa vào frontend.
+### Cơ chế xử lý Gemini tạm thời không khả dụng
 
-### Chạy trên Render/VPS (tùy chọn)
+Server thử lại tối đa 2 lần cho mỗi model khi gặp lỗi dịch vụ/mạng tạm thời (bao gồm HTTP 503), với thời gian chờ tăng dần. Nếu model chính vẫn thất bại, server thử model dự phòng `gemini-3.1-flash-lite` theo cùng cơ chế. Nếu cả hai không khả dụng, Scanner có thể hiển thị kết quả quy tắc dự phòng kèm cảnh báo rõ ràng; kết quả đó **không phải** giám định hình ảnh bằng AI và không được xem là xác nhận ảnh thật/giả.
 
-Nếu sau này muốn dùng backend Node.js riêng, dự án vẫn giữ `render.yaml`. Dùng Build Command `npm install --include=dev --no-audit --no-fund && npm run build`, Start Command `npm start`, rồi đặt `GEMINI_API_KEY` và `GEMINI_MODEL` trong Environment Variables của host. Không cần cách này nếu chỉ dùng Netlify.
+> Dự án vẫn giữ `netlify.toml` và `netlify/functions/` để hỗ trợ cấu hình Netlify khi cần, nhưng hướng dẫn triển khai chính ở đây là Render.
 
 ---
 
@@ -102,9 +102,9 @@ Khai báo trong tệp `.env` hoặc cấu hình máy chủ:
 ## 7. Cách cấu hình dịch vụ AI
 
 1. Truy cập [Google AI Studio](https://aistudio.google.com/) để tạo một API key.
-2. Nếu chạy local, đặt khóa trong tệp `.env` (không commit tệp này vào GitHub). Nếu deploy Netlify, đặt `GEMINI_API_KEY` trong **Site/Project configuration → Environment variables** thay vì đưa key vào code.
-3. Restart local server hoặc chạy lại deploy trên Netlify sau khi lưu biến môi trường.
-4. `/api/health` hiển thị `aiConfigured` để kiểm tra biến có tồn tại, nhưng đây không phải bài kiểm tra gọi model. Khi API thất bại, scanner hiển thị mã chẩn đoán an toàn như `INVALID_API_KEY`, `QUOTA_EXCEEDED` hoặc `MODEL_OR_ENDPOINT_NOT_FOUND`; xem Function logs để biết chi tiết. Không coi chế độ dự phòng là giám định ảnh bằng AI.
+2. Nếu chạy local, đặt khóa trong tệp `.env` (không commit tệp này vào GitHub). Khi deploy Render, đặt `GEMINI_API_KEY` tại **service → Environment** thay vì đưa key vào code.
+3. Khởi động lại server local hoặc deploy lại dịch vụ Render sau khi lưu biến môi trường.
+4. `/api/health` hiển thị `aiConfigured` để kiểm tra biến có tồn tại, nhưng đây không phải bài kiểm tra gọi model. Khi API thất bại, scanner hiển thị mã chẩn đoán an toàn như `INVALID_API_KEY`, `QUOTA_EXCEEDED` hoặc `MODEL_OR_ENDPOINT_NOT_FOUND`; xem Render Logs để biết chi tiết. Không coi chế độ dự phòng là giám định ảnh bằng AI.
 
 ---
 

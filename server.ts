@@ -57,6 +57,46 @@ const getSafeAiFailureCode = (error: any): string => {
   return 'GEMINI_REQUEST_FAILED';
 };
 
+// Gemini can return 503 during temporary demand spikes. Retry transient service/network
+// failures a small, bounded number of times with exponential backoff before using fallback.
+const GEMINI_MAX_RETRIES = 2;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isTransientGeminiError = (error: any): boolean => {
+  const rawStatus = error?.status ?? error?.response?.status ?? error?.error?.code;
+  const status = Number(rawStatus);
+  const message = [error?.status, error?.code, error?.message, error?.error?.message]
+    .filter(Boolean).join(' ').toLowerCase();
+
+  if ([500, 502, 503, 504].includes(status)) return true;
+  return /\b(500|502|503|504)\b/.test(message) ||
+    /temporarily unavailable|currently experiencing high demand|service unavailable|overloaded|econnreset|econnrefused|etimedout|enotfound|fetch failed|network error|socket hang up/i.test(message);
+};
+
+const generateContentWithRetry = async (
+  ai: GoogleGenAI,
+  model: string,
+  request: any,
+  operation: string,
+): Promise<any> => {
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
+    try {
+      return await ai.models.generateContent({ ...request, model });
+    } catch (error: any) {
+      const canRetry = attempt < GEMINI_MAX_RETRIES && isTransientGeminiError(error);
+      if (!canRetry) throw error;
+
+      const delayMs = Math.min(800 * (2 ** attempt), 3200) + Math.floor(Math.random() * 250);
+      const status = error?.status ?? error?.response?.status ?? error?.code ?? 'transient';
+      console.warn(`[${operation}] ${model} temporary error (${status}); retry ${attempt + 1}/${GEMINI_MAX_RETRIES} in ${delayMs}ms.`);
+      await sleep(delayMs);
+    }
+  }
+
+  // The loop either returns a response or throws. This line satisfies strict control-flow analysis.
+  throw new Error('GEMINI_RETRY_EXHAUSTED');
+};
+
 // Health & Config status endpoint
 app.get('/api/health', (req, res) => {
   const ai = getGeminiClient();
@@ -361,19 +401,17 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
 
     let response: any;
     try {
-      response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
+      response = await generateContentWithRetry(ai, GEMINI_MODEL, {
         contents: { parts },
         config: generateConfig,
-      });
+      }, 'Scan');
     } catch (primaryErr: any) {
-      console.warn(`[Scan] Primary model (${GEMINI_MODEL}) notice:`, primaryErr?.message || primaryErr);
-      console.log(`[Scan] Retrying with fast fallback model (${GEMINI_FALLBACK_MODEL})...`);
-      response = await ai.models.generateContent({
-        model: GEMINI_FALLBACK_MODEL,
+      console.warn(`[Scan] Primary model (${GEMINI_MODEL}) failed after bounded retries:`, primaryErr?.message || primaryErr);
+      console.log(`[Scan] Switching to fallback model (${GEMINI_FALLBACK_MODEL})...`);
+      response = await generateContentWithRetry(ai, GEMINI_FALLBACK_MODEL, {
         contents: { parts },
         config: generateConfig,
-      });
+      }, 'Scan fallback');
     }
 
     let parsedData: any = {};
@@ -610,26 +648,24 @@ Quy tắc ứng xử và bảo vệ học sinh:
 
     let response: any;
     try {
-      response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
+      response = await generateContentWithRetry(ai, GEMINI_MODEL, {
         contents: formattedContents,
         config: {
           systemInstruction,
           temperature: 0.7,
           topP: 0.9,
         },
-      });
+      }, 'Chat');
     } catch (primaryChatErr: any) {
-      console.warn(`[Chat] Primary model error:`, primaryChatErr?.message || primaryChatErr);
-      response = await ai.models.generateContent({
-        model: GEMINI_FALLBACK_MODEL,
+      console.warn(`[Chat] Primary model (${GEMINI_MODEL}) failed after bounded retries:`, primaryChatErr?.message || primaryChatErr);
+      response = await generateContentWithRetry(ai, GEMINI_FALLBACK_MODEL, {
         contents: formattedContents,
         config: {
           systemInstruction,
           temperature: 0.7,
           topP: 0.9,
         },
-      });
+      }, 'Chat fallback');
     }
 
     const reply = response.text || 'SafeBot đang gặp gián đoạn tạm thời. Em hãy giữ bình tĩnh và trao đổi ngay với người lớn đáng tin cậy nhé!';

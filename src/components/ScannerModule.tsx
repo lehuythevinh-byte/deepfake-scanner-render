@@ -38,9 +38,8 @@ interface ScannerModuleProps {
   aiConfigured: boolean | null;
 }
 
-// Netlify Functions have a request payload limit. Keep the JSON/base64 request
-// below that limit by shrinking only images that are too large to send safely.
-const MAX_SERVERLESS_IMAGE_BYTES = 3.2 * 1024 * 1024;
+// Keep image payloads reasonably sized while preserving enough detail for analysis.
+const MAX_API_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const readBlobAsDataUrl = (blob: Blob): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -50,7 +49,7 @@ const readBlobAsDataUrl = (blob: Blob): Promise<string> => new Promise((resolve,
 });
 
 const prepareImageForApi = async (file: File): Promise<{ dataUrl: string; mimeType: string }> => {
-  if (file.size <= MAX_SERVERLESS_IMAGE_BYTES) {
+  if (file.size <= MAX_API_IMAGE_BYTES) {
     return { dataUrl: await readBlobAsDataUrl(file), mimeType: file.type };
   }
 
@@ -82,11 +81,11 @@ const prepareImageForApi = async (file: File): Promise<{ dataUrl: string; mimeTy
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', attempt.quality));
-      if (blob && blob.size <= MAX_SERVERLESS_IMAGE_BYTES) {
+      if (blob && blob.size <= MAX_API_IMAGE_BYTES) {
         return { dataUrl: await readBlobAsDataUrl(blob), mimeType: 'image/jpeg' };
       }
     }
-    throw new Error('IMAGE_TOO_LARGE_FOR_NETLIFY');
+    throw new Error('IMAGE_TOO_LARGE_FOR_API');
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -307,7 +306,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
       let fileMime = '';
 
       if (selectedFile) {
-        setProcessingStep('Đang tối ưu ảnh để gửi an toàn đến Netlify AI...');
+        setProcessingStep('Đang tối ưu ảnh để gửi an toàn đến máy chủ AI...');
         const preparedImage = await prepareImageForApi(selectedFile);
         base64Data = preparedImage.dataUrl;
         fileMime = preparedImage.mimeType;
@@ -357,12 +356,12 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
       } as ThreatScanResult);
     } catch (err: any) {
       console.error('Scan request error:', err);
-      if (err?.message === 'IMAGE_TOO_LARGE_FOR_NETLIFY') {
-        setScanError('Ảnh quá lớn để gửi qua Netlify sau khi tối ưu. Hãy thử ảnh có độ phân giải thấp hơn.');
+      if (err?.message === 'IMAGE_TOO_LARGE_FOR_API') {
+        setScanError('Ảnh quá lớn sau khi tối ưu. Hãy thử ảnh có độ phân giải thấp hơn hoặc ảnh nhỏ hơn 20MB.');
       } else if (err?.message === 'IMAGE_READ_FAILED' || err?.message === 'IMAGE_DECODE_FAILED') {
         setScanError('Không đọc được ảnh này. Hãy thử lưu lại ảnh dưới dạng PNG, JPEG hoặc WEBP rồi tải lên lại.');
       } else {
-        setScanError('Không thể kết nối đến máy chủ AI. Hãy kiểm tra biến GEMINI_API_KEY trên Netlify và nhật ký Functions.');
+        setScanError('Không thể kết nối máy chủ AI. Hãy kiểm tra GEMINI_API_KEY tại Render → Environment và xem Render Logs.');
       }
     } finally {
       setIsScanning(false);
@@ -816,7 +815,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
                   <p>Máy chủ đang sử dụng quy tắc nhận diện từ văn bản. Phân tích hình ảnh bằng AI chưa hoàn tất; trạng thái này không chứng minh ảnh thật hay giả. Hãy dùng Evidence Lab và xác minh qua nguồn độc lập.</p>
                   {threatResult.aiFailureCode && (
                     <p className="mt-2 border-t border-amber-300/20 pt-2 text-amber-200">
-                      Mã chẩn đoán: <strong>{threatResult.aiFailureCode}</strong>. Kiểm tra Environment Variables và Netlify Function logs để biết chi tiết.
+                      Mã chẩn đoán: <strong>{threatResult.aiFailureCode}</strong>. Kiểm tra Render → Environment và Render Logs để biết chi tiết.
                     </p>
                   )}
                 </div>

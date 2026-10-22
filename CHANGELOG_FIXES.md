@@ -1,5 +1,15 @@
 # DEEPFAKE SCANNER — Bản vá và ghi chú kiểm thử
 
+## Bổ sung ngày 21/10/2026 — Xử lý Gemini 503 trên Render
+
+- Thêm retry có giới hạn (tối đa 2 lần thử lại cho mỗi model) với exponential backoff và jitter cho lỗi dịch vụ/mạng tạm thời như HTTP 503.
+- Áp dụng cùng cơ chế retry cho cả AI Scanner và SafeBot; chỉ chuyển sang model dự phòng sau khi model chính đã hết lượt thử lại.
+- Không retry tự động các lỗi cấu hình/quyền hoặc quota 429, tránh tạo thêm lượt gọi không có ích.
+- Khi cả hai model vẫn lỗi, giữ kết quả quy tắc dự phòng nhưng gắn rõ `isHeuristicNotice` và mã chẩn đoán; không tuyên bố đó là giám định ảnh bằng AI.
+- Cập nhật thông báo giao diện và hướng dẫn triển khai để chỉ đúng **Render → Environment / Logs**.
+- Nới ngưỡng tối ưu ảnh phía trình duyệt từ 3,2 MB lên 8 MB vì ngưỡng cũ dành cho payload Netlify Functions; giới hạn kiểm tra ảnh phía máy chủ vẫn là 20 MB.
+- Kiểm tra cú pháp TypeScript/TSX cho các file đã sửa và kiểm thử helper retry bằng mock: thành công sau lỗi 503, dừng sau 3 lần gọi nếu dịch vụ vẫn lỗi, không retry mã quota 429. Cài dependency đầy đủ để chạy build toàn dự án không hoàn tất trong môi trường này, vì vậy cần xác nhận build cuối cùng trên Render sau khi đẩy mã nguồn.
+
 ## Các thay đổi trong bản này
 
 ### 1. Sửa lỗi cấu hình và khả năng chạy
