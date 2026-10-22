@@ -134,3 +134,39 @@ Theo đúng quy tắc trung thực khoa học:
 1. **Không đảm bảo chính xác 100%:** Các mô hình trí tuệ nhân tạo hoạt động dựa trên xác suất nhận dạng mẫu pixel và đặc trưng thống kê. Kết quả "Chưa phát hiện dấu hiệu bất thường" KHÔNG đồng nghĩa chắc chắn 100% nội dung là thật.
 2. **Tác động từ chất lượng tệp:** Ảnh hoặc video bị nén nhiều lần khi gửi qua mạng xã hội (như Zalo, Facebook Messenger) có thể làm mờ các chi tiết vi mô, gây khó khăn cho việc phân tích.
 3. **Vai trò con người là quyết định:** Mọi kết quả phân tích kỹ thuật số chỉ đóng vai trò tham khảo. Kỹ năng xác minh qua kênh độc lập (gọi điện thoại trực tiếp, kiểm tra báo chí chính thống) vẫn là chốt chặn quan trọng nhất.
+
+
+## 9. Tài khoản Người dùng và Admin Console
+
+Source hiện có khu vực tài khoản và bảng quản trị mới. Các tính năng tài khoản yêu cầu PostgreSQL; nếu chưa cấu hình cơ sở dữ liệu, các công cụ khách cũ vẫn hoạt động nhưng đăng ký/đăng nhập sẽ báo chưa sẵn sàng.
+
+### Thiết lập trên Render
+
+1. Tạo một PostgreSQL database từ Render Dashboard (nên dùng cùng region với Web Service).
+2. Trong Web Service → Environment, đặt `DATABASE_URL` bằng **Internal Database URL** của PostgreSQL.
+3. Đặt `ADMIN_EMAIL` là email quản trị ban đầu, `ADMIN_PASSWORD` là mật khẩu duy nhất tối thiểu 12 ký tự, và tùy chọn `ADMIN_NAME`.
+4. Không đưa mật khẩu quản trị hoặc `DATABASE_URL` vào GitHub. Các biến `sync: false` trong `render.yaml` được khai báo để nhập an toàn trên Render.
+5. Deploy lại. Mở `/api/health` và xác nhận `authStore.ready` là `true`.
+6. Đăng nhập bằng email/mật khẩu bootstrap. Chỉ dùng email quản trị chuyên dụng và thay mật khẩu mặc định ngay nếu có sử dụng tạm thời.
+
+`ADMIN_EMAIL`/`ADMIN_PASSWORD` dùng cho bước bootstrap Admin đầu tiên. Nếu email đã tồn tại, ứng dụng cấp vai trò Admin cho tài khoản đó nhưng không ghi đè mật khẩu. Cờ bootstrap được lưu trong database nên các thay đổi vai trò về sau không tự bị đảo lại khi redeploy.
+
+### API tài khoản
+
+- `POST /api/auth/register` — đăng ký tài khoản User; vai trò luôn được cấp ở server và không nhận role từ client.
+- `POST /api/auth/login` — đăng nhập; session opaque token được lưu dưới dạng SHA-256 hash trong PostgreSQL và gửi bằng cookie `HttpOnly`, `SameSite=Lax`.
+- `POST /api/auth/logout` — thu hồi session.
+- `GET /api/auth/me` — kiểm tra session hiện tại.
+- `GET /api/me/scans` / `DELETE /api/me/scans` — xem/xóa lịch sử của chính tài khoản.
+- `GET /api/admin/overview`, `GET /api/admin/users`, `GET /api/admin/audit` — API chỉ dành cho Admin.
+- `PATCH /api/admin/users/:id/status` — tạm khóa/mở khóa tài khoản, thu hồi session khi khóa.
+- `PATCH /api/admin/users/:id/role` — cấp/hạ quyền Admin, bảo vệ Admin cuối cùng.
+
+Lịch sử quét chỉ lưu chế độ, tên tệp, trạng thái, tóm tắt và cờ kết quả dự phòng; không lưu ảnh hoặc nội dung tin nhắn gốc. Mọi thao tác phân quyền/trạng thái được ghi vào audit log. Đây là phiên bản chức năng cơ bản; trước khi mở công khai quy mô lớn nên bổ sung CAPTCHA/chống bot và quy trình khôi phục mật khẩu đã xác minh email.
+
+### Nếu Render vẫn trả 503
+
+- Đọc **Render → Logs** để phân biệt lỗi khởi động Node, lỗi build và lỗi gọi Gemini.
+- Mở `/api/health`: endpoint này kiểm tra tiến trình backend; `aiConfigured: true` chỉ cho biết API key đã được đặt, không đảm bảo Gemini đang sẵn sàng.
+- Nếu `authStore.configured` là `false`, đặt `DATABASE_URL`. Nếu `authStore.ready` là `false`, kiểm tra URL PostgreSQL, quyền kết nối và log `[AuthStore]`.
+- Xác nhận Build Command là `npm install --include=dev --no-audit --no-fund && npm run build`, Start Command là `npm start`, Health Check Path là `/api/health`.

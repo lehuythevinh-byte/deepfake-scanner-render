@@ -7,9 +7,22 @@ export type ActiveTab =
   | 'safebot'
   | 'research'
   | 'report'
-  | 'emergency';
+  | 'emergency'
+  | 'account'
+  | 'admin';
 
 export type ScanMode = 'image' | 'social_post' | 'message_scam';
+
+export interface AppUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: 'user' | 'admin';
+  status: 'active' | 'suspended';
+  createdAt?: string;
+  lastLoginAt?: string | null;
+}
+
 
 export interface ForensicObservation {
   category: string;

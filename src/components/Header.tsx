@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActiveTab } from '../types';
+import type { ActiveTab, AppUser } from '../types';
 import { 
   ShieldAlert, 
   Search, 
@@ -13,16 +13,19 @@ import {
   Menu,
   X,
   Sparkles,
-  Info
+  Info,
+  UserRound,
+  ShieldCheck
 } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
   aiConfigured: boolean | null;
+  user: AppUser | null;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfigured }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfigured, user }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -103,6 +106,26 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfig
             })}
           </nav>
 
+          {/* User account and role-aware Admin entry */}
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              onClick={() => handleSelectTab('account')}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${activeTab === 'account' ? 'border-[#55DDF2]/40 bg-[#55DDF2]/10 text-[#8DEBFA]' : 'border-[#2B4364] text-slate-200 hover:bg-[#172941]'}`}
+              aria-label="Mở khu vực tài khoản"
+            >
+              <UserRound className="h-4 w-4" />
+              <span>{user ? user.displayName.split(' ')[0] : 'Tài khoản'}</span>
+            </button>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => handleSelectTab('admin')}
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${activeTab === 'admin' ? 'border-violet-300/40 bg-violet-300/10 text-violet-200' : 'border-violet-300/25 text-violet-200 hover:bg-violet-300/10'}`}
+              >
+                <ShieldCheck className="h-4 w-4" /> Admin
+              </button>
+            )}
+          </div>
+
           {/* AI Connection Status Indicator */}
           <div className="hidden sm:flex items-center gap-3">
             <div 
@@ -161,6 +184,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfig
               </button>
             );
           })}
+          <button onClick={() => handleSelectTab('account')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'account' ? 'bg-[#172941] text-[#55DDF2]' : 'text-slate-300 hover:bg-[#172941]/50 hover:text-white'}`}><UserRound className="w-4 h-4" /><span>{user ? `Tài khoản: ${user.displayName}` : 'Đăng nhập / Đăng ký'}</span></button>
+          {user?.role === 'admin' && <button onClick={() => handleSelectTab('admin')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'admin' ? 'bg-violet-300/10 text-violet-200' : 'text-violet-200 hover:bg-violet-300/10'}`}><ShieldCheck className="w-4 h-4" /><span>Admin Console</span></button>}
         </div>
       )}
     </header>

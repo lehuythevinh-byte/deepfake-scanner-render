@@ -118,7 +118,7 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
                 <span>Bảo vệ quyền riêng tư</span>
               </div>
               <p>
-                Website không lưu trữ dữ liệu cá nhân hay hình ảnh người dùng tải lên sau phiên phân tích. Không thu thập thông tin danh tính nhạy cảm.
+                Nếu tạo tài khoản, hệ thống lưu email, tên hiển thị và tóm tắt lịch sử quét để cung cấp hồ sơ. Ảnh/tin nhắn gốc không được lưu trong lịch sử tài khoản; người dùng có thể xóa lịch sử đã lưu.
               </p>
               <div className="pt-1 border-t border-slate-700/50 text-[10px] text-amber-300/90">
                 <strong>Giới hạn của AI:</strong> Kết quả AI chỉ mang tính tham khảo kỹ thuật, không thay thế việc kiểm chứng nguồn độc lập.

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
+import { attachOptionalUserForScans, getAuthStoreStatus, initializeAuthStoreWithRetry, registerAuthRoutes, saveScanHistory, type AuthUser } from './src/server/auth';
 
 dotenv.config();
 
@@ -14,6 +15,16 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: '30mb' }));
 app.use(express.urlencoded({ extended: true, limit: '30mb' }));
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+registerAuthRoutes(app);
+attachOptionalUserForScans(app);
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -106,6 +117,7 @@ app.get('/api/health', (req, res) => {
     model: GEMINI_MODEL,
     timestamp: new Date().toISOString(),
     project: 'DEEPFAKE SCANNER — TRUNG TÂM AN TOÀN SỐ',
+    authStore: getAuthStoreStatus(),
   });
 });
 
@@ -423,6 +435,13 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
       parsedData = JSON.parse(rawText || '{}');
     }
 
+    await saveScanHistory((req as any).authUser as AuthUser | undefined, {
+      scanMode,
+      fileName: typeof fileName === 'string' ? fileName : 'content_sample',
+      overallStatus: typeof parsedData?.overallStatus === 'string' ? parsedData.overallStatus : 'inconclusive',
+      summary: typeof parsedData?.summary === 'string' ? parsedData.summary : '',
+      isHeuristic: false,
+    });
     res.json({
       success: true,
       data: parsedData,
@@ -576,6 +595,13 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
       scientificDisclaimer: 'Đây là kết quả dự phòng dựa trên quy tắc văn bản, không phải giám định hình ảnh hay xác minh liên kết. Kết quả chỉ hỗ trợ giáo dục an toàn số, không có giá trị kết luận pháp lý; luôn xác minh qua kênh độc lập.',
     };
 
+    await saveScanHistory((req as any).authUser as AuthUser | undefined, {
+      scanMode,
+      fileName: typeof fileName === 'string' ? fileName : 'content_sample',
+      overallStatus: fallbackThreatResult.overallStatus,
+      summary: fallbackThreatResult.summary,
+      isHeuristic: true,
+    });
     res.json({
       success: true,
       data: fallbackThreatResult,
@@ -707,8 +733,15 @@ app.use((error: any, _req: express.Request, res: express.Response, next: express
   return next(error);
 });
 
+// Return JSON for unknown API endpoints instead of the SPA HTML document.
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'API_NOT_FOUND', message: 'API endpoint không tồn tại.' });
+});
+
 // Setup Vite or Static serving
 async function startServer() {
+  // Do not block HTTP startup on the optional database so Render health checks stay responsive.
+  void initializeAuthStoreWithRetry();
   const isDev = process.env.NODE_ENV !== 'production';
 
   if (isDev) {

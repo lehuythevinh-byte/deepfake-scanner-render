@@ -514,7 +514,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
                     <Upload className="w-5 h-5" />
                   </div>
                   <p className="text-xs font-semibold text-white">Kéo thả ảnh chụp vào đây hoặc nhấn để chọn</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Ảnh sẽ được gửi đến Gemini API khi bật AI; không tải nội dung riêng tư</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Ảnh có thể được gửi đến Gemini API khi phân tích; tránh tải tệp nhạy cảm</p>
                 </div>
               ) : (
                 <div className="relative rounded-xl overflow-hidden border border-[#55DDF2]/40 bg-[#101C32] p-2 space-y-2">
@@ -754,7 +754,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
             {/* Privacy pledge */}
             <p className="text-[10px] text-slate-400 flex items-center justify-center gap-1.5 text-center">
               <Lock className="w-3 h-3 text-[#41866C]" />
-              <span>Bảo mật: Tệp và văn bản chỉ được phân tích tạm thời, không lưu trữ thông tin cá nhân.</span>
+              <span>Quyền riêng tư: Tệp gốc không lưu trong lịch sử tài khoản; nếu đăng nhập, hệ thống lưu tên tệp và tóm tắt kết quả.</span>
             </p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActiveTab } from './types';
+import type { ActiveTab } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomeModule } from './components/HomeModule';
@@ -11,6 +11,9 @@ import { SafeBotModule } from './components/SafeBotModule';
 import { ResearchDashboardModule } from './components/ResearchDashboardModule';
 import { ResearchReportModule } from './components/ResearchReportModule';
 import { EmergencyModule } from './components/EmergencyModule';
+import { AccountModule } from './components/AccountModule';
+import { AdminModule } from './components/AdminModule';
+import type { AppUser } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -26,11 +29,15 @@ export default function App() {
       'research',
       'report',
       'emergency',
+      'account',
+      'admin',
     ];
     return validTabs.includes(hash) ? hash : 'home';
   });
 
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [authAvailable, setAuthAvailable] = useState(true);
 
   // Check backend health and AI configuration status on startup
   useEffect(() => {
@@ -51,6 +58,27 @@ export default function App() {
 
     checkBackendStatus();
   }, []);
+
+  // Restore the current account session on page load.
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        const data = await response.json();
+        setCurrentUser(data.authenticated && data.user ? data.user as AppUser : null);
+        setAuthAvailable(Boolean(data.authAvailable));
+      } catch {
+        setCurrentUser(null);
+        setAuthAvailable(false);
+      }
+    };
+    void checkSession();
+  }, []);
+
+  const handleAuthChange = (user: AppUser | null, available = true) => {
+    setCurrentUser(user);
+    setAuthAvailable(available);
+  };
 
   // Sync tab changes with URL hash
   const handleTabChange = (tab: ActiveTab) => {
@@ -73,6 +101,8 @@ export default function App() {
         'research',
         'report',
         'emergency',
+        'account',
+        'admin',
       ];
       if (validTabs.includes(hash) && hash !== activeTab) {
         setActiveTab(hash);
@@ -90,6 +120,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         aiConfigured={aiConfigured}
+        user={currentUser}
       />
 
       {/* Main Content Area */}
@@ -120,6 +151,12 @@ export default function App() {
         )}
         {activeTab === 'emergency' && (
           <EmergencyModule onTabChange={handleTabChange} />
+        )}
+        {activeTab === 'account' && (
+          <AccountModule user={currentUser} authAvailable={authAvailable} onAuthChange={handleAuthChange} onTabChange={handleTabChange} />
+        )}
+        {activeTab === 'admin' && (
+          <AdminModule user={currentUser} />
         )}
       </main>
 

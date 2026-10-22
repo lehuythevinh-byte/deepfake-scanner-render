@@ -236,7 +236,7 @@ export const ResearchReportModule: React.FC<ResearchReportModuleProps> = ({ onTa
                 <ul className="space-y-1.5 list-disc list-inside">
                   <li><strong>Frontend:</strong> React 19, TypeScript, Tailwind CSS, bảo đảm giao diện thích ứng responsive hoàn hảo trên máy tính và điện thoại thông minh của học sinh.</li>
                   <li><strong>Backend & API:</strong> Express server kết nối dịch vụ Gemini Vision 3.8 Flash bảo mật phía máy chủ (không để lộ API key ra trình duyệt).</li>
-                  <li><strong>Bảo vệ dữ liệu & Quyền riêng tư:</strong> Source hiện không ghi tệp tải lên vào cơ sở dữ liệu riêng; tuy nhiên, khi bật Gemini, nội dung được gửi tới API của Google để phân tích và việc xử lý còn phụ thuộc điều khoản của nhà cung cấp. Không tải ảnh riêng tư/nhạy cảm. Trước khi dùng thật với học sinh, cần thông báo rõ, xin sự đồng ý phù hợp, giảm dữ liệu nhận dạng và thiết lập quy trình lưu/xóa dữ liệu.</li>
+                  <li><strong>Bảo vệ dữ liệu & Quyền riêng tư:</strong> Source không ghi tệp tải lên vào cơ sở dữ liệu riêng; nếu người dùng đăng nhập, hệ thống lưu email/tên hiển thị và tóm tắt lịch sử quét, không lưu ảnh hoặc tin nhắn gốc trong lịch sử. Khi bật Gemini, nội dung được gửi tới API của Google để phân tích và việc xử lý còn phụ thuộc điều khoản của nhà cung cấp. Không tải ảnh riêng tư/nhạy cảm. Trước khi dùng thật với học sinh, cần thông báo rõ, xin sự đồng ý phù hợp, giảm dữ liệu nhận dạng và thiết lập quy trình lưu/xóa dữ liệu.</li>
                 </ul>
 
                 <h4 className="font-bold text-base text-white pt-2">2. Cơ chế xử lý trung thực khoa học</h4>

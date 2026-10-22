@@ -1,5 +1,17 @@
 # DEEPFAKE SCANNER — Bản vá và ghi chú kiểm thử
 
+## Bổ sung ngày 22/10/2026 — User/Admin Console
+
+- Thêm đăng ký, đăng nhập, đăng xuất và khôi phục session qua cookie `HttpOnly`, `SameSite=Lax`; cookie `Secure` trong production.
+- Thêm lưu tài khoản, session hash, lịch sử phân tích tối thiểu và nhật ký quản trị trong PostgreSQL.
+- Thêm khu vực tài khoản: xem hồ sơ, xem lịch sử, xuất JSON, xóa lịch sử của chính tài khoản.
+- Thêm Admin Console: số liệu tổng quan, trạng thái cấu hình AI/cơ sở dữ liệu, tìm kiếm tài khoản, khóa/mở khóa, cấp/hạ quyền Admin và audit log.
+- Vai trò luôn do backend quyết định; các route Admin kiểm tra quyền phía server. Không lưu ảnh hoặc toàn văn tin nhắn người dùng vào lịch sử.
+- Bảo vệ Admin hoạt động cuối cùng và không cho Admin tự khóa hoặc tự hạ quyền của chính mình qua giao diện/API này.
+- Bootstrap Admin chạy một lần bằng `ADMIN_EMAIL` và `ADMIN_PASSWORD`, tránh tự cấp lại quyền ở mỗi lần deploy.
+- Thêm `DATABASE_URL` và các biến bootstrap vào `.env.example`/`render.yaml`; thêm `USER_ADMIN_SETUP_VI.md`.
+- Xác minh cú pháp TS/TSX bằng TypeScript transpileModule. Build toàn dự án chưa chạy được trong môi trường này do npm install không hoàn tất; cần xác nhận `npm install`, `npm run build` và `npm run lint` trên CI/Render sau khi đẩy code.
+
 ## Bổ sung ngày 21/10/2026 — Xử lý Gemini 503 trên Render
 
 - Thêm retry có giới hạn (tối đa 2 lần thử lại cho mỗi model) với exponential backoff và jitter cho lỗi dịch vụ/mạng tạm thời như HTTP 503.
