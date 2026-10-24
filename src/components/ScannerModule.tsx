@@ -342,6 +342,10 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
 
       const result = await response.json();
 
+      if (result.isHeuristicNotice || result.data?.isHeuristicNotice) {
+        setScanError('Gemini AI chưa hoàn tất phân tích. Kết quả dự phòng bằng quy tắc văn bản không được xem là kết quả giám định. Vui lòng thử lại sau.');
+        return;
+      }
       if (!response.ok || !result.success) {
         setScanError(result.message || 'Có lỗi xảy ra trong quá trình phân tích.');
         setIsScanning(false);
