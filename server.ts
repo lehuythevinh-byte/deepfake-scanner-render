@@ -266,6 +266,7 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
     });
 
     const generateConfig = {
+      thinkingConfig: { thinkingLevel: 'low' },
       systemInstruction: systemPrompt,
       responseMimeType: 'application/json',
       responseSchema: {
@@ -665,9 +666,8 @@ Quy tắc ứng xử và bảo vệ học sinh:
     const response = await generateContentWithRetry(ai, GEMINI_MODEL, {
       contents: formattedContents,
       config: {
+        thinkingConfig: { thinkingLevel: 'low' },
         systemInstruction,
-        temperature: 0.7,
-        topP: 0.9,
       },
     }, 'Chat');
 
