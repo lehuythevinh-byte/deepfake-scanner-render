@@ -44,7 +44,7 @@ const getValidGeminiModel = (): string => {
 };
 
 const GEMINI_MODEL = getValidGeminiModel();
-const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite';
+
 
 const getGeminiClient = () => {
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
@@ -70,7 +70,7 @@ const getSafeAiFailureCode = (error: any): string => {
 
 // Gemini can return 503 during temporary demand spikes. Retry transient service/network
 // failures a small, bounded number of times with exponential backoff before using fallback.
-const GEMINI_MAX_RETRIES = 2;
+const GEMINI_MAX_RETRIES = 0;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isTransientGeminiError = (error: any): boolean => {
@@ -411,20 +411,10 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
         },
       };
 
-    let response: any;
-    try {
-      response = await generateContentWithRetry(ai, GEMINI_MODEL, {
-        contents: { parts },
-        config: generateConfig,
-      }, 'Scan');
-    } catch (primaryErr: any) {
-      console.warn(`[Scan] Primary model (${GEMINI_MODEL}) failed after bounded retries:`, primaryErr?.message || primaryErr);
-      console.log(`[Scan] Switching to fallback model (${GEMINI_FALLBACK_MODEL})...`);
-      response = await generateContentWithRetry(ai, GEMINI_FALLBACK_MODEL, {
-        contents: { parts },
-        config: generateConfig,
-      }, 'Scan fallback');
-    }
+    const response = await generateContentWithRetry(ai, GEMINI_MODEL, {
+      contents: { parts },
+      config: generateConfig,
+    }, 'Scan');
 
     let parsedData: any = {};
     const rawText = (response.text || '{}').trim();
@@ -672,27 +662,14 @@ Quy tắc ứng xử và bảo vệ học sinh:
       parts: [{ text: m.content }],
     }));
 
-    let response: any;
-    try {
-      response = await generateContentWithRetry(ai, GEMINI_MODEL, {
-        contents: formattedContents,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-          topP: 0.9,
-        },
-      }, 'Chat');
-    } catch (primaryChatErr: any) {
-      console.warn(`[Chat] Primary model (${GEMINI_MODEL}) failed after bounded retries:`, primaryChatErr?.message || primaryChatErr);
-      response = await generateContentWithRetry(ai, GEMINI_FALLBACK_MODEL, {
-        contents: formattedContents,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-          topP: 0.9,
-        },
-      }, 'Chat fallback');
-    }
+    const response = await generateContentWithRetry(ai, GEMINI_MODEL, {
+      contents: formattedContents,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+        topP: 0.9,
+      },
+    }, 'Chat');
 
     const reply = response.text || 'SafeBot đang gặp gián đoạn tạm thời. Em hãy giữ bình tĩnh và trao đổi ngay với người lớn đáng tin cậy nhé!';
 
@@ -701,41 +678,35 @@ Quy tắc ứng xử và bảo vệ học sinh:
       reply,
     });
   } catch (error: any) {
-    console.warn('[Chat] Fallback guidance activated:', error?.message || error);
+    const code = getSafeAiFailureCode(error);
+    console.warn('[Chat] Gemini request failed:', code, error?.message || error);
 
-    // If Gemini model is experiencing high demand (503), return structured expert guidance with notice
-    const fallbackAnswers = [
-      "SafeBot xin hướng dẫn em quy trình xử lý khẩn cấp 4 bước:",
-      "1. DỪNG LẠI (Stop): Tuyệt đối không chuyển tiền, không đọc mã OTP hoặc gửi thông tin riêng tư.",
-      "2. KIỂM CHỨNG (Check): Hãy gọi điện thoại trực tiếp bằng số SIM thông thường trong danh bạ hoặc hỏi người thân đang ở cạnh.",
-      "3. BẢO VỆ (Protect): Kích hoạt xác thực 2 lớp (2FA), đặt 'Mật khẩu gia đình' để xác minh khi khẩn cấp.",
-      "4. BÁO CÁO (Report): Nếu có dấu hiệu bị tống tiền hoặc đe dọa, hãy chia sẻ ngay với cha mẹ, thầy cô hoặc gọi Tổng đài Quốc gia Bảo vệ Trẻ em 111 (miễn phí 24/7).",
-    ].join('\n\n');
+    const status =
+      code === 'QUOTA_EXCEEDED' ? 429 :
+      code === 'AI_NOT_CONFIGURED' ||
+      code === 'GEMINI_TEMPORARILY_UNAVAILABLE' ||
+      code === 'NETWORK_ERROR' ? 503 : 502;
 
-    res.json({
-      success: true,
-      reply: fallbackAnswers,
-      isFallbackNotice: true,
-      aiFailureCode: getSafeAiFailureCode(error),
+    const message =
+      code === 'GEMINI_TEMPORARILY_UNAVAILABLE'
+        ? 'Gemini AI đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau.'
+        : code === 'QUOTA_EXCEEDED'
+          ? 'API Gemini đã hết hạn mức hoặc vượt quota. Hãy kiểm tra hạn mức API.'
+          : code === 'INVALID_API_KEY' ||
+            code === 'API_KEY_PERMISSION_DENIED'
+            ? 'API key Gemini không hợp lệ hoặc chưa được cấp quyền.'
+            : code === 'MODEL_OR_ENDPOINT_NOT_FOUND'
+              ? 'Không tìm thấy model Gemini đã cấu hình. Hãy kiểm tra GEMINI_MODEL.'
+              : code === 'AI_NOT_CONFIGURED'
+                ? 'Chưa cấu hình GEMINI_API_KEY trên máy chủ.'
+                : 'SafeBot không thể kết nối Gemini AI lúc này. Vui lòng thử lại sau.';
+
+    return res.status(status).json({
+      success: false,
+      error: code,
+      message,
     });
   }
-});
-
-// Convert request parser failures (including oversized JSON bodies) into predictable JSON responses.
-app.use((error: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (res.headersSent) return next(error);
-  if (error?.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'REQUEST_TOO_LARGE', message: 'Yêu cầu quá lớn. Hãy giảm dung lượng ảnh hoặc rút gọn văn bản.' });
-  }
-  if (error instanceof SyntaxError && 'body' in error) {
-    return res.status(400).json({ error: 'INVALID_JSON', message: 'Dữ liệu gửi lên không phải JSON hợp lệ.' });
-  }
-  return next(error);
-});
-
-// Return JSON for unknown API endpoints instead of the SPA HTML document.
-app.use('/api', (_req, res) => {
-  res.status(404).json({ error: 'API_NOT_FOUND', message: 'API endpoint không tồn tại.' });
 });
 
 // Setup Vite or Static serving
