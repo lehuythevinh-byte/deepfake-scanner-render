@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertCircle, ArrowRight, Download, History, KeyRound, LogIn, LogOut, Mail, ShieldCheck, Trash2, UserPlus, UserRound, ScanSearch } from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, Download, Eye, EyeOff, History, KeyRound, LogIn, LogOut, Mail, ShieldCheck, Trash2, UserPlus, UserRound, ScanSearch } from 'lucide-react';
 import type { ActiveTab, AppUser } from '../types';
 
 interface ScanHistoryItem {
@@ -42,6 +42,7 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, authAvailabl
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ type: 'error' | 'success' | 'info'; text: string } | null>(null);
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
@@ -80,7 +81,7 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, authAvailabl
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ email, password, ...(mode === 'register' ? { displayName } : {}) }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password, ...(mode === 'register' ? { displayName: displayName.trim() } : {}) }),
       });
       if (!response.ok) throw new Error(await readApiError(response));
       const body = await response.json();
@@ -88,7 +89,7 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, authAvailabl
       setPassword('');
       setNotice({ type: 'success', text: mode === 'login' ? 'Đăng nhập thành công.' : 'Tài khoản đã được tạo thành công.' });
     } catch (error) {
-      setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Không thể kết nối máy chủ.' });
+      setNotice({ type: 'error', text: error instanceof TypeError ? 'Không thể kết nối máy chủ. Hãy kiểm tra kết nối mạng và thử tải lại trang.' : error instanceof Error ? error.message : 'Không thể kết nối máy chủ. Vui lòng thử lại.' });
     } finally {
       setLoading(false);
     }
@@ -96,11 +97,16 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, authAvailabl
 
   const logout = async () => {
     setLoading(true);
+    setNotice(null);
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-    } finally {
+      const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      if (!response.ok) throw new Error(await readApiError(response));
       onAuthChange(null, authAvailable);
+      setPassword('');
       setNotice({ type: 'success', text: 'Bạn đã đăng xuất.' });
+    } catch (error) {
+      setNotice({ type: 'error', text: error instanceof TypeError ? 'Không thể xác nhận đăng xuất với máy chủ. Hãy kiểm tra mạng rồi thử lại.' : error instanceof Error ? error.message : 'Không thể đăng xuất. Vui lòng thử lại.' });
+    } finally {
       setLoading(false);
     }
   };
@@ -148,13 +154,13 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, authAvailabl
       {!user ? (
         <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <div className={`${panelClass} p-6 sm:p-8`}>
-            <div className="mb-6 flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#55DDF2]/25 bg-[#55DDF2]/10 text-[#55DDF2]">{mode === 'login' ? <LogIn className="h-6 w-6" /> : <UserPlus className="h-6 w-6" />}</div><div><h2 className="text-xl font-bold text-white">{mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}</h2><p className="mt-1 text-sm text-slate-400">{mode === 'login' ? 'Tiếp tục sử dụng hồ sơ cá nhân.' : 'Mật khẩu tối thiểu 10 ký tự.'}</p></div></div>
-            <div className="mb-6 grid grid-cols-2 rounded-xl bg-[#0D192B] p-1"><button onClick={() => { setMode('login'); setNotice(null); }} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-[#203651] text-white' : 'text-slate-400 hover:text-white'}`}>Đăng nhập</button><button onClick={() => { setMode('register'); setNotice(null); }} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${mode === 'register' ? 'bg-[#203651] text-white' : 'text-slate-400 hover:text-white'}`}>Đăng ký</button></div>
-            {!authAvailable && <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm leading-6 text-amber-100"><strong>Hệ thống tài khoản chưa được cấu hình.</strong><br />Quản trị viên cần kết nối PostgreSQL và đặt biến môi trường <code>DATABASE_URL</code> trên Render. Các công cụ khách hiện có vẫn có thể dùng.</div>}
+            <div className="mb-6 flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#55DDF2]/25 bg-[#55DDF2]/10 text-[#55DDF2]">{mode === 'login' ? <LogIn className="h-6 w-6" /> : <UserPlus className="h-6 w-6" />}</div><div><h2 className="text-xl font-bold text-white">{mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}</h2><p className="mt-1 text-sm text-slate-400">{mode === 'login' ? 'Tiếp tục sử dụng hồ sơ cá nhân.' : 'Dùng mật khẩu từ 10 đến 128 ký tự.'}</p></div></div>
+            <div className="mb-6 grid grid-cols-2 rounded-xl bg-[#0D192B] p-1"><button onClick={() => { setMode('login'); setNotice(null); setPassword(''); setShowPassword(false); }} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-[#203651] text-white' : 'text-slate-400 hover:text-white'}`}>Đăng nhập</button><button onClick={() => { setMode('register'); setNotice(null); setPassword(''); setShowPassword(false); }} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${mode === 'register' ? 'bg-[#203651] text-white' : 'text-slate-400 hover:text-white'}`}>Đăng ký</button></div>
+            {!authAvailable && <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm leading-6 text-amber-100"><strong>Hệ thống tài khoản hiện chưa sẵn sàng.</strong><br />Có thể cơ sở dữ liệu chưa được cấu hình hoặc máy chủ chưa khởi tạo xong. Nếu quản trị viên vừa cập nhật cấu hình Render, hãy tải lại trang sau khi dịch vụ triển khai hoàn tất. Các công cụ khách hiện có vẫn có thể sử dụng.</div>}
             <form onSubmit={submit} className="space-y-4">
               {mode === 'register' && <label className="block"><span className="mb-2 block text-sm font-medium text-slate-200">Tên hiển thị</span><input className={inputClass} autoComplete="name" maxLength={80} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Tên của bạn" required minLength={2} /></label>}
-              <label className="block"><span className="mb-2 block text-sm font-medium text-slate-200">Email</span><span className="relative block"><Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input className={`${inputClass} pl-10`} autoComplete="email" type="email" maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="ban@example.com" required /></span></label>
-              <label className="block"><span className="mb-2 block text-sm font-medium text-slate-200">Mật khẩu</span><span className="relative block"><KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input className={`${inputClass} pl-10`} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={mode === 'register' ? 10 : 1} maxLength={128} placeholder={mode === 'register' ? 'Ít nhất 10 ký tự' : 'Nhập mật khẩu'} required /></span></label>
+              <label className="block"><span className="mb-2 block text-sm font-medium text-slate-200">Email</span><span className="relative block"><Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input className={`${inputClass} pl-10`} autoComplete="email" autoCapitalize="none" spellCheck={false} type="email" maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="ban@example.com" required /></span></label>
+              <label className="block"><span className="mb-2 block text-sm font-medium text-slate-200">Mật khẩu</span><span className="relative block"><KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input className={`${inputClass} pl-10 pr-12`} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} minLength={mode === 'register' ? 10 : 1} maxLength={128} placeholder={mode === 'register' ? 'Ít nhất 10 ký tự' : 'Nhập mật khẩu'} required /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#55DDF2]">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span></label>
               <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#55DDF2] px-4 py-3 font-bold text-[#0A1B2B] transition hover:bg-[#85ECF8] disabled:cursor-not-allowed disabled:opacity-60">{loading ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập an toàn' : 'Tạo tài khoản'} {!loading && <ArrowRight className="h-4 w-4" />}</button>
             </form>
             <p className="mt-5 text-xs leading-5 text-slate-500">Phiên đăng nhập dùng cookie HttpOnly. Không nhập OTP, mật khẩu ngân hàng hoặc thông tin bí mật của dịch vụ khác vào đây.</p>

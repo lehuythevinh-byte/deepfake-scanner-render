@@ -75,8 +75,12 @@ async function hashPassword(password: string): Promise<string> {
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [saltHex, hashHex] = stored.split(':');
   if (!saltHex || !hashHex || !/^[a-f0-9]+$/i.test(saltHex) || !/^[a-f0-9]+$/i.test(hashHex)) return false;
+  const salt = Buffer.from(saltHex, 'hex');
   const expected = Buffer.from(hashHex, 'hex');
-  const actual = await scrypt(password, Buffer.from(saltHex, 'hex'), expected.length);
+  // Password hashes created by this application use a 16-byte salt and a 64-byte key.
+  // Reject malformed/corrupted rows cleanly rather than throwing from scrypt.
+  if (salt.length !== 16 || expected.length !== 64) return false;
+  const actual = await scrypt(password, salt, expected.length);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
@@ -201,15 +205,15 @@ async function revokeRequestSession(req: Request) {
   if (db && token) await db.query('UPDATE auth_sessions SET revoked_at = NOW() WHERE token_hash = $1 AND revoked_at IS NULL', [sha256(token)]);
 }
 
-async function createSession(userId: string, req: Request, res: Response) {
-  const db = getPool();
-  if (!db) throw new Error('AUTH_STORE_UNAVAILABLE');
+async function createSessionToken(client: PoolClient, userId: string): Promise<string> {
+  // Insert the session using the caller's transaction so an account and its first
+  // session cannot be left half-created if the database fails midway.
   const token = randomBytes(32).toString('base64url');
-  await db.query(
+  await client.query(
     'INSERT INTO auth_sessions (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'7 days\')',
     [userId, sha256(token)],
   );
-  setSessionCookie(req, res, token);
+  return token;
 }
 
 async function writeAudit(adminId: string, action: string, targetUserId: string | null, details: Record<string, unknown>, req: Request) {
@@ -334,9 +338,12 @@ export function registerAuthRoutes(app: Express): void {
     if (!rateLimit(req, res, 'register', 5)) return;
     if (!authStoreReady) return authUnavailable(res);
     const db = getPool();
+    if (!db) return authUnavailable(res);
+
     const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : '';
     const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
+
     if (displayName.length < 2 || displayName.length > 80) {
       return res.status(400).json({ error: 'INVALID_NAME', message: 'Tên hiển thị phải từ 2 đến 80 ký tự.' });
     }
@@ -346,20 +353,38 @@ export function registerAuthRoutes(app: Express): void {
     if (password.length < 10 || password.length > 128) {
       return res.status(400).json({ error: 'INVALID_PASSWORD', message: 'Mật khẩu phải có từ 10 đến 128 ký tự.' });
     }
+
+    let client: PoolClient | null = null;
+    let transactionStarted = false;
     try {
+      client = await db.connect();
+      await client.query('BEGIN');
+      transactionStarted = true;
       const passwordHash = await hashPassword(password);
-      const result = await db!.query<DbUser>(
+      const result = await client.query<DbUser>(
         `INSERT INTO app_users (email, display_name, password_hash) VALUES ($1, $2, $3)
          RETURNING id::text AS id, email, display_name, role, status, created_at, last_login_at`,
         [email, displayName, passwordHash],
       );
       const user = result.rows[0];
-      await createSession(String(user.id), req, res);
+      const token = await createSessionToken(client, String(user.id));
+      await client.query('COMMIT');
+      transactionStarted = false;
+      setSessionCookie(req, res, token);
       return res.status(201).json({ success: true, user: mapUser(user) });
     } catch (error: any) {
-      if (error?.code === '23505') return res.status(409).json({ error: 'EMAIL_EXISTS', message: 'Email này đã được đăng ký.' });
+      if (client && transactionStarted) {
+        await client.query('ROLLBACK').catch((rollbackError: any) => {
+          console.warn('[Auth] Registration rollback failed:', rollbackError?.message || rollbackError);
+        });
+      }
+      if (error?.code === '23505') {
+        return res.status(409).json({ error: 'EMAIL_EXISTS', message: 'Email này đã được đăng ký. Hãy đăng nhập hoặc sử dụng email khác.' });
+      }
       console.error('[Auth] Registration failed:', error?.message || error);
-      return res.status(500).json({ error: 'REGISTER_FAILED', message: 'Không thể tạo tài khoản lúc này. Vui lòng thử lại.' });
+      return res.status(500).json({ error: 'REGISTER_FAILED', message: 'Không thể tạo tài khoản lúc này. Vui lòng thử lại sau ít phút.' });
+    } finally {
+      client?.release();
     }
   });
 
@@ -367,26 +392,55 @@ export function registerAuthRoutes(app: Express): void {
     if (!rateLimit(req, res, 'login', 10)) return;
     if (!authStoreReady) return authUnavailable(res);
     const db = getPool();
+    if (!db) return authUnavailable(res);
+
     const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
-    if (!EMAIL_RE.test(email) || !password || password.length > 128) {
-      return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'Email hoặc mật khẩu không hợp lệ.' });
+    if (!EMAIL_RE.test(email) || email.length > 254 || !password || password.length > 128) {
+      return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'Vui lòng kiểm tra lại email và mật khẩu.' });
     }
+
+    let client: PoolClient | null = null;
+    let transactionStarted = false;
     try {
-      const result = await db!.query<DbUser>(
-        'SELECT id::text AS id, email, display_name, password_hash, role, status, created_at, last_login_at FROM app_users WHERE email = $1 LIMIT 1',
+      client = await db.connect();
+      await client.query('BEGIN');
+      transactionStarted = true;
+      // Lock the account row while checking status and creating the session, so a
+      // concurrent admin suspension cannot race with successful login.
+      const result = await client.query<DbUser>(
+        'SELECT id::text AS id, email, display_name, password_hash, role, status, created_at, last_login_at FROM app_users WHERE email = $1 LIMIT 1 FOR UPDATE',
         [email],
       );
       const row = result.rows[0];
       const valid = row ? await verifyPassword(password, row.password_hash || '') : false;
-      if (!row || !valid) return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Email hoặc mật khẩu chưa chính xác.' });
-      if (row.status !== 'active') return res.status(403).json({ error: 'ACCOUNT_SUSPENDED', message: 'Tài khoản đang bị tạm khóa. Vui lòng liên hệ quản trị viên.' });
-      await db!.query('UPDATE app_users SET last_login_at = NOW() WHERE id = $1', [row.id]);
-      await createSession(String(row.id), req, res);
+      if (!row || !valid) {
+        await client.query('ROLLBACK');
+        transactionStarted = false;
+        return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Email hoặc mật khẩu chưa chính xác.' });
+      }
+      if (row.status !== 'active') {
+        await client.query('ROLLBACK');
+        transactionStarted = false;
+        return res.status(403).json({ error: 'ACCOUNT_SUSPENDED', message: 'Tài khoản đang bị tạm khóa. Vui lòng liên hệ quản trị viên.' });
+      }
+
+      await client.query('UPDATE app_users SET last_login_at = NOW() WHERE id = $1', [row.id]);
+      const token = await createSessionToken(client, String(row.id));
+      await client.query('COMMIT');
+      transactionStarted = false;
+      setSessionCookie(req, res, token);
       return res.json({ success: true, user: mapUser({ ...row, last_login_at: new Date() }) });
     } catch (error: any) {
+      if (client && transactionStarted) {
+        await client.query('ROLLBACK').catch((rollbackError: any) => {
+          console.warn('[Auth] Login rollback failed:', rollbackError?.message || rollbackError);
+        });
+      }
       console.error('[Auth] Login failed:', error?.message || error);
-      return res.status(500).json({ error: 'LOGIN_FAILED', message: 'Không thể đăng nhập lúc này. Vui lòng thử lại.' });
+      return res.status(500).json({ error: 'LOGIN_FAILED', message: 'Không thể đăng nhập lúc này. Vui lòng thử lại sau ít phút.' });
+    } finally {
+      client?.release();
     }
   });
 
