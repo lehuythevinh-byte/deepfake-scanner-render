@@ -44,7 +44,7 @@ const getValidGeminiModel = (): string => {
 };
 
 const GEMINI_MODEL = getValidGeminiModel();
-const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite';
+
 
 const getGeminiClient = () => {
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
@@ -70,7 +70,7 @@ const getSafeAiFailureCode = (error: any): string => {
 
 // Gemini can return 503 during temporary demand spikes. Retry transient service/network
 // failures a small, bounded number of times with exponential backoff before using fallback.
-const GEMINI_MAX_RETRIES = 2;
+const GEMINI_MAX_RETRIES = 0;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isTransientGeminiError = (error: any): boolean => {
@@ -266,6 +266,7 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
     });
 
     const generateConfig = {
+      thinkingConfig: { thinkingLevel: 'low' },
       systemInstruction: systemPrompt,
       responseMimeType: 'application/json',
       responseSchema: {
@@ -411,20 +412,10 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
         },
       };
 
-    let response: any;
-    try {
-      response = await generateContentWithRetry(ai, GEMINI_MODEL, {
-        contents: { parts },
-        config: generateConfig,
-      }, 'Scan');
-    } catch (primaryErr: any) {
-      console.warn(`[Scan] Primary model (${GEMINI_MODEL}) failed after bounded retries:`, primaryErr?.message || primaryErr);
-      console.log(`[Scan] Switching to fallback model (${GEMINI_FALLBACK_MODEL})...`);
-      response = await generateContentWithRetry(ai, GEMINI_FALLBACK_MODEL, {
-        contents: { parts },
-        config: generateConfig,
-      }, 'Scan fallback');
-    }
+    const response = await generateContentWithRetry(ai, GEMINI_MODEL, {
+      contents: { parts },
+      config: generateConfig,
+    }, 'Scan');
 
     let parsedData: any = {};
     const rawText = (response.text || '{}').trim();
@@ -450,166 +441,30 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
       scanMode,
     });
   } catch (error: any) {
-    console.warn('[Scan] Switched to heuristic threat analysis engine:', error?.message || error);
-
-    // Heuristic multi-layered analysis fallback when Gemini is busy or in offline mode
-    const textCorpus = [
-      contextualNotes,
-      postData?.postCaption,
-      postData?.accountName,
-      postData?.handle,
-      postData?.profileBio,
-      postData?.postLink,
-      postData?.relatedComments,
-      messageData?.messageText,
-      messageData?.senderName,
-      messageData?.extractedLinks,
-    ].filter((value) => typeof value === 'string' && value.trim()).join(' ').toLowerCase();
-
-    // Conservative text-only heuristics. They do not inspect pixels or verify URLs.
-    const hasMoneyOrBank = /(?:chuyển\s*(?:khoản|tiền)|số\s*tài\s*khoản|\bstk\b|thẻ\s*cào|phí\s*(?:nhận|ship|vận\s*chuyển|đặt\s*cọc)|nạp\s*tiền|gửi\s*tiền|mượn\s*tiền|đóng\s*(?:tiền|phí)|ngân\s*hàng.{0,30}(?:chuyển|mã\s*xác\s*thực|đăng\s*nhập))/i.test(textCorpus);
-    const hasOtpOrPassword = /(?:\botp\b|mã\s*(?:xác\s*thực|xác\s*nhận|đăng\s*nhập)|mật\s*khẩu|đọc\s*(?:cho|giúp).*\d?\s*số|6\s*số|bình\s*chọn.{0,40}(?:mã|link|liên\s*kết|đăng\s*nhập))/i.test(textCorpus);
-    const hasBlackmailOrPhoto = /(?:tống\s*tiền|ảnh\s*nhạy\s*cảm|video\s*nhạy\s*cảm|phát\s*tán|ghép\s*ảnh|cắt\s*ghép|lột\s*đồ|nudify|blackmail|bôi\s*nhọ|đe\s*dọa\s*đăng)/i.test(textCorpus);
-    const hasUrgency = /(?:gấp|ngay\s*lập\s*tức|khẩn\s*cấp|tai\s*nạn|va\s*quẹt|không\s*kịp|trong\s*\d+\s*phút)/i.test(textCorpus);
-    const hasPrize = /(?:trúng\s*thưởng|phí\s*(?:ship|vận\s*chuyển|nhận\s*thưởng)|đóng\s*phí\s*để\s*nhận|nhận\s*quà\s*miễn\s*phí)/i.test(textCorpus);
-    const hasPhishingLink = /(?:https?:\/\/|bit\.ly|tinyurl|t\.co|cutt\.ly|rb\.gy|rebrand\.ly)/i.test(textCorpus)
-      && /(?:đăng\s*nhập|login|mật\s*khẩu|password|otp|mã\s*xác\s*thực|bình\s*chọn|tài\s*khoản\s*bị\s*khóa|xác\s*minh\s*tài\s*khoản|verify)/i.test(textCorpus);
-    const hasShockingNews = /(?:tin\s*nóng|kinh\s*hoàng|chấn\s*động|trước\s*khi\s*bị\s*xóa|nghỉ\s*học\s*khẩn)/i.test(textCorpus)
-      && !/(?:vietnamplus|vietnam\.vn|tuoitre\.vn|thanhnien\.vn|vtv\.vn)/i.test(textCorpus);
-    const hasDeepfakeAd = /(?:deepfake|giả\s*giọng|giả\s*mạo).{0,60}(?:quảng\s*cáo|đầu\s*tư|kiếm\s*tiền|bác\s*sĩ|người\s*nổi\s*tiếng)/i.test(textCorpus);
-
-    const matchedScenarios: string[] = [];
-    if (hasMoneyOrBank && hasUrgency) matchedScenarios.push('SCENARIO_2_VOICE_CLONE_MONEY');
-    if (hasOtpOrPassword) matchedScenarios.push('SCENARIO_6_OTP_THEFT');
-    if (hasBlackmailOrPhoto) matchedScenarios.push('SCENARIO_8_CYBERBULLYING_BLACKMAIL');
-    if (hasPrize) matchedScenarios.push('SCENARIO_4_FAKE_PRIZE_FEE');
-    if (hasPhishingLink) matchedScenarios.push('SCENARIO_5_PHISHING_LOGIN_LINK');
-    if (hasShockingNews) matchedScenarios.push('SCENARIO_7_SHOCKING_VIRAL_NEWS');
-    if (hasDeepfakeAd) matchedScenarios.push('SCENARIO_9_DECEPTIVE_DEEPFAKE_ADS');
-    // Urgency alone is common in ordinary messages; only flag this scenario when paired with a concrete risk signal.
-    if (hasUrgency && (hasMoneyOrBank || hasOtpOrPassword || hasPrize || hasPhishingLink || hasBlackmailOrPhoto)) {
-      matchedScenarios.push('SCENARIO_10_URGENCY_PRESSURE');
-    }
-
-    const isSuspicious = hasMoneyOrBank || hasOtpOrPassword || hasBlackmailOrPhoto || hasPrize || hasPhishingLink || hasShockingNews || hasDeepfakeAd;
-    const hasImpersonationSignal = (scanMode === 'message_scam' || scanMode === 'social_post') && (hasMoneyOrBank || hasOtpOrPassword || hasUrgency || hasPrize || hasPhishingLink || hasDeepfakeAd || hasBlackmailOrPhoto);
-
-    const quotes: string[] = [];
-    if (messageData?.messageText) {
-      if (hasMoneyOrBank) quotes.push('Đoạn yêu cầu: "' + messageData.messageText.slice(0, 100) + '"');
-      if (hasOtpOrPassword) quotes.push('Lời gạ gẫm lấy mã OTP: "' + messageData.messageText.slice(0, 80) + '"');
-    } else if (postData?.postCaption) {
-      quotes.push('Trích xuất từ bài đăng: "' + postData.postCaption.slice(0, 100) + '"');
-    }
-
-    const fallbackThreatResult = {
-      scanMode,
-      isHeuristicNotice: true,
-      overallStatus: isSuspicious ? 'suspicious' : 'inconclusive',
-      overallStatusLabel: isSuspicious
-        ? 'Có dấu hiệu rủi ro trong văn bản — cần kiểm chứng'
-        : 'Chưa đủ dữ liệu để kết luận',
-      summary: isSuspicious
-        ? 'Một số từ khóa hoặc dấu hiệu trong văn bản có thể liên quan đến lừa đảo, thúc ép hành động hoặc xâm phạm quyền riêng tư. Đây là kết quả sàng lọc theo quy tắc, không phải kết luận chắc chắn; hãy đối chiếu nội dung và nguồn độc lập.'
-        : 'Chế độ dự phòng chưa thể xác minh tính thật/giả của ảnh, tài khoản hay liên kết. Chưa phát hiện tín hiệu văn bản đủ mạnh theo bộ quy tắc hiện có, nhưng điều đó không chứng minh nội dung an toàn.',
-      matchedScenarioCodes: matchedScenarios,
-      imageAuthenticity: {
-        status: 'inconclusive',
-        statusLabel: 'Chưa thực hiện được giám định hình ảnh bằng AI',
-        confidenceLevel: 'low',
-        observations: [],
-        technicalNote: 'Chế độ dự phòng chỉ rà soát một số tín hiệu trong văn bản; không kiểm tra pixel, ánh sáng, mắt, khuôn mặt hay dấu vết chỉnh sửa. Không diễn giải mục này thành kết luận ảnh thật hoặc giả.',
-      },
-      scamRisks: {
-        detected: hasBlackmailOrPhoto || hasMoneyOrBank || hasPrize || hasOtpOrPassword || hasPhishingLink,
-        riskLevel: hasBlackmailOrPhoto || hasOtpOrPassword || (hasMoneyOrBank && hasUrgency) ? 'high' : (hasMoneyOrBank || hasPrize || hasPhishingLink ? 'medium' : 'low'),
-        title: hasBlackmailOrPhoto ? 'Nguy cơ tống tiền hoặc xâm phạm quyền riêng tư' : hasOtpOrPassword || hasPhishingLink ? 'Nguy cơ đánh cắp tài khoản (Phishing/OTP)' : hasMoneyOrBank || hasPrize ? 'Nguy cơ lừa đảo tài chính hoặc trúng thưởng giả' : 'Chưa thấy dấu hiệu yêu cầu tiền bạc rõ ràng',
-        deceptiveTactics: [
-          ...(hasUrgency ? ['Có ngôn ngữ thúc ép hành động nhanh hoặc tạo cảm giác khẩn cấp.'] : []),
-          ...(hasMoneyOrBank ? ['Có đề cập chuyển tiền, tài khoản hoặc phí. Hãy xác minh yêu cầu qua kênh độc lập.'] : []),
-          ...(hasOtpOrPassword ? ['Có cụm từ liên quan mã xác thực, mật khẩu hoặc đăng nhập. Không chia sẻ OTP.'] : []),
-          ...(hasPrize ? ['Có dấu hiệu lời mời nhận thưởng/nhận quà cần được kiểm tra.'] : []),
-          ...(hasPhishingLink ? ['Có liên kết đi kèm ngôn ngữ đăng nhập/xác minh; chưa truy cập hoặc xác thực liên kết.'] : []),
-          ...(hasBlackmailOrPhoto ? ['Có cụm từ liên quan đe dọa, tống tiền hoặc phát tán hình ảnh.'] : []),
-        ],
-        exactQuotes: quotes.length > 0 ? quotes : ['Không có trích dẫn văn bản khả dụng trong chế độ dự phòng.'],
-        explanation: 'Đây là rà soát từ khóa trong văn bản, không phải kết luận tự động. Cần đọc bằng chứng được trích dẫn và xác minh qua nguồn độc lập.',
-      },
-      impersonationRisks: {
-        detected: hasImpersonationSignal,
-        riskLevel: 'medium',
-        suspiciousIndicators: hasImpersonationSignal ? [
-          'Có một số dấu hiệu văn bản cần được kiểm chứng độc lập; chúng chưa xác minh danh tính người gửi.',
-          'Nội dung có thể khai thác lòng tin, nhưng bộ quy tắc không thể xác nhận ai thực sự đứng sau tài khoản.',
-        ] : [],
-        accountVerificationNeeds: hasImpersonationSignal ? [
-          'Gọi điện thoại trực tiếp qua số SIM đã lưu sẵn trong danh bạ, không gọi lại qua chính tài khoản đang bị nghi ngờ.',
-          'Kiểm tra tài khoản qua kênh chính thức và lịch sử hoạt động trước khi thực hiện yêu cầu.',
-        ] : [],
-        explanation: hasImpersonationSignal ? 'Cần xác minh danh tính qua kênh độc lập; tên hiển thị và ảnh đại diện không đủ để chứng minh danh tính.' : 'Chưa có dấu hiệu văn bản cụ thể đủ để gắn cờ mạo danh trong chế độ dự phòng.',
-      },
-      youthRisks: {
-        detected: hasBlackmailOrPhoto || hasMoneyOrBank || hasOtpOrPassword,
-        riskLevel: hasBlackmailOrPhoto ? 'high' : 'medium',
-        riskTypes: hasBlackmailOrPhoto
-          ? ['blackmail', 'privacy_breach', 'psychological_pressure']
-          : hasMoneyOrBank || hasPrize || hasPhishingLink || hasOtpOrPassword
-          ? ['financial_loss', 'psychological_pressure']
-          : ['misinformation'],
-        studentGuidance: hasBlackmailOrPhoto
-          ? 'EM TUYỆT ĐỐI KHÔNG CÓ LỖI! Không nộp tiền, không mua thẻ cào. Chụp màn hình lưu bằng chứng và báo ngay cho cha mẹ hoặc gọi Tổng đài 111.'
-          : 'Học sinh THCS cần giữ kín mã OTP, mật khẩu và luôn xin ý kiến cha mẹ trước các yêu cầu chuyển khoản.',
-        emergencyNotice: hasBlackmailOrPhoto ? 'Tổng đài Quốc gia Bảo vệ Trẻ em 111 hoạt động miễn phí 24/7.' : undefined,
-      },
-      sourcesAndEvidence: {
-        extractedOcrText: postData?.postCaption || messageData?.messageText || contextualNotes || 'Không có OCR tự động trong chế độ dự phòng.',
-        analyzedLinks: (postData?.postLink || messageData?.extractedLinks) ? [
-          {
-            url: postData?.postLink || messageData?.extractedLinks || '',
-            warning: /(?:bit\.ly|tinyurl|t\.co|cutt\.ly|rb\.gy|rebrand\.ly|faceb00k|paypa[l1])/i.test(String(postData?.postLink || messageData?.extractedLinks || ''))
-              ? 'Có đặc điểm thường gặp ở liên kết rút gọn hoặc tên miền dễ gây nhầm lẫn. Chưa truy cập và chưa xác minh đích đến.'
-              : 'Hệ thống chưa truy cập hay xác minh đích đến của liên kết. Kiểm tra chính xác tên miền bằng kênh độc lập và không nhập thông tin nhạy cảm.',
-            isDeceptiveOrShortened: /(?:bit\.ly|tinyurl|t\.co|cutt\.ly|rb\.gy|rebrand\.ly|faceb00k|paypa[l1])/i.test(String(postData?.postLink || messageData?.extractedLinks || '')),
-          }
-        ] : [],
-        unverifiedGaps: [
-          'Chưa thể xác minh danh tính thật của người sở hữu tài khoản nếu chỉ nhìn ảnh chụp màn hình.',
-          'Chưa thể khẳng định chắc chắn đoạn hội thoại không bị cắt bớt ngữ cảnh xung quanh.',
-        ],
-      },
-      actionGuidance: {
-        step1Stop: 'DỪNG LẠI 30 GIÂY: Tuyệt đối không bấm vào link lạ, không chuyển tiền, không đọc mã OTP.',
-        step2Verify: [
-          'Gọi điện thoại trực tiếp bằng số SIM di động trong danh bạ cho người thân hoặc bạn bè.',
-          'Đối chiếu trên báo chí chính thống (VTV, Tuổi Trẻ, Thanh Niên) nếu là tin tức thời sự.',
-        ],
-        step3Protect: [
-          'Không chia sẻ mật khẩu, mã OTP cho bất kỳ ai kể cả người tự xưng là thầy cô hay bạn thân.',
-          'Khóa trang cá nhân ở chế độ riêng tư và bật bảo mật 2 lớp (2FA).',
-        ],
-        step4Report: [
-          'Chụp lại màn hình toàn bộ tin nhắn, tài khoản và đường link để lưu bằng chứng.',
-          'Chia sẻ ngay với bố mẹ, thầy cô hoặc gọi Tổng đài 111 (miễn phí 24/7).',
-        ],
-      },
-      scientificDisclaimer: 'Đây là kết quả dự phòng dựa trên quy tắc văn bản, không phải giám định hình ảnh hay xác minh liên kết. Kết quả chỉ hỗ trợ giáo dục an toàn số, không có giá trị kết luận pháp lý; luôn xác minh qua kênh độc lập.',
-    };
-
-    await saveScanHistory((req as any).authUser as AuthUser | undefined, {
-      scanMode,
-      fileName: typeof fileName === 'string' ? fileName : 'content_sample',
-      overallStatus: fallbackThreatResult.overallStatus,
-      summary: fallbackThreatResult.summary,
-      isHeuristic: true,
-    });
-    res.json({
-      success: true,
-      data: fallbackThreatResult,
-      analyzedAt: new Date().toISOString(),
-      fileName: fileName || 'content_sample',
-      scanMode,
-      isHeuristicNotice: true,
-      aiFailureCode: getSafeAiFailureCode(error),
+    const code = getSafeAiFailureCode(error);
+    console.warn('[Scan] Gemini analysis failed:', code, error?.message || error);
+    const status =
+      code === 'QUOTA_EXCEEDED' ? 429 :
+      code === 'AI_NOT_CONFIGURED' ||
+      code === 'GEMINI_TEMPORARILY_UNAVAILABLE' ||
+      code === 'NETWORK_ERROR' ? 503 : 502;
+    const message =
+      code === 'GEMINI_TEMPORARILY_UNAVAILABLE'
+        ? 'Gemini AI đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau.'
+        : code === 'QUOTA_EXCEEDED'
+          ? 'API Gemini đã hết hạn mức hoặc vượt quota. Hãy kiểm tra hạn mức API.'
+          : code === 'INVALID_API_KEY' || code === 'API_KEY_PERMISSION_DENIED'
+            ? 'API key Gemini không hợp lệ hoặc chưa được cấp quyền. Hãy kiểm tra GEMINI_API_KEY trên Render.'
+            : code === 'MODEL_OR_ENDPOINT_NOT_FOUND'
+              ? 'Không tìm thấy model Gemini đã cấu hình. Hãy kiểm tra GEMINI_MODEL trên Render.'
+              : code === 'AI_NOT_CONFIGURED'
+                ? 'Chưa cấu hình GEMINI_API_KEY trên máy chủ.'
+                : 'Không thể hoàn tất phân tích bằng Gemini AI. Vui lòng thử lại sau.';
+    return res.status(status).json({
+      success: false,
+      error: code,
+      message,
+      isHeuristicNotice: false,
     });
   }
 });
@@ -672,27 +527,13 @@ Quy tắc ứng xử và bảo vệ học sinh:
       parts: [{ text: m.content }],
     }));
 
-    let response: any;
-    try {
-      response = await generateContentWithRetry(ai, GEMINI_MODEL, {
-        contents: formattedContents,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-          topP: 0.9,
-        },
-      }, 'Chat');
-    } catch (primaryChatErr: any) {
-      console.warn(`[Chat] Primary model (${GEMINI_MODEL}) failed after bounded retries:`, primaryChatErr?.message || primaryChatErr);
-      response = await generateContentWithRetry(ai, GEMINI_FALLBACK_MODEL, {
-        contents: formattedContents,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-          topP: 0.9,
-        },
-      }, 'Chat fallback');
-    }
+    const response = await generateContentWithRetry(ai, GEMINI_MODEL, {
+      contents: formattedContents,
+      config: {
+        thinkingConfig: { thinkingLevel: 'low' },
+        systemInstruction,
+      },
+    }, 'Chat');
 
     const reply = response.text || 'SafeBot đang gặp gián đoạn tạm thời. Em hãy giữ bình tĩnh và trao đổi ngay với người lớn đáng tin cậy nhé!';
 
@@ -701,41 +542,35 @@ Quy tắc ứng xử và bảo vệ học sinh:
       reply,
     });
   } catch (error: any) {
-    console.warn('[Chat] Fallback guidance activated:', error?.message || error);
+    const code = getSafeAiFailureCode(error);
+    console.warn('[Chat] Gemini request failed:', code, error?.message || error);
 
-    // If Gemini model is experiencing high demand (503), return structured expert guidance with notice
-    const fallbackAnswers = [
-      "SafeBot xin hướng dẫn em quy trình xử lý khẩn cấp 4 bước:",
-      "1. DỪNG LẠI (Stop): Tuyệt đối không chuyển tiền, không đọc mã OTP hoặc gửi thông tin riêng tư.",
-      "2. KIỂM CHỨNG (Check): Hãy gọi điện thoại trực tiếp bằng số SIM thông thường trong danh bạ hoặc hỏi người thân đang ở cạnh.",
-      "3. BẢO VỆ (Protect): Kích hoạt xác thực 2 lớp (2FA), đặt 'Mật khẩu gia đình' để xác minh khi khẩn cấp.",
-      "4. BÁO CÁO (Report): Nếu có dấu hiệu bị tống tiền hoặc đe dọa, hãy chia sẻ ngay với cha mẹ, thầy cô hoặc gọi Tổng đài Quốc gia Bảo vệ Trẻ em 111 (miễn phí 24/7).",
-    ].join('\n\n');
+    const status =
+      code === 'QUOTA_EXCEEDED' ? 429 :
+      code === 'AI_NOT_CONFIGURED' ||
+      code === 'GEMINI_TEMPORARILY_UNAVAILABLE' ||
+      code === 'NETWORK_ERROR' ? 503 : 502;
 
-    res.json({
-      success: true,
-      reply: fallbackAnswers,
-      isFallbackNotice: true,
-      aiFailureCode: getSafeAiFailureCode(error),
+    const message =
+      code === 'GEMINI_TEMPORARILY_UNAVAILABLE'
+        ? 'Gemini AI đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau.'
+        : code === 'QUOTA_EXCEEDED'
+          ? 'API Gemini đã hết hạn mức hoặc vượt quota. Hãy kiểm tra hạn mức API.'
+          : code === 'INVALID_API_KEY' ||
+            code === 'API_KEY_PERMISSION_DENIED'
+            ? 'API key Gemini không hợp lệ hoặc chưa được cấp quyền.'
+            : code === 'MODEL_OR_ENDPOINT_NOT_FOUND'
+              ? 'Không tìm thấy model Gemini đã cấu hình. Hãy kiểm tra GEMINI_MODEL.'
+              : code === 'AI_NOT_CONFIGURED'
+                ? 'Chưa cấu hình GEMINI_API_KEY trên máy chủ.'
+                : 'SafeBot không thể kết nối Gemini AI lúc này. Vui lòng thử lại sau.';
+
+    return res.status(status).json({
+      success: false,
+      error: code,
+      message,
     });
   }
-});
-
-// Convert request parser failures (including oversized JSON bodies) into predictable JSON responses.
-app.use((error: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (res.headersSent) return next(error);
-  if (error?.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'REQUEST_TOO_LARGE', message: 'Yêu cầu quá lớn. Hãy giảm dung lượng ảnh hoặc rút gọn văn bản.' });
-  }
-  if (error instanceof SyntaxError && 'body' in error) {
-    return res.status(400).json({ error: 'INVALID_JSON', message: 'Dữ liệu gửi lên không phải JSON hợp lệ.' });
-  }
-  return next(error);
-});
-
-// Return JSON for unknown API endpoints instead of the SPA HTML document.
-app.use('/api', (_req, res) => {
-  res.status(404).json({ error: 'API_NOT_FOUND', message: 'API endpoint không tồn tại.' });
 });
 
 // Setup Vite or Static serving
