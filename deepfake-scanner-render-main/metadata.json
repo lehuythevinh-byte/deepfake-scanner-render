@@ -1,0 +1,7 @@
+{
+  "name": "DEEPFAKE SCANNER — TRUNG TÂM AN TOÀN SỐ",
+  "description": "Website nghiên cứu khoa học: Giải pháp giúp học sinh trung học cơ sở tránh một số tác động rủi ro từ Deepfake khi sử dụng mạng xã hội.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
