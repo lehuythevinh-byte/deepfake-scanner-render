@@ -84,6 +84,8 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [contextualNotes, setContextualNotes] = useState<string>('');
+  const [isVideoSampling, setIsVideoSampling] = useState<boolean>(false);
+  const [originalVideoName, setOriginalVideoName] = useState<string | null>(null);
 
   // Mode B: Social Post inputs
   const [postPlatform, setPostPlatform] = useState<string>('TikTok');
@@ -229,21 +231,81 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
   }, [previewUrl]);
 
   const handleFileSelection = (file: File) => {
-    if (file.size > 20 * 1024 * 1024) {
-      setScanError('Tệp quá lớn. Vui lòng chọn ảnh nhỏ hơn 20MB.');
+    if (file.size > 50 * 1024 * 1024) {
+      setScanError('Tệp quá lớn. Vui lòng chọn tệp nhỏ hơn 50MB.');
       return;
     }
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setScanError('Định dạng không được hỗ trợ. Vui lòng chọn ảnh PNG, JPEG hoặc WEBP.');
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!isVideo && !validImageTypes.includes(file.type)) {
+      setScanError('Định dạng không được hỗ trợ. Vui lòng chọn ảnh PNG, JPEG, WEBP hoặc video MP4, WEBM.');
       return;
     }
     setScanError(null);
+    setThreatResult(null);
+
+    if (isVideo) {
+      setScanError('Đang trích xuất khung hình tiêu biểu từ video...');
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      const videoBlobUrl = URL.createObjectURL(file);
+      video.src = videoBlobUrl;
+
+      video.onloadedmetadata = () => {
+        video.currentTime = Math.min(1.0, video.duration > 0 ? video.duration / 2 : 0.5);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 360;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(videoBlobUrl);
+            setScanError('Trình duyệt không hỗ trợ dựng khung hình video.');
+            return;
+          }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(videoBlobUrl);
+            if (!blob) {
+              setScanError('Không thể xuất khung hình từ video.');
+              return;
+            }
+            const sampledFrameFile = new File([blob], `frame_${file.name.replace(/\.[^/.]+$/, '')}.jpg`, { type: 'image/jpeg' });
+            setSelectedFile(sampledFrameFile);
+            setIsVideoSampling(true);
+            setOriginalVideoName(file.name);
+            setScanError(null);
+            const frameUrl = URL.createObjectURL(sampledFrameFile);
+            setPreviewUrl(frameUrl);
+
+            compressImage(sampledFrameFile, 1280, 0.82)
+              .then((res) => setCompressionStats(res))
+              .catch((err) => console.warn('Lỗi nén khung hình video:', err));
+          }, 'image/jpeg', 0.85);
+        } catch (err: any) {
+          URL.revokeObjectURL(videoBlobUrl);
+          setScanError('Không thể trích xuất khung hình video: ' + (err.message || 'Lỗi xử lý'));
+        }
+      };
+
+      video.onerror = () => {
+        URL.revokeObjectURL(videoBlobUrl);
+        setScanError('Không thể giải mã tệp video. Vui lòng thử lại với định dạng MP4 tiêu chuẩn.');
+      };
+      return;
+    }
+
+    setIsVideoSampling(false);
+    setOriginalVideoName(null);
     setSelectedFile(file);
     setCompressionStats(null);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-    setThreatResult(null);
 
     // Chuẩn bị tính toán trước dung lượng nén để hiển thị thông số tối ưu cho người dùng
     compressImage(file, 1280, 0.82)
@@ -646,18 +708,26 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/png,image/jpeg,image/webp"
+                    accept="image/png,image/jpeg,image/webp,video/mp4,video/webm"
                     className="hidden"
                     onChange={(e) => e.target.files?.[0] && handleFileSelection(e.target.files[0])}
                   />
                   <div className="w-10 h-10 rounded-xl bg-[#55DDF2]/10 text-[#55DDF2] flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
                     <Upload className="w-5 h-5" />
                   </div>
-                  <p className="text-xs font-semibold text-white">Kéo thả ảnh chụp vào đây hoặc nhấn để chọn</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Ảnh sẽ được gửi đến Gemini API khi bật AI; không tải nội dung riêng tư</p>
+                  <p className="text-xs font-semibold text-white">Kéo thả ảnh chụp hoặc video ngắn vào đây để phân tích</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Hỗ trợ PNG, JPG, WEBP và video MP4/WEBM (tự động trích xuất khung hình mẫu)</p>
                 </div>
               ) : (
                 <div className="relative rounded-xl overflow-hidden border border-[#55DDF2]/40 bg-[#101C32] p-2 space-y-2">
+                  {isVideoSampling && (
+                    <div className="bg-indigo-950/60 border border-indigo-500/30 rounded-lg p-2 text-[11px] text-indigo-200 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                      <span>
+                        <strong>Đã trích xuất khung hình từ video:</strong> {originalVideoName} (Khung hình đại diện — Không phân tích toàn bộ luồng video thời gian thực).
+                      </span>
+                    </div>
+                  )}
                   {previewUrl && (
                     <img
                       src={previewUrl}

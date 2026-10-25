@@ -1,6 +1,12 @@
 export type ActiveTab =
   | 'home'
+  | 'landing'
+  | 'features'
+  | 'how-it-works'
+  | 'safety-guide'
+  | 'app'
   | 'scanner'
+  | 'link-scanner'
   | 'evidence-lab'
   | 'academy'
   | 'simulator'
@@ -8,9 +14,39 @@ export type ActiveTab =
   | 'research'
   | 'report'
   | 'emergency'
-  | 'account';
+  | 'account'
+  | 'admin'
+  | 'login'
+  | 'register';
 
-export type ScanMode = 'image' | 'social_post' | 'message_scam';
+export type ScanMode = 'image' | 'social_post' | 'message_scam' | 'video_frame' | 'link';
+
+export interface LinkFinding {
+  type: 'danger' | 'warning' | 'info';
+  code: string;
+  message: string;
+}
+
+export interface LinkScanResult {
+  url: string;
+  normalizedUrl: string;
+  protocol: string;
+  hostname: string;
+  riskLevel: 'safe' | 'suspicious' | 'dangerous';
+  score: number; // 0 to 100 risk score (higher = riskier)
+  summary: string;
+  findings: LinkFinding[];
+  domainChecks: {
+    isPunycode: boolean;
+    isIpHost: boolean;
+    isShortener: boolean;
+    hasSuspiciousKeywords: boolean;
+    hasSensitiveParams: boolean;
+    tld: string;
+  };
+  recommendations: string[];
+  disclaimer: string;
+}
 
 export interface AuthUser {
   id: string;

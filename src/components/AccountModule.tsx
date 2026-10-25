@@ -1,5 +1,5 @@
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
-import { AuthUser } from '../types';
+import { ActiveTab, AuthUser } from '../types';
 import {
   AlertCircle, BarChart3, Check, Clock3, Database, LogIn, LogOut, RefreshCw,
   ShieldCheck, UserPlus, Users, UserRound, Activity, LockKeyhole, ShieldAlert,
@@ -28,6 +28,7 @@ interface AccountModuleProps {
   user: AuthUser | null;
   databaseConfigured: boolean | null;
   onAuthChanged: () => Promise<void>;
+  onTabChange?: (tab: ActiveTab) => void;
 }
 
 const EMPTY_STATS: AdminStats = { users: 0, activeUsers: 0, admins: 0, scans: 0, scansLast7Days: 0, heuristicScans: 0 };
@@ -45,7 +46,7 @@ async function readApiResponse(response: Response): Promise<any> {
   return data;
 }
 
-export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConfigured, onAuthChanged }) => {
+export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConfigured, onAuthChanged, onTabChange }) => {
   const [showRegister, setShowRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -147,6 +148,17 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
       setNotice(showRegister ? 'Tạo tài khoản thành công.' : 'Đăng nhập thành công.');
       await onAuthChanged();
       if (data.user?.role === 'admin') await loadAdmin();
+      if (onTabChange) {
+        let nextTab: ActiveTab = 'app';
+        try {
+          const saved = sessionStorage.getItem('dfscanner_next_tab') as ActiveTab;
+          if (saved) {
+            nextTab = saved;
+            sessionStorage.removeItem('dfscanner_next_tab');
+          }
+        } catch {}
+        onTabChange(nextTab);
+      }
     } catch (authError: any) {
       setError(authError?.message || 'Không thể xác thực tài khoản.');
     } finally {
@@ -161,6 +173,9 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
       await onAuthChanged();
       setNotice('Bạn đã đăng xuất.');
+      if (onTabChange) {
+        onTabChange('home');
+      }
     } catch (logoutError: any) {
       setError(logoutError?.message || 'Không thể đăng xuất lúc này.');
     } finally {

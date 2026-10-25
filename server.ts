@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const ALLOWED_SCAN_MODES = new Set(['image', 'social_post', 'message_scam']);
+const ALLOWED_SCAN_MODES = new Set(['image', 'social_post', 'message_scam', 'video_frame', 'link']);
 const getValidGeminiModel = (): string => {
   const envModel = (process.env.GEMINI_MODEL || '').trim();
   if (
@@ -1222,6 +1222,258 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
       analysisMeta: { engine: 'heuristic', reason: shortGeminiError(error), primaryMs: geminiPrimaryMs, fallbackMs: geminiFallbackMs, totalMs },
     });
   }
+});
+
+// Dedicated Link Safety Scanner endpoint (Strictly SSRF-safe; analyzes syntax, brand patterns, homographs, shorteners)
+app.post('/api/link-scan', scanRateLimiter, async (req, res) => {
+  const requestStartedAt = performance.now();
+  const { url } = req.body || {};
+
+  if (typeof url !== 'string' || !url.trim()) {
+    return res.status(400).json({ error: 'INVALID_URL', message: 'Vui lòng cung cấp địa chỉ liên kết (URL) cần kiểm tra.' });
+  }
+
+  const rawUrl = url.trim();
+  if (rawUrl.length > 2048) {
+    return res.status(400).json({ error: 'URL_TOO_LONG', message: 'Độ dài URL vượt quá giới hạn an toàn (2048 ký tự).' });
+  }
+
+  let parsedUrl: URL;
+  try {
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//i.test(rawUrl);
+    parsedUrl = new URL(hasScheme ? rawUrl : `https://${rawUrl}`);
+  } catch {
+    return res.status(400).json({ error: 'MALFORMED_URL', message: 'Định dạng URL không hợp lệ.' });
+  }
+
+  const protocol = parsedUrl.protocol.toLowerCase();
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    return res.status(400).json({ error: 'UNSUPPORTED_PROTOCOL', message: 'Chỉ hỗ trợ liên kết web chuẩn HTTP hoặc HTTPS.' });
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const pathname = parsedUrl.pathname.toLowerCase();
+  const search = parsedUrl.search.toLowerCase();
+  const fullHref = parsedUrl.href;
+
+  const findings: Array<{ type: 'danger' | 'warning' | 'info'; code: string; message: string }> = [];
+  let riskScore = 0;
+
+  // 1. Check IP host
+  const isIpv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+  const isIpv6 = /^\[?[a-fA-F0-9:]+\]?$/.test(hostname) && hostname.includes(':');
+  const isIpHost = isIpv4 || isIpv6;
+  if (isIpHost) {
+    riskScore += 45;
+    findings.push({
+      type: 'danger',
+      code: 'IP_ADDRESS_HOST',
+      message: 'Địa chỉ máy chủ là địa chỉ IP thô thay vì tên miền chuẩn. Kẻ xấu thường dùng cách này để né bộ lọc an toàn.',
+    });
+  }
+
+  // 2. Punycode / IDN Homograph check
+  const isPunycode = hostname.includes('xn--');
+  if (isPunycode) {
+    riskScore += 40;
+    findings.push({
+      type: 'danger',
+      code: 'HOMOGRAPH_PUNYCODE',
+      message: 'Tên miền sử dụng ký tự Punycode (IDN). Rất nhiều chiến dịch lừa đảo dùng kỹ thuật này để giả mạo giao diện trang chính thống.',
+    });
+  }
+
+  // 3. Known link shorteners
+  const shortenerDomains = new Set([
+    'bit.ly', 'tinyurl.com', 'cutt.ly', 't.co', 'rb.gy', 'rebrand.ly', 'is.gd', 'goo.gl', 'ow.ly',
+    's.id', 'gg.gg', 'shorturl.at', 'bl.ink', 'adf.ly', 'bc.vc', 'linktr.ee', 'taplink.cc'
+  ]);
+  const isShortener = shortenerDomains.has(hostname) || Array.from(shortenerDomains).some(s => hostname.endsWith('.' + s));
+  if (isShortener) {
+    riskScore += 25;
+    findings.push({
+      type: 'warning',
+      code: 'URL_SHORTENER',
+      message: 'Liên kết sử dụng dịch vụ rút gọn link, làm ẩn tên miền thực tế. Tuyệt đối không nhập thông tin hoặc tải file khi chưa biết đích đến thực sự.',
+    });
+  }
+
+  // 4. Suspicious TLD check
+  const suspiciousTlds = new Set(['.tk', '.ml', '.ga', '.cf', '.gq', '.top', '.xyz', '.buzz', '.click', '.club', '.work', '.date', '.loan', '.racing', '.rest', '.quest']);
+  const matchedTld = Array.from(suspiciousTlds).find(tld => hostname.endsWith(tld));
+  const tldParts = hostname.split('.');
+  const tld = tldParts.length > 1 ? '.' + tldParts.slice(-1)[0] : '';
+  if (matchedTld) {
+    riskScore += 20;
+    findings.push({
+      type: 'warning',
+      code: 'SUSPICIOUS_TLD',
+      message: `Đuôi tên miền (${matchedTld}) thường xuất hiện trong các chiến dịch spam, phát tán phần mềm độc hại hoặc trang mồi câu lừa đảo.`,
+    });
+  }
+
+  // 5. Brand Spoofing Keywords in domain or path
+  const brandKeywords = [
+    { key: 'facebook', name: 'Facebook' },
+    { key: 'fb', name: 'Facebook' },
+    { key: 'zalo', name: 'Zalo' },
+    { key: 'tiktok', name: 'TikTok' },
+    { key: 'telegram', name: 'Telegram' },
+    { key: 'instagram', name: 'Instagram' },
+    { key: 'vietcombank', name: 'Vietcombank' },
+    { key: 'vcb', name: 'Vietcombank' },
+    { key: 'mbbank', name: 'MB Bank' },
+    { key: 'techcombank', name: 'Techcombank' },
+    { key: 'bidv', name: 'BIDV' },
+    { key: 'agribank', name: 'Agribank' },
+    { key: 'acb', name: 'ACB' },
+    { key: 'vpbank', name: 'VPBank' },
+    { key: 'vnpay', name: 'VNPay' },
+    { key: 'momo', name: 'MoMo' },
+  ];
+
+  const officialDomains: Record<string, string[]> = {
+    facebook: ['facebook.com', 'fb.com', 'messenger.com'],
+    fb: ['fb.com', 'facebook.com'],
+    zalo: ['zalo.me', 'zaloapp.com'],
+    tiktok: ['tiktok.com'],
+    telegram: ['telegram.org', 't.me'],
+    instagram: ['instagram.com'],
+    vietcombank: ['vietcombank.com.vn'],
+    vcb: ['vietcombank.com.vn'],
+    mbbank: ['mbbank.com.vn'],
+    techcombank: ['techcombank.com', 'techcombank.com.vn'],
+    bidv: ['bidv.com.vn'],
+    agribank: ['agribank.com.vn'],
+    acb: ['acb.com.vn'],
+    vpbank: ['vpbank.com.vn'],
+    vnpay: ['vnpay.vn'],
+    momo: ['momo.vn'],
+  };
+
+  let hasSuspiciousKeywords = false;
+  for (const brand of brandKeywords) {
+    const isMentionedInHost = hostname.includes(brand.key);
+    if (isMentionedInHost) {
+      const allowed = officialDomains[brand.key] || [];
+      const isOfficial = allowed.some(domain => hostname === domain || hostname.endsWith('.' + domain));
+      if (!isOfficial) {
+        hasSuspiciousKeywords = true;
+        riskScore += 40;
+        findings.push({
+          type: 'danger',
+          code: 'BRAND_IMPERSONATION',
+          message: `Tên miền chứa từ khóa thương hiệu "${brand.name}" nhưng không thuộc hệ thống tên miền chính thức (${allowed.join(', ')}). Nguy cơ cao là trang mạo danh đánh cắp tài khoản.`,
+        });
+      }
+    }
+  }
+
+  // 6. Suspicious Scam/Phishing Actions in URL
+  const phishingPathKeywords = [
+    'login', 'dang-nhap', 'verify', 'xac-thuc', 'xac-minh', 'otp', 'pass', 'security', 'bao-mat',
+    'nap-the', 'napthe', 'nhan-qua', 'nhanqua', 'binh-chon', 'binhchon', 'vote', 'vote-idol', 'nhan-tien',
+    'tro-cap', 'ho-tro', 'claim', 'free-gift', 'free-skin', 'tang-qua', 'khoa-tai-khoan'
+  ];
+  const matchedPathKeywords = phishingPathKeywords.filter(k => hostname.includes(k) || pathname.includes(k));
+  if (matchedPathKeywords.length > 0) {
+    hasSuspiciousKeywords = true;
+    riskScore += 25;
+    findings.push({
+      type: 'warning',
+      code: 'PHISHING_INTENT_KEYWORDS',
+      message: `Đường dẫn chứa các từ khóa kích thích thao tác nhạy cảm: [${matchedPathKeywords.join(', ')}]. Kẻ xấu thường dùng để dụ người dùng đăng nhập hoặc gửi mã xác thực.`,
+    });
+  }
+
+  // 7. Sensitive query parameters
+  const sensitiveParamKeywords = ['password', 'passwd', 'token', 'otp', 'secret', 'auth_token', 'code', 'access_token'];
+  const hasSensitiveParams = sensitiveParamKeywords.some(p => search.includes(p + '='));
+  if (hasSensitiveParams) {
+    riskScore += 30;
+    findings.push({
+      type: 'danger',
+      code: 'SENSITIVE_PARAM_EXPOSURE',
+      message: 'URL chứa tham số truy vấn nhạy cảm (mật khẩu/mã/token) trực tiếp trên thanh địa chỉ. Nguy cơ bị lộ bí mật hoặc đường link kích hoạt bất thường.',
+    });
+  }
+
+  // 8. Protocol warning (HTTP instead of HTTPS)
+  if (protocol === 'http:') {
+    riskScore += 15;
+    findings.push({
+      type: 'warning',
+      code: 'INSECURE_HTTP',
+      message: 'Kết nối sử dụng giao thức HTTP chưa mã hóa (không có SSL/TLS). Dữ liệu gửi đi có thể bị chặn hoặc giả mạo trên đường truyền.',
+    });
+  }
+
+  // Determine overall risk level
+  const clampedScore = Math.min(100, Math.max(0, riskScore));
+  let riskLevel: 'safe' | 'suspicious' | 'dangerous' = 'safe';
+  if (clampedScore >= 50) {
+    riskLevel = 'dangerous';
+  } else if (clampedScore >= 20) {
+    riskLevel = 'suspicious';
+  } else {
+    riskLevel = 'safe';
+    if (findings.length === 0) {
+      findings.push({
+        type: 'info',
+        code: 'NO_OBVIOUS_RISK',
+        message: 'Không phát hiện bất thường rõ rệt về cú pháp, tên miền, rút gọn link hoặc từ khóa mạo danh thương hiệu phổ biến.',
+      });
+    }
+  }
+
+  const recommendations: string[] = [];
+  if (riskLevel === 'dangerous') {
+    recommendations.push('KHÔNG nhấp vào liên kết này hoặc tiếp tục truy cập.');
+    recommendations.push('Tuyệt đối KHÔNG đăng nhập tài khoản mạng xã hội hay nhập thông tin ngân hàng/ví điện tử.');
+    recommendations.push('Chụp lại màn hình tin nhắn chứa link và báo ngay với cha mẹ, thầy cô hoặc đầu số 156/5656.');
+  } else if (riskLevel === 'suspicious') {
+    recommendations.push('Cẩn trọng cao độ: Không cung cấp mã OTP, số điện thoại hoặc mật khẩu.');
+    recommendations.push('Nếu link được gửi từ bạn bè, hãy gọi điện thoại trực tiếp xác nhận xem tài khoản của bạn có bị chiếm quyền không.');
+    recommendations.push('Tìm kiếm trực tiếp trên trang chủ chính thức thay vì bấm vào liên kết nhận được.');
+  } else {
+    recommendations.push('Vẫn duy trì cảnh giác: Không nhập mật khẩu ở các trang không phải do bạn chủ động tìm kiếm.');
+    recommendations.push('Bật xác thực 2 bước (2FA) cho toàn bộ tài khoản mạng xã hội và email.');
+  }
+
+  const totalMs = Math.round(performance.now() - requestStartedAt);
+  recordScanAudit(req, 'link_scan', 'heuristic_syntax', null, totalMs);
+
+  const summary = riskLevel === 'dangerous'
+    ? `CẢNH BÁO NGUY HIỂM: Đường link có ${findings.filter(f => f.type === 'danger').length} dấu hiệu đe dọa nghiêm trọng. Khả năng cao là bẫy lừa đảo hoặc mã độc.`
+    : riskLevel === 'suspicious'
+    ? `CẢNH GIÁC CAO: Phát hiện các đặc điểm đáng ngờ (rút gọn link, tên miền lạ hoặc từ khóa nhạy cảm). Cần kiểm chứng cẩn trọng trước khi mở.`
+    : `MỨC ĐỘ RỦI RO THẤP: Cú pháp và cấu trúc tên miền không biểu hiện các dấu hiệu lừa đảo phổ biến. Vẫn cần tự bảo vệ thông tin cá nhân.`;
+
+  res.json({
+    success: true,
+    data: {
+      url: rawUrl,
+      normalizedUrl: fullHref,
+      protocol: protocol.replace(':', ''),
+      hostname,
+      riskLevel,
+      score: clampedScore,
+      summary,
+      findings,
+      domainChecks: {
+        isPunycode,
+        isIpHost,
+        isShortener,
+        hasSuspiciousKeywords,
+        hasSensitiveParams,
+        tld,
+      },
+      recommendations,
+      disclaimer: 'Hệ thống đánh giá tĩnh dựa trên phân tích cú pháp, danh sách tên miền và mẫu giả mạo phổ biến, không thực hiện truy cập thực tế đến máy chủ đích (bảo đảm an toàn tuyệt đối). Kết quả mang tính hỗ trợ kỹ năng, hãy luôn kiểm chứng đa kênh.',
+    },
+    analyzedAt: new Date().toISOString(),
+    totalMs,
+  });
 });
 
 // SafeBot AI Chat endpoint

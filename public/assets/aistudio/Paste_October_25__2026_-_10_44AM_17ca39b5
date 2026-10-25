@@ -1,0 +1,875 @@
+
+admin@DESKTOP-JTU12NS UCRT64 ~/Downloads/deepfake-scanner-—-trung-tâm-an-toàn-số (5) (main)
+$ git add .
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/.aistudio/artifacts/bra
+in/c24c11bc-b45f-427e-a004-732d010519c0/implementation_plan.md', LF will be replaced by CRLF the nex
+t time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/.aistudio/artifacts/bra
+in/c24c11bc-b45f-427e-a004-732d010519c0/implementation_plan.md.metadata.json', LF will be replaced b
+y CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/.env.example', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/.gitignore', LF will be
+ replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/CHANGELOG_FIXES.md', LF
+ will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/PROMPT_NANG_CAP_DEEPFAK
+E_SCANNER.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/README.md', LF will be
+replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/bun.lock', LF will be r
+eplaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/index.html', LF will be
+ replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/metadata.json', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/netlify.toml', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/package.json', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/render.yaml', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/scripts/clean.mjs', LF
+will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/server.ts', LF will be
+replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/App.tsx', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/AcademyM
+odule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/AccountM
+odule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Emergenc
+yModule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Evidence
+LabModule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Footer.t
+sx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Header.t
+sx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/HomeModu
+le.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Research
+DashboardModule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Research
+ReportModule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/SafeBotM
+odule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/ScannerM
+odule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/components/Simulato
+rModule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/data/academyData.ts
+', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/data/emergencyGuide
+Data.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/data/simulatorData.
+ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/data/surveyData.ts'
+, LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/data/threatScenario
+sData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/index.css', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/main.tsx', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/types/index.ts', LF
+ will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/src/utils/imageCompress
+or.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/tsconfig.json', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-—-trung-tâm-an-toàn-số (5)/vite.config.ts', LF wil
+l be replaced by CRLF the next time Git touches it
+
+admin@DESKTOP-JTU12NS UCRT64 ~/Downloads/deepfake-scanner-—-trung-tâm-an-toàn-số (5) (main)
+$ git commit -m "feat: add admin dashboard, account system, and fast AI"
+git remote add origin https://github.com/lehuythevinh-byte/deepfake-scanner-render.git 2>/dev/null || git remote set-url origin https://github.com/lehuythevinh-byte/deepfake-scanner-render.git
+git push -f -u origin main
+[main (root-commit) 72dfc56] feat: add admin dashboard, account system, and fast AI
+ 42 files changed, 9224 insertions(+)
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/.aistudio/artifacts/brain/c24c11bc-b45f-427e-a004-732d010519c0/implementation_plan.md"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/.aistudio/artifacts/brain/c24c11bc-b45f-427e-a004-732d010519c0/implementation_plan.md.metadata.json
+"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/.env.example"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/.gitignore"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/CHANGELOG_FIXES.md"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/PROMPT_NANG_CAP_DEEPFAKE_SCANNER.md"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/README.md"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/bun.lock"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/index.html"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/metadata.json"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/netlify.toml"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/package.json"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/public/assets/aistudio/deepfake-scanner-fixed_a72bbf3c.zip"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/public/assets/aistudio/deepfake-scanner-render-main__1__1d25541c.zip"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/public/assets/aistudio/deepfake_scanner_admin_ai_fix_0cbaf2fe.zip"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/render.yaml"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/scripts/clean.mjs"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/server.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/App.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/AcademyModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/AccountModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/EmergencyModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/EvidenceLabModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/Footer.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/Header.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/HomeModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/ResearchDashboardModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/ResearchReportModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/SafeBotModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/ScannerModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/components/SimulatorModule.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/data/academyData.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/data/emergencyGuideData.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/data/simulatorData.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/data/surveyData.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/data/threatScenariosData.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/index.css"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/main.tsx"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/types/index.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/src/utils/imageCompressor.ts"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/tsconfig.json"
+ create mode 100644 "deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5)
+/vite.config.ts"
+Enumerating objects: 58, done.
+Counting objects: 100% (58/58), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (51/51), done.
+Writing objects: 100% (58/58), 1.04 MiB | 971.00 KiB/s, done.
+Total 58 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To https://github.com/lehuythevinh-byte/deepfake-scanner-render.git
+ + f12213f...72dfc56 main -> main (forced update)
+branch 'main' set up to track 'origin/main'.
+
+admin@DESKTOP-JTU12NS UCRT64 ~/Downloads/deepfake-scanner-—-trung-tâm-an-toàn-số (5) (main)
+$ # 1. Bật chế độ di chuyển cả file ẩn (.gitignore, .env.example)
+shopt -s dotglob
+
+# 2. Đưa toàn bộ file từ thư mục con ra ngoài thư mục gốc
+mv deepfake-scanner*/* . 2>/dev/null || true
+rm -rf "deepfake-scanner-—-trung-tâm-an-toàn-số (5)"
+
+# 3. Lưu lại thay đổi
+git add -A
+git commit -m "fix: move all files to root directory for Render"
+
+# 4. Đẩy đè lên GitHub
+git push -f -u origin main
+warning: in the working copy of '.env.example', LF will be replaced by CRLF the next time Git touche
+s it
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of 'DEEPFAKE_SCANNER_2.0_DELIVERABLES/DEEPFAKE_SCANNER_2.0_MASTER_PROMP
+T_VI.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'DEEPFAKE_SCANNER_2.0_GITHUB_PACKAGE/DEEPFAKE_SCANNER_2.0_GITHUB_PAC
+KAGE/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'DEEPFAKE_SCANNER_2.0_GITHUB_PACKAGE/DEEPFAKE_SCANNER_2.0_GITHUB_PAC
+KAGE/docs/DEEPFAKE_SCANNER_2.0_MASTER_PROMPT_VI.md', LF will be replaced by CRLF the next time Git t
+ouches it
+warning: in the working copy of 'DEEPFAKE_SCANNER_2_GITHUB_READY/DEEPFAKE_SCANNER_2_GITHUB_READY/GIT
+HUB_UPLOAD_GUIDE_VI.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'DEEPFAKE_SCANNER_2_GITHUB_READY/DEEPFAKE_SCANNER_2_GITHUB_READY/doc
+s/DEEPFAKE_SCANNER_2.0_MASTER_PROMPT_VI.md', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'DEEPFAKE_SCANNER_2_GITHUB_READY/DEEPFAKE_SCANNER_2_GITHUB_READY/doc
+s/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_No_Fallback_Patch/deepfake-scanner-gemini-n
+o-fallback-patch/CHANGELOG_VI.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_No_Fallback_Patch/deepfake-scanner-gemini-n
+o-fallback-patch/README_VI.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_No_Fallback_Patch/deepfake-scanner-gemini-n
+o-fallback-patch/apply_gemini_no_fallback_patch.mjs', LF will be replaced by CRLF the next time Git
+touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/.env.example', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/CHANGELOG_FIXES.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/NETLIFY_AI_SETUP_VI.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/PROMPT_NANG_CAP_DEEPFAKE_SCANNER.md', LF will be replaced by CRLF the next time Git touc
+hes it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/metadata.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/netlify.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/netlify/functions/api.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/render.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/scripts/clean.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/server.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/AcademyModule.tsx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/EmergencyModule.tsx', LF will be replaced by CRLF the next time Git touch
+es it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/EvidenceLabModule.tsx', LF will be replaced by CRLF the next time Git tou
+ches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/Footer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/Header.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/HomeModule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/ResearchDashboardModule.tsx', LF will be replaced by CRLF the next time G
+it touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/ResearchReportModule.tsx', LF will be replaced by CRLF the next time Git
+touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/SafeBotModule.tsx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/ScannerModule.tsx', LF will be replaced by CRLF the next time Git touches
+ it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/components/SimulatorModule.tsx', LF will be replaced by CRLF the next time Git touch
+es it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/data/academyData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/data/emergencyGuideData.ts', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/data/simulatorData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/data/surveyData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/data/threatScenariosData.ts', LF will be replaced by CRLF the next time Git touches
+it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/index.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/main.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/src/types/index.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Deepfake_Scanner_Gemini_Optimized/deepfake-scanner-render-main-spee
+d-optimized/vite.config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_COACH_PRO_V4_HTML.html', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_COACH_PRO_V5_RPG_FULL.html', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_COACH_PRO_V6_INTERIOR_WORLD.html', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_ENGLISH_TOWN_HTML.html', LF will be replaced by CRLF t
+he next time Git touches it
+warning: adding embedded git repository: LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH
+hint: You've added another git repository inside your current repository.
+hint: Clones of the outer repository will not contain the contents of
+hint: the embedded repository and will not know how to obtain it.
+hint: If you meant to add a submodule, use:
+hint:
+hint:   git submodule add <url> LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH
+hint:
+hint: If you added this path by mistake, you can remove it from the
+hint: index with:
+hint:
+hint:   git rm --cached LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH
+hint:
+hint: See "git help submodule" for more information.
+hint: Disable this message with "git config set advice.addEmbeddedRepo false"
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/.env.example', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/.gitignore', LF will be replaced by CRL
+F the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/README.md', LF will be replaced by CRLF
+ the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/bun.lock', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/index.html', LF will be replaced by CRL
+F the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/metadata.json', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/netlify.toml', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/netlify/functions/gemini.ts', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/package.json', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/server.ts', LF will be replaced by CRLF
+ the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/App.tsx', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/game_engine.js', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/index.css', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/main.tsx', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/services/cefrService.ts', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/services/speechService.ts', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/ui/AudioSettingsModal.tsx', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/ui/CEFRSelectorModal.tsx', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/src/ui/MobileControls.tsx', LF will be
+replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/tsconfig.json', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_GITHUB_NETLIFY/vite.config.ts', LF will be replaced by
+ CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V10_SMART_ECONOMY.html', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_2_BUILDING_GRAPHICS_FIX.html', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_3_10_HOUSE_VARIANTS.html', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_4_RANDOM_DISTINCT_HOUSES.html', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_CLEAN_UI_BEAUTIFUL_MINIMAP (1).html', LF will be
+ replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_CLEAN_UI_BEAUTIFUL_MINIMAP.html', LF will be rep
+laced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/.env.example', LF will be replaced b
+y CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/.gitignore', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/README.md', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/backend/server.py', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/index.html', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/original/LIFEQUEST_AI_V11_6_original
+.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/requirements.txt', LF will be replac
+ed by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/src/css/styles.css', LF will be repl
+aced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/src/js/app.js', LF will be replaced
+by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_FULL_SOURCE/src/js/config.js', LF will be replac
+ed by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GEMINI_404_FIXED_PROJECT/LIFEQUEST_AI_V11_6_GEMI
+NI_404_FIXED_PROJECT/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GEMINI_404_FIXED_PROJECT/LIFEQUEST_AI_V11_6_GEMI
+NI_404_FIXED_PROJECT/GEMINI_404_QA.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GEMINI_404_FIXED_PROJECT/LIFEQUEST_AI_V11_6_GEMI
+NI_404_FIXED_PROJECT/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GEMINI_404_FIXED_PROJECT/LIFEQUEST_AI_V11_6_GEMI
+NI_404_FIXED_PROJECT/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB (1)/.gitignore', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB (1)/README.md', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB (1)/index.html', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB (2)/.gitignore', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB (2)/README.md', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB (2)/index (3).html', LF will be replaced
+by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB/.gitignore', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB/README.md', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_GITHUB/index.html', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_MYSTERY_INTERIORS.html', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_6_NO_SPLASH_GEMINI_API.html', LF will be replaced
+by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_7_FULL_INTERIOR_LOGIC.html', LF will be replaced b
+y CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_GRAPHICS_UI_MASTER_PROMPT.md', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_GRAPHICS_UI_REWORK.html', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V11_QA_REPORT.md', LF will be replaced by CRLF the nex
+t time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V7_WORLD_EDITION (1).html', LF will be replaced by CRL
+F the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V7_WORLD_EDITION.html', LF will be replaced by CRLF th
+e next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_V8_LIVING_WORLD.html', LF will be replaced by CRLF the
+ next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/.env.example', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/.gitignore', LF will be replaced by CRLF
+ the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/README.md', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/api/gemini.ts', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/index.html', LF will be replaced by CRLF
+ the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/metadata.json', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/package.json', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/server.ts', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/App.tsx', LF will be replaced by CRL
+F the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/game_engine.js', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/index.css', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/main.tsx', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/services/cefrService.ts', LF will be
+ replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/services/speechService.ts', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/ui/AudioSettingsModal.tsx', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/ui/CEFRSelectorModal.tsx', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/src/ui/MobileControls.tsx', LF will be r
+eplaced by CRLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/tsconfig.json', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/vercel.json', LF will be replaced by CRL
+F the next time Git touches it
+warning: in the working copy of 'LIFEQUEST_AI_VERCEL_GEMINI/vite.config.ts', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'MEGA_CITY_2048_OFFLINE.html', LF will be replaced by CRLF the next
+time Git touches it
+warning: in the working copy of 'MEGA_CITY_MASTER_PROMPT.md', LF will be replaced by CRLF the next t
+ime Git touches it
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches i
+t
+warning: in the working copy of 'Sunny Town · English Adventure.html', LF will be replaced by CRLF t
+he next time Git touches it
+warning: adding embedded git repository: Wallos
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/.env.example', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/.gitignore', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/README.md', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/index.html', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/metadata.json', LF will be repl
+aced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/package.json', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/server.ts', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/App.tsx', LF will be replac
+ed by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/components/ChatbotWidget.ts
+x', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/components/Footer.tsx', LF
+will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/components/Header.tsx', LF
+will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/data/assessment.ts', LF wil
+l be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/data/knowledge.ts', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/data/resources.ts', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/data/risks.ts', LF will be
+replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/data/scenarios.ts', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/index.css', LF will be repl
+aced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/main.tsx', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/AssessmentPage.tsx',
+LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/EducatorsPage.tsx', L
+F will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/ForensicLabPage.tsx',
+ LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/HelpCenterPage.tsx',
+LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/HomePage.tsx', LF wil
+l be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/KnowledgePage.tsx', L
+F will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/RiskMapPage.tsx', LF
+will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/pages/ScenarioPage.tsx', LF
+ will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/src/types/index.ts', LF will be
+ replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/tsconfig.json', LF will be repl
+aced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-safe---an-toàn-số-thcs (1)/vite.config.ts', LF will be rep
+laced by CRLF the next time Git touches it
+warning: adding embedded git repository: deepfake-scanner-auth-fixed/deepfake-scanner-render-main
+warning: in the working copy of 'deepfake-scanner-fixed/.env.example', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/.gitignore', LF will be replaced by CRLF the
+ next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/CHANGELOG_FIXES.md', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/PROMPT_NANG_CAP_DEEPFAKE_SCANNER.md', LF wil
+l be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/README.md', LF will be replaced by CRLF the
+next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/index.html', LF will be replaced by CRLF the
+ next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/metadata.json', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/netlify.toml', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/package.json', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/render.yaml', LF will be replaced by CRLF th
+e next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/scripts/clean.mjs', LF will be replaced by C
+RLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/server.ts', LF will be replaced by CRLF the
+next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/App.tsx', LF will be replaced by CRLF th
+e next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/AcademyModule.tsx', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/EmergencyModule.tsx', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/EvidenceLabModule.tsx', LF wi
+ll be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/Footer.tsx', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/Header.tsx', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/HomeModule.tsx', LF will be r
+eplaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/ResearchDashboardModule.tsx',
+ LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/ResearchReportModule.tsx', LF
+ will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/SafeBotModule.tsx', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/ScannerModule.tsx', LF will b
+e replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/components/SimulatorModule.tsx', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/data/academyData.ts', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/data/emergencyGuideData.ts', LF will be
+replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/data/simulatorData.ts', LF will be repla
+ced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/data/surveyData.ts', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/data/threatScenariosData.ts', LF will be
+ replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/index.css', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/main.tsx', LF will be replaced by CRLF t
+he next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/src/types/index.ts', LF will be replaced by
+CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/tsconfig.json', LF will be replaced by CRLF
+the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-fixed/vite.config.ts', LF will be replaced by CRLF
+ the next time Git touches it
+warning: adding embedded git repository: deepfake-scanner-github-update
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/.env.example', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/.gitignore', LF will be replaced
+by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/CHANGELOG_FIXES.md', LF will be r
+eplaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/NETLIFY_AI_SETUP_VI.md', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/PROMPT_NANG_CAP_DEEPFAKE_SCANNER.
+md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/README.md', LF will be replaced b
+y CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/index.html', LF will be replaced
+by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/metadata.json', LF will be replac
+ed by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/netlify.toml', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/netlify/functions/api.ts', LF wil
+l be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/package.json', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/render.yaml', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/scripts/clean.mjs', LF will be re
+placed by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/server.ts', LF will be replaced b
+y CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/App.tsx', LF will be replaced
+ by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/AcademyModule.tsx'
+, LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/EmergencyModule.ts
+x', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/EvidenceLabModule.
+tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/Footer.tsx', LF wi
+ll be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/Header.tsx', LF wi
+ll be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/HomeModule.tsx', L
+F will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/ResearchDashboardM
+odule.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/ResearchReportModu
+le.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/SafeBotModule.tsx'
+, LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/ScannerModule.tsx'
+, LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/components/SimulatorModule.ts
+x', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/data/academyData.ts', LF will
+ be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/data/emergencyGuideData.ts',
+LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/data/simulatorData.ts', LF wi
+ll be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/data/surveyData.ts', LF will
+be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/data/threatScenariosData.ts',
+ LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/index.css', LF will be replac
+ed by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/main.tsx', LF will be replace
+d by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/src/types/index.ts', LF will be r
+eplaced by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/tsconfig.json', LF will be replac
+ed by CRLF the next time Git touches it
+warning: in the working copy of 'deepfake-scanner-netlify-ai-fixed/vite.config.ts', LF will be repla
+ced by CRLF the next time Git touches it
+error: 'deepfake-scanner-render-503-fixed/' does not have a commit checked out
+error: unable to index file 'deepfake-scanner-render-503-fixed/'
+fatal: adding files failed
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        ../.env.example
+        ../.gitignore
+        ../1791567903142_710033354366437294_g6192985958426128517_03775dd3a2f0ed4daf051f394c105565.jp
+g
+        ../1792199939899_2089280943005365898_g9149006443153759619_5583c6393f21964c6b6a64f0e5f15bcc.j
+pg
+        ../BattleCity-master.zip
+        ../Claude Setup.exe
+        ../DEEPFAKE_SCANNER_2.0_DELIVERABLES.zip
+        ../DEEPFAKE_SCANNER_2.0_DELIVERABLES/
+        ../DEEPFAKE_SCANNER_2.0_GITHUB_PACKAGE.zip
+        ../DEEPFAKE_SCANNER_2.0_GITHUB_PACKAGE/
+        ../DEEPFAKE_SCANNER_2_GITHUB_READY.zip
+        ../DEEPFAKE_SCANNER_2_GITHUB_READY/
+        ../Deepfake_Scanner_Gemini_No_Fallback_Patch.zip
+        ../Deepfake_Scanner_Gemini_No_Fallback_Patch/
+        ../Deepfake_Scanner_Gemini_Optimized.zip
+        ../Deepfake_Scanner_Gemini_Optimized/
+        ../Gamemaking2
+        ../Gamemaking2-20261015T134850Z-1-001.zip
+        ../Gamemaking2.zip
+        ../HoSo_BangA_EnglishTown_FPT.docx
+        ../LIFEQUEST_AI_COACH_PRO_V4_HTML.html
+        ../LIFEQUEST_AI_COACH_PRO_V4_NETLIFY (1).zip
+        ../LIFEQUEST_AI_COACH_PRO_V4_NETLIFY.zip
+        ../LIFEQUEST_AI_COACH_PRO_V5_RPG_FULL.html
+        ../LIFEQUEST_AI_COACH_PRO_V6_INTERIOR_WORLD.html
+        ../LIFEQUEST_AI_ENGLISH_TOWN_HTML.html
+        ../LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH (1) (1).zip
+        ../LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH (1).zip
+        ../LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH.zip
+        ../LIFEQUEST_AI_FOR_GITHUB_LEHUYTHEVINH/
+        ../LIFEQUEST_AI_GITHUB_NETLIFY.zip
+        ../LIFEQUEST_AI_GITHUB_NETLIFY/
+        ../LIFEQUEST_AI_TRO_CHUYEN_DIEU_KHIEN_GIU_NGUYEN_DO_HOA.zip
+        ../LIFEQUEST_AI_V10_SMART_ECONOMY.html
+        ../LIFEQUEST_AI_V11_2_BUILDING_GRAPHICS_FIX.html
+        ../LIFEQUEST_AI_V11_3_10_HOUSE_VARIANTS.html
+        ../LIFEQUEST_AI_V11_4_RANDOM_DISTINCT_HOUSES.html
+        ../LIFEQUEST_AI_V11_4_RANDOM_DISTINCT_HOUSES.zip
+        ../LIFEQUEST_AI_V11_6_CLEAN_UI_BEAUTIFUL_MINIMAP (1).html
+        ../LIFEQUEST_AI_V11_6_CLEAN_UI_BEAUTIFUL_MINIMAP.html
+        ../LIFEQUEST_AI_V11_6_FULL_SOURCE.zip
+        ../LIFEQUEST_AI_V11_6_FULL_SOURCE/
+        ../LIFEQUEST_AI_V11_6_GEMINI_404_FIXED_PROJECT.zip
+        ../LIFEQUEST_AI_V11_6_GEMINI_404_FIXED_PROJECT/
+        ../LIFEQUEST_AI_V11_6_GITHUB (1).zip
+        ../LIFEQUEST_AI_V11_6_GITHUB (1)/
+        ../LIFEQUEST_AI_V11_6_GITHUB (2).rar
+        ../LIFEQUEST_AI_V11_6_GITHUB (2).zip
+        ../LIFEQUEST_AI_V11_6_GITHUB (2)/
+        ../LIFEQUEST_AI_V11_6_GITHUB.zip
+        ../LIFEQUEST_AI_V11_6_GITHUB/
+        ../LIFEQUEST_AI_V11_6_MYSTERY_INTERIORS.html
+        ../LIFEQUEST_AI_V11_6_NO_SPLASH_GEMINI_API.html
+        ../LIFEQUEST_AI_V11_7_FULL_INTERIOR_LOGIC.html
+        ../LIFEQUEST_AI_V11_GRAPHICS_UI_MASTER_PROMPT.md
+        ../LIFEQUEST_AI_V11_GRAPHICS_UI_REWORK.html
+        ../LIFEQUEST_AI_V11_QA_REPORT.md
+        ../LIFEQUEST_AI_V7_WORLD_EDITION (1).html
+        ../LIFEQUEST_AI_V7_WORLD_EDITION.html
+        ../LIFEQUEST_AI_V8_LIVING_WORLD.html
+        ../LIFEQUEST_AI_VERCEL_GEMINI.zip
+        ../LIFEQUEST_AI_VERCEL_GEMINI/
+        ../MEGA_CITY_2048_OFFLINE.html
+        ../MEGA_CITY_MASTER_PROMPT.md
+        ../README.md
+        ../SaveWise-AI-deploy-ready.zip
+        ../ScannerModule.tsx.before-gemini-no-fallback.bak
+        "../Sunny Town \302\267 English Adventure.html"
+        ../Wallos/
+        "../deepfake-safe---an-to\303\240n-s\341\273\221-thcs (1).zip"
+        "../deepfake-safe---an-to\303\240n-s\341\273\221-thcs (1)/"
+        "../deepfake-safe---an-to\303\240n-s\341\273\221-thcs (2).zip"
+        "../deepfake-safe---an-to\303\240n-s\341\273\221-thcs (3).zip"
+        "../deepfake-safe---an-to\303\240n-s\341\273\221-thcs (4).zip"
+        "../deepfake-safe---an-to\303\240n-s\341\273\221-thcs.zip"
+        ../deepfake-scanner-auth-fixed.zip
+        ../deepfake-scanner-auth-fixed/
+        ../deepfake-scanner-fixed.zip
+        ../deepfake-scanner-fixed/
+        ../deepfake-scanner-github-update.rar
+        ../deepfake-scanner-github-update/
+        ../deepfake-scanner-netlify-ai-fixed.zip
+        ../deepfake-scanner-netlify-ai-fixed/
+        ../deepfake-scanner-render-503-fixed.zip
+        ../deepfake-scanner-render-503-fixed/
+        ../deepfake-scanner-render-main (1).zip
+        ../deepfake-scanner-render-main.zip
+        ../deepfake-scanner-render-main/
+        ../deepfake-scanner-render-main_USER_ADMIN_UPDATED.zip
+        ../deepfake-scanner-render-main_USER_ADMIN_UPDATED/
+        ../deepfake-scanner-render-ready.zip
+        ../deepfake-scanner-render-ready/
+        ../deepfake-scanner-render-speed-fix-latest-source-2026-10-24.zip
+        ../deepfake-scanner-render-speed-fix-latest-source-2026-10-24/
+        ../deepfake-scanner-render-upload/
+        ../deepfake-scanner-render/
+        ../deepfake-scanner-speedfix/
+        ../deepfake-scanner-update-temp/
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (1).zip"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (2).zip"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (3).zip"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (3)/"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (4).zip"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (4)/"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221 (5).zip"
+        "../deepfake-scanner-\342\200\224-trung-t\303\242m-an-to\303\240n-s\341\273\221.zip"
+        ../deepfake_scanner_admin_ai_fix.zip
+        ../deepfake_speed_fix (1).zip
+        ../deepfake_speed_fix (1)/
+        ../deepfake_speed_fix (2).zip
+        ../deepfake_speed_fix (2)/
+        ../deepfake_speed_fix.zip
+        ../desktop.ini
+        ../emberpath.html
+        ../english-town-save-2026-10-17.json
+        ../gemini-code-1790859010088.html
+        ../gemini-code-1790859058656.html
+        ../gemini-code-1790859444485.html
+        ../gemini-code-1790859645998.html
+        ../gemini-code-1790859755155.html
+        ../gemini-code-1792156666539.html
+        ../gemini-code-1792156777252.html
+        ../index (1).html
+        ../index.html
+        ../lifequest-3d.html
+        ../lifequest-English-town-release/
+        ../lifequest-English-town-update/
+        ../lifequest-ai---english-town (1).zip
+        ../lifequest-ai---english-town.zip
+        ../lifequest-ai---english-town/
+        ../lifequest-ai-/
+        "../lifequest-ai-\342\200\224-3d-open-world-english-rpg-&-eco-sim.zip"
+        ../mega-city_-ultimate-world.zip
+        ../metadata.json
+        ../node-v24.22.1-x64.msi
+        ../package.json
+        ../pixel-town_-expanded-world (1).zip
+        ../pixel-town_-expanded-world.zip
+        ../pixel_art_town_map.html
+        ../public/
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh (1).zip"
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh (2).zip"
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh (3).zip"
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh (4).zip"
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh (4)/"
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh.zip"
+        "../savewise-ai-\342\200\223-qu\341\272\243n-l\303\275-chi-ti\303\252u-&-tr\341\273\243-l\30
+3\275-t\303\240i-ch\303\255nh-th\303\264ng-minh/"
+        ../savewise_thu_chi_2026-10-11.csv
+        ../savewise_transactions_2026-10-11 (1).csv
+        ../savewise_transactions_2026-10-11.csv
+        ../server.ts
+        ../server.ts.before-gemini-no-fallback.bak
+        ../server.ts.before-low-thinking.bak
+        ../server.ts.before-single-gemini.bak
+        ../smart phone.png
+        ../src/
+        ../tsconfig.json
+        ../vite.config.ts
+        ../web/
+
+nothing added to commit but untracked files present (use "git add" to track)

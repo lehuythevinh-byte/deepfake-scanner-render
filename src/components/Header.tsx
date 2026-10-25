@@ -15,7 +15,9 @@ import {
   Sparkles,
   Info,
   UserRound,
-  ShieldCheck
+  ShieldCheck,
+  Link2,
+  LayoutDashboard
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -30,13 +32,14 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfig
 
   const navItems = [
     { id: 'home' as ActiveTab, label: 'Trang chủ', icon: ShieldAlert },
-    { id: 'scanner' as ActiveTab, label: 'Threat Scanner', icon: Search },
+    ...(currentUser ? [{ id: 'app' as ActiveTab, label: 'Không gian App', icon: LayoutDashboard }] : []),
+    { id: 'scanner' as ActiveTab, label: 'Quét Ảnh & Video', icon: Search },
+    { id: 'link-scanner' as ActiveTab, label: 'Quét Link', icon: Link2 },
     { id: 'evidence-lab' as ActiveTab, label: 'Kiểm chứng', icon: CheckSquare },
     { id: 'academy' as ActiveTab, label: 'Học viện', icon: BookOpen },
     { id: 'simulator' as ActiveTab, label: 'Tình huống', icon: Gamepad2 },
     { id: 'safebot' as ActiveTab, label: 'SafeBot AI', icon: Bot },
     { id: 'research' as ActiveTab, label: 'Nghiên cứu', icon: BarChart3 },
-    { id: 'report' as ActiveTab, label: 'Báo cáo', icon: FileText },
     { id: 'emergency' as ActiveTab, label: 'Ứng phó khẩn', icon: AlertTriangle, highlight: true },
   ];
 

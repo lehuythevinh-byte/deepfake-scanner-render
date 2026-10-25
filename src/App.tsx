@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ActiveTab, AuthUser } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
-import { HomeModule } from './components/HomeModule';
+import { LandingPage } from './components/LandingPage';
+import { UserDashboard } from './components/UserDashboard';
 import { ScannerModule } from './components/ScannerModule';
+import { LinkScannerModule } from './components/LinkScannerModule';
 import { EvidenceLabModule } from './components/EvidenceLabModule';
 import { AcademyModule } from './components/AcademyModule';
 import { SimulatorModule } from './components/SimulatorModule';
@@ -13,25 +15,54 @@ import { ResearchReportModule } from './components/ResearchReportModule';
 import { EmergencyModule } from './components/EmergencyModule';
 import { AccountModule } from './components/AccountModule';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-    // Check URL hash for direct deep linking
-    const hash = window.location.hash.replace('#', '') as ActiveTab;
-    const validTabs: ActiveTab[] = [
-      'home',
-      'scanner',
-      'evidence-lab',
-      'academy',
-      'simulator',
-      'safebot',
-      'research',
-      'report',
-      'emergency',
-      'account',
-    ];
-    return validTabs.includes(hash) ? hash : 'home';
-  });
+// Pathname to Tab resolver
+function resolveInitialTab(): ActiveTab {
+  if (typeof window === 'undefined') return 'home';
 
+  // 1. Check pathname first (e.g., /app, /app/scanner, /link-scanner, /login)
+  const pathname = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+  if (pathname === '/app') return 'app';
+  if (pathname === '/app/scanner' || pathname === '/scanner') return 'scanner';
+  if (pathname === '/app/link-scanner' || pathname === '/link-scanner') return 'link-scanner';
+  if (pathname === '/app/safebot' || pathname === '/safebot') return 'safebot';
+  if (pathname === '/login' || pathname === '/register' || pathname === '/account' || pathname === '/admin') return 'account';
+  if (pathname === '/features') return 'features';
+  if (pathname === '/how-it-works') return 'how-it-works';
+  if (pathname === '/safety-guide') return 'safety-guide';
+
+  // 2. Check hash fallback
+  const hash = window.location.hash.replace('#', '').toLowerCase();
+  const validTabs: ActiveTab[] = [
+    'home',
+    'landing',
+    'features',
+    'how-it-works',
+    'safety-guide',
+    'app',
+    'scanner',
+    'link-scanner',
+    'evidence-lab',
+    'academy',
+    'simulator',
+    'safebot',
+    'research',
+    'report',
+    'emergency',
+    'account',
+    'admin',
+    'login',
+    'register',
+  ];
+
+  if (hash && validTabs.includes(hash as ActiveTab)) {
+    return hash as ActiveTab;
+  }
+
+  return 'home';
+}
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>(resolveInitialTab);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
@@ -75,36 +106,28 @@ export default function App() {
     checkBackendStatus();
   }, []);
 
-  // Sync tab changes with URL hash
+  // Sync tab change with URL hash & browser history
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
     window.location.hash = tab;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Listen to browser back/forward buttons
+  // Listen to browser navigation (back / forward / hash changes)
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '') as ActiveTab;
-      const validTabs: ActiveTab[] = [
-        'home',
-        'scanner',
-        'evidence-lab',
-        'academy',
-        'simulator',
-        'safebot',
-        'research',
-        'report',
-        'emergency',
-        'account',
-      ];
-      if (validTabs.includes(hash) && hash !== activeTab) {
-        setActiveTab(hash);
+    const handleNavigation = () => {
+      const resolved = resolveInitialTab();
+      if (resolved !== activeTab) {
+        setActiveTab(resolved);
       }
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleNavigation);
+    window.addEventListener('popstate', handleNavigation);
+    return () => {
+      window.removeEventListener('hashchange', handleNavigation);
+      window.removeEventListener('popstate', handleNavigation);
+    };
   }, [activeTab]);
 
   return (
@@ -119,38 +142,77 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1">
-        {activeTab === 'home' && (
-          <HomeModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
+        {/* Landing and overview routes */}
+        {(activeTab === 'home' || activeTab === 'landing' || activeTab === 'features' || activeTab === 'how-it-works' || activeTab === 'safety-guide') && (
+          <LandingPage
+            onTabChange={handleTabChange}
+            currentUser={currentUser}
+            aiConfigured={aiConfigured}
+          />
         )}
+
+        {/* Member App Dashboard at /app */}
+        {activeTab === 'app' && (
+          <UserDashboard
+            user={currentUser}
+            onTabChange={handleTabChange}
+            aiConfigured={aiConfigured}
+            databaseConfigured={databaseConfigured}
+          />
+        )}
+
+        {/* Threat Scanner (Image & Video frame sampling) */}
         {activeTab === 'scanner' && (
           <ScannerModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
         )}
+
+        {/* Link Safety Scanner */}
+        {activeTab === 'link-scanner' && (
+          <LinkScannerModule onTabChange={handleTabChange} />
+        )}
+
+        {/* Forensic Evidence Lab */}
         {activeTab === 'evidence-lab' && (
           <EvidenceLabModule onTabChange={handleTabChange} />
         )}
+
+        {/* Academy & STEM Knowledge Base */}
         {activeTab === 'academy' && (
           <AcademyModule onTabChange={handleTabChange} />
         )}
+
+        {/* Interactive Scenario Simulator */}
         {activeTab === 'simulator' && (
           <SimulatorModule onTabChange={handleTabChange} />
         )}
+
+        {/* SafeBot AI Chat */}
         {activeTab === 'safebot' && (
           <SafeBotModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
         )}
+
+        {/* Research Dashboard & Survey Data */}
         {activeTab === 'research' && (
           <ResearchDashboardModule onTabChange={handleTabChange} />
         )}
+
+        {/* Scientific Research Report */}
         {activeTab === 'report' && (
           <ResearchReportModule onTabChange={handleTabChange} />
         )}
+
+        {/* Emergency Response & Hotlines */}
         {activeTab === 'emergency' && (
           <EmergencyModule onTabChange={handleTabChange} />
         )}
-        {activeTab === 'account' && (
+
+        {/* Account / Admin / Auth Portal */}
+        {(activeTab === 'account' || activeTab === 'admin' || activeTab === 'login' || activeTab === 'register') && (
           <AccountModule
             user={currentUser}
             databaseConfigured={databaseConfigured}
             onAuthChanged={refreshAuth}
+            onTabChange={handleTabChange}
           />
         )}
       </main>
