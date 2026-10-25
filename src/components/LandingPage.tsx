@@ -14,54 +14,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleStartNow = () => {
+  const handleStartScan = (targetTab: ActiveTab = 'scanner') => {
     if (currentUser) {
-      onTabChange('app');
+      onTabChange(targetTab);
     } else {
-      // Store redirect intent and route to login
       try {
-        sessionStorage.setItem('dfscanner_next_tab', 'app');
+        sessionStorage.setItem('dfscanner_next_tab', targetTab);
       } catch {}
       onTabChange('login');
     }
   };
 
-  const handleDirectScan = (tab: ActiveTab) => {
-    if (currentUser) {
-      onTabChange(tab);
-    } else {
-      try {
-        sessionStorage.setItem('dfscanner_next_tab', tab);
-      } catch {}
-      onTabChange('login');
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const faqs = [
     {
-      q: 'Hệ thống có tải ảnh hoặc đường link của tôi lên các máy chủ công cộng không?',
-      a: 'Tuyệt đối không. Hệ thống phân tích hình ảnh và liên kết một cách bảo mật. Chúng tôi không lưu trữ ảnh riêng tư trong cơ sở dữ liệu và không bao giờ gửi yêu cầu HTTP trực tiếp đến các đường link nghi ngờ (chính sách Zero-SSRF an toàn).',
+      q: 'Hệ thống có lưu trữ ảnh hoặc video tải lên của tôi không?',
+      a: 'Tuyệt đối không. Hệ thống tuân thủ chính sách quyền riêng tư nghiêm ngặt: hình ảnh và khung hình video chỉ được nén tạm thời trên bộ nhớ đệm trình duyệt để đối chiếu và không bao giờ được lưu vĩnh viễn trong cơ sở dữ liệu.',
     },
     {
-      q: 'Học sinh THCS có phải trả phí để sử dụng Trung tâm An toàn Số không?',
-      a: 'Không. Toàn bộ nền tảng được phát triển phục vụ đề tài nghiên cứu khoa học an toàn số học đường, hoàn toàn miễn phí và không có quảng cáo thương mại.',
+      q: 'Hệ thống kiểm tra liên kết (Link Scanner) có bị lộ thông tin khi bấm quét không?',
+      a: 'Không. Máy quét liên kết hoạt động theo nguyên tắc Zero-SSRF (Server-Side Request Forgery Safe): phân tích cú pháp tĩnh, cấu trúc tên miền, chứng chỉ và các mẫu tấn công đã biết mà không thực thi mã JavaScript độc hại hay gửi cookie người dùng ra ngoài.',
+    },
+    {
+      q: 'Học sinh THCS và phụ huynh có phải trả phí để sử dụng không?',
+      a: 'Không. Toàn bộ nền tảng được phát triển phục vụ đề tài nghiên cứu khoa học an toàn số học đường, hoàn toàn miễn phí, không thu phí và không có quảng cáo thương mại.',
     },
     {
       q: 'Nếu lỡ gửi tiền hoặc bị kẻ xấu tống tiền bằng ảnh ghép Deepfake thì phải làm gì?',
-      a: 'Hãy lập tức giữ bình tĩnh, chụp ảnh màn hình lưu bằng chứng, không làm theo lời đe dọa, chia sẻ ngay với cha mẹ/thầy cô và gọi đến Tổng đài Quốc gia Bảo vệ Trẻ em 111 (miễn phí 24/7).',
-    },
-    {
-      q: 'Hệ thống hỗ trợ những định dạng tệp và nội dung nào?',
-      a: 'Hệ thống hỗ trợ ảnh PNG, JPG, WEBP, trích xuất khung hình video ngắn (video frame sampling), văn bản tin nhắn nghi ngờ lừa đảo, bài đăng mạng xã hội và đường link trang web.',
+      a: 'Hãy lập tức giữ bình tĩnh, chụp ảnh màn hình lưu bằng chứng, không làm theo lời đe dọa, chia sẻ ngay với cha mẹ/thầy cô và gọi đến Tổng đài Quốc gia Bảo vệ Trẻ em 111 hoặc đầu số 156/5656.',
     },
   ];
 
   return (
     <div className="space-y-16 pb-16">
-      {/* Hero Section */}
+      {/* 5.1 Hero Section */}
       <section className="relative overflow-hidden pt-12 md:pt-20 pb-16 md:pb-24 border-b border-slate-800">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(59,130,246,0.22),rgba(255,255,255,0))]" />
-        
+
         <div className="max-w-6xl mx-auto px-4 relative z-10 text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-300 border border-blue-500/25 mb-6 backdrop-blur-sm">
@@ -69,38 +64,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             ĐỀ TÀI NGHIÊN CỨU KHOA HỌC — BẢO VỆ HỌC SINH THCS TRƯỚC DEEPFAKE & LỪA ĐẢO SỐ
           </div>
 
-          {/* Heading */}
+          {/* Heading (Exact copy requirement from Section 5.1) */}
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mx-auto">
-            Trung Tâm Nhận Diện{' '}
+            Nhận diện dấu hiệu giả mạo.{' '}
             <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-              Deepfake & An Toàn Số
+              Bảo vệ bạn trong thế giới số.
             </span>
           </h1>
 
+          {/* Description (Exact copy requirement from Section 5.1) */}
           <p className="mt-6 text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Nền tảng hỗ trợ học sinh, phụ huynh và nhà trường phát hiện hình ảnh AI giả mạo, bẫy lừa đảo tin nhắn, đường link độc hại và cung cấp quy trình bảo vệ bản thân 4 bước.
+            Phân tích tín hiệu đáng ngờ trong nội dung số, kiểm tra liên kết và tìm hiểu cách phòng tránh lừa đảo trực tuyến với sự hỗ trợ của AI.
           </p>
 
           {/* Call to Action Buttons */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={handleStartNow}
+              onClick={() => handleStartScan('scanner')}
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl text-base shadow-xl shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>{currentUser ? 'Vào Không Gian Thành Viên' : 'Bắt Đầu Ngay (Miễn Phí)'}</span>
+              <span>Bắt đầu quét</span>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </button>
 
             <button
-              onClick={() => onTabChange('how-it-works')}
+              onClick={() => scrollToSection('features')}
               className="w-full sm:w-auto px-6 py-4 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 font-semibold rounded-xl text-base border border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              <span>Cách Hoạt Động & Quy Trình</span>
+              <span>Khám phá tính năng</span>
             </button>
           </div>
 
@@ -112,7 +108,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div>
               <div className="text-2xl font-bold text-blue-400">Zero-SSRF</div>
-              <div className="text-xs text-slate-400 mt-0.5">Kiểm tra link tuyệt đối an toàn</div>
+              <div className="text-xs text-slate-400 mt-0.5">Kiểm tra link bảo vệ tuyệt đối</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-indigo-400">111 & 156</div>
@@ -120,8 +116,81 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div>
               <div className="text-2xl font-bold text-emerald-400">100% Free</div>
-              <div className="text-xs text-slate-400 mt-0.5">Giáo dục vì cộng đồng</div>
+              <div className="text-xs text-slate-400 mt-0.5">Phi lợi nhuận vì học đường</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Tool Launcher Section */}
+      <section className="max-w-6xl mx-auto px-4">
+        <div className="bg-[#142036] border border-blue-500/20 rounded-2xl p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-white">Khu Vực Phân Tích Nhanh</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Chọn loại nội dung bạn cần kiểm tra an toàn:</p>
+            </div>
+            {currentUser && (
+              <button
+                onClick={() => onTabChange('app')}
+                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+              >
+                Vào Không Gian Thành Viên →
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button
+              onClick={() => handleStartScan('scanner')}
+              className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60 hover:border-blue-500/50 hover:bg-[#121f36] transition text-left group cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
+                Quét Ảnh & Khung Hình Video
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Phát hiện khuôn mặt cắt ghép, ánh sáng bất thường, mạo danh.
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleStartScan('link-scanner')}
+              className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60 hover:border-indigo-500/50 hover:bg-[#121f36] transition text-left group cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </div>
+              <div className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">
+                Quét Liên Kết & Web Độc Hại
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Kiểm tra link rút gọn, tên miền mạo danh, Zero-SSRF an toàn tuyệt đối.
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleStartScan('safebot')}
+              className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60 hover:border-purple-500/50 hover:bg-[#121f36] transition text-left group cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                Trợ Lý SafeBot AI 24/7
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Hỏi đáp cách ứng xử khi bị đe dọa, tống tiền hoặc nghi ngờ lừa đảo.
+              </div>
+            </button>
           </div>
         </div>
       </section>
@@ -153,7 +222,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </p>
             </div>
             <button
-              onClick={() => handleDirectScan('scanner')}
+              onClick={() => handleStartScan('scanner')}
               className="mt-6 text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
             >
               Mở máy quét ảnh →
@@ -174,7 +243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </p>
             </div>
             <button
-              onClick={() => handleDirectScan('link-scanner')}
+              onClick={() => handleStartScan('link-scanner')}
               className="mt-6 text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
             >
               Kiểm tra đường link →
@@ -195,12 +264,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </p>
             </div>
             <button
-              onClick={() => handleDirectScan('safebot')}
+              onClick={() => handleStartScan('safebot')}
               className="mt-6 text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
             >
               Trò chuyện cùng SafeBot →
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* 5.2 Section: Giới hạn của AI & Tính trung thực khoa học */}
+      <section className="max-w-6xl mx-auto px-4">
+        <div className="bg-[#111c30] border border-amber-500/30 rounded-2xl p-6 md:p-8 space-y-4">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+            <h3 className="text-base md:text-lg font-bold text-amber-300 uppercase tracking-wide">
+              Minh Bạch Giới Hạn Của Trí Tuệ Nhân Tạo (AI Limitations)
+            </h3>
+          </div>
+          <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+            Hệ thống sử dụng mô hình đa phương thức để phát hiện các tín hiệu bất thường trong ảnh, video và văn bản. Tuy nhiên:
+          </p>
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs text-slate-300">
+            <li className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
+              <strong className="text-white block mb-1">Không Phải Kết Luận Pháp Lý:</strong>
+              Kết quả phân tích có giá trị cảnh báo sớm và giáo dục kỹ năng số, không thay thế cơ quan giám định tư pháp hoặc điều tra công an.
+            </li>
+            <li className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
+              <strong className="text-white block mb-1">Không Bảo Đảm Tuyệt Đối 100%:</strong>
+              Kết quả “Chưa phát hiện dấu hiệu bất thường” không đồng nghĩa với việc nội dung là thật 100%. Kẻ xấu liên tục cập nhật thủ đoạn tinh vi.
+            </li>
+            <li className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
+              <strong className="text-white block mb-1">Luôn Xác Minh Độc Lập:</strong>
+              Khi có yêu cầu liên quan đến tiền bạc hoặc thông tin cá nhân, luôn gọi điện thoại SIM truyền thống cho người thân để xác minh.
+            </li>
+          </ul>
         </div>
       </section>
 
@@ -287,6 +385,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60">
               <div className="text-emerald-400 font-bold text-xs uppercase mb-1">Bước 4: BÁO CÁO (REPORT)</div>
               <p className="text-xs text-slate-300">Nói ngay với cha mẹ, thầy cô, báo cáo tài khoản và gọi Tổng đài 111 (miễn phí).</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5.2 Section: Chính sách quyền riêng tư */}
+      <section className="max-w-6xl mx-auto px-4">
+        <div className="bg-[#142036] border border-slate-800 rounded-2xl p-6 md:p-8 space-y-3">
+          <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+            <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            Chính Sách Bảo Vệ Quyền Riêng Tư & An Toàn Dữ Liệu
+          </h3>
+          <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+            Chúng tôi cam kết tôn trọng tuyệt đối quyền riêng tư của học sinh, phụ huynh và giáo viên:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs text-slate-400">
+            <div className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
+              <strong className="text-slate-200 block mb-0.5">Không Lưu Ảnh Riêng Tư:</strong>
+              Các tệp tải lên chỉ xử lý tạm trong phiên quét và không lưu trữ trên máy chủ database.
+            </div>
+            <div className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
+              <strong className="text-slate-200 block mb-0.5">Zero-SSRF An Toàn:</strong>
+              Máy chủ không bao giờ gửi yêu cầu HTTP trực tiếp đến các URL nguy hiểm mà người dùng kiểm tra.
+            </div>
+            <div className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
+              <strong className="text-slate-200 block mb-0.5">Bảo Mật Phiên HttpOnly:</strong>
+              Phiên đăng nhập được mã hóa và bảo vệ bằng cookie HttpOnly, không lưu token nhạy cảm trong localStorage.
             </div>
           </div>
         </div>

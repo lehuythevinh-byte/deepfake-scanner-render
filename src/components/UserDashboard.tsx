@@ -217,6 +217,27 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               Xem quy trình khẩn cấp →
             </div>
           </div>
+
+          {/* Tile 7: Scan History */}
+          <div
+            onClick={() => onTabChange('history')}
+            className="p-6 rounded-2xl bg-[#162238] border border-slate-700/60 hover:border-amber-500/60 hover:bg-[#1a2942] transition-all cursor-pointer group shadow-lg"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 group-hover:scale-105 transition-transform">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-white mb-1.5 group-hover:text-amber-300 transition-colors">
+              Nhật Ký Quét & Quản Lý Báo Cáo
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed mb-4">
+              Xem lại các mã báo cáo đã thực hiện, lọc theo phân loại, xuất file CSV và quản lý nhật ký cá nhân an toàn.
+            </p>
+            <div className="text-xs font-semibold text-amber-400 flex items-center gap-1">
+              Xem lịch sử quét →
+            </div>
+          </div>
         </div>
       </div>
     </div>

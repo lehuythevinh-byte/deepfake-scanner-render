@@ -1108,7 +1108,18 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
                     <span className="text-[10px] font-mono font-bold uppercase text-[#55DDF2] tracking-wider">
                       BÁO CÁO PHÂN TÍCH RỦI RO ĐA TẦNG
                     </span>
+                    {threatResult.reportId && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#101C32] text-cyan-300 border border-cyan-800 text-[10px] font-mono font-bold">
+                        <ShieldCheck className="w-3 h-3 text-[#55DDF2]" />
+                        <span>MÃ: {threatResult.reportId}</span>
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-400 font-mono">· {threatResult.scanMode.toUpperCase()}</span>
+                    {threatResult.taskState && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 text-[10px] font-mono border border-slate-700/60">
+                        <span>Trạng thái: {threatResult.taskState}</span>
+                      </span>
+                    )}
                     {lastScanDuration !== null && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono">
                         <Zap className="w-3 h-3 text-emerald-400" />
@@ -1212,6 +1223,29 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
                 <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block mb-1">Tóm tắt nhận định:</span>
                 {threatResult.summary}
               </div>
+
+              {/* Giới hạn khoa học & Khuyến nghị thẩm định độc lập */}
+              {((threatResult.limitations && threatResult.limitations.length > 0) || (threatResult.verificationGuidance && threatResult.verificationGuidance.length > 0)) && (
+                <div className="p-3.5 rounded-xl bg-[#101C32]/90 border border-amber-500/30 space-y-2">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300 uppercase tracking-wide">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Giới hạn khoa học & Cảnh báo pháp lý</span>
+                  </div>
+                  {threatResult.limitations && threatResult.limitations.length > 0 && (
+                    <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                      {threatResult.limitations.map((lim, i) => (
+                        <li key={i} className="text-slate-300 text-[11px] leading-relaxed">{lim}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {threatResult.verificationGuidance && threatResult.verificationGuidance.length > 0 && (
+                    <div className="pt-1.5 border-t border-slate-800 text-[11px] text-[#A9D8F0]">
+                      <span className="font-semibold text-white">Khuyến nghị xác minh: </span>
+                      {threatResult.verificationGuidance.join(' · ')}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* 1. Tính xác thực hình ảnh (Collapsible) */}
               <div className="rounded-xl bg-[#101C32] border border-slate-800 overflow-hidden">

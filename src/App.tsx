@@ -14,16 +14,18 @@ import { ResearchDashboardModule } from './components/ResearchDashboardModule';
 import { ResearchReportModule } from './components/ResearchReportModule';
 import { EmergencyModule } from './components/EmergencyModule';
 import { AccountModule } from './components/AccountModule';
+import { HistoryModule } from './components/HistoryModule';
 
 // Pathname to Tab resolver
 function resolveInitialTab(): ActiveTab {
   if (typeof window === 'undefined') return 'home';
 
-  // 1. Check pathname first (e.g., /app, /app/scanner, /link-scanner, /login)
+  // 1. Check pathname first (e.g., /app, /app/scanner, /link-scanner, /login, /app/history)
   const pathname = window.location.pathname.toLowerCase().replace(/\/+$/, '');
   if (pathname === '/app') return 'app';
   if (pathname === '/app/scanner' || pathname === '/scanner') return 'scanner';
   if (pathname === '/app/link-scanner' || pathname === '/link-scanner') return 'link-scanner';
+  if (pathname === '/app/history' || pathname === '/history') return 'history';
   if (pathname === '/app/safebot' || pathname === '/safebot') return 'safebot';
   if (pathname === '/login' || pathname === '/register' || pathname === '/account' || pathname === '/admin') return 'account';
   if (pathname === '/features') return 'features';
@@ -169,6 +171,11 @@ export default function App() {
         {/* Link Safety Scanner */}
         {activeTab === 'link-scanner' && (
           <LinkScannerModule onTabChange={handleTabChange} />
+        )}
+
+        {/* Scan History & Reports */}
+        {activeTab === 'history' && (
+          <HistoryModule user={currentUser} onTabChange={handleTabChange} />
         )}
 
         {/* Forensic Evidence Lab */}

@@ -17,7 +17,8 @@ import {
   UserRound,
   ShieldCheck,
   Link2,
-  LayoutDashboard
+  LayoutDashboard,
+  Clock
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,9 +33,10 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfig
 
   const navItems = [
     { id: 'home' as ActiveTab, label: 'Trang chủ', icon: ShieldAlert },
-    ...(currentUser ? [{ id: 'app' as ActiveTab, label: 'Không gian App', icon: LayoutDashboard }] : []),
+    ...(currentUser ? [{ id: 'app' as ActiveTab, label: 'Bảng điều khiển', icon: LayoutDashboard }] : []),
     { id: 'scanner' as ActiveTab, label: 'Quét Ảnh & Video', icon: Search },
     { id: 'link-scanner' as ActiveTab, label: 'Quét Link', icon: Link2 },
+    ...(currentUser ? [{ id: 'history' as ActiveTab, label: 'Lịch sử', icon: Clock }] : []),
     { id: 'evidence-lab' as ActiveTab, label: 'Kiểm chứng', icon: CheckSquare },
     { id: 'academy' as ActiveTab, label: 'Học viện', icon: BookOpen },
     { id: 'simulator' as ActiveTab, label: 'Tình huống', icon: Gamepad2 },
