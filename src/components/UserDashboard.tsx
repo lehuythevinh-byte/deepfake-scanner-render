@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActiveTab, AuthUser } from '../types';
 
 interface UserDashboardProps {
@@ -14,6 +14,18 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   aiConfigured,
   databaseConfigured,
 }) => {
+  // Recent activity comes from the user's own server-side history; nothing is invented.
+  const [recent, setRecent] = useState<{ id: string; scanMode: string; riskLevel: string; createdAt: string; status: string }[] | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetch('/api/auth/scans', { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => { if (!cancelled) setRecent((d.scans || []).slice(0, 5)); })
+      .catch(() => { if (!cancelled) setRecent([]); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Welcome Banner */}
@@ -240,6 +252,29 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Recent activity */}
+      <section aria-labelledby="recent-activity">
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="recent-activity" className="text-lg font-bold text-white">Hoạt động gần đây</h2>
+          <button onClick={() => onTabChange('history')} className="text-xs font-semibold text-[#55DDF2] hover:underline">Xem tất cả</button>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-[#142036] divide-y divide-slate-800">
+          {recent === null ? (
+            <div className="p-5 text-sm text-slate-400">Đang tải…</div>
+          ) : recent.length === 0 ? (
+            <div className="p-5 text-sm text-slate-400">Chưa có hoạt động nào. Hãy thử AI Scanner hoặc Link Scanner để bắt đầu.</div>
+          ) : (
+            recent.map((scan) => (
+              <div key={scan.id} className="p-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-slate-200">{scan.scanMode}</span>
+                <span className="text-xs text-slate-400">{scan.status} · mức rủi ro: {scan.riskLevel}</span>
+                <span className="text-xs text-slate-500">{new Date(scan.createdAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 };

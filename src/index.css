@@ -24,3 +24,35 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #55DDF2;
 }
+
+/* ===== Cinematic landing hero (CSS-only, no image downloads) ===== */
+.df-hero { background: #050a14; }
+.df-hero-glow {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 38%, rgba(85, 221, 242, 0.20), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 85% 70%, rgba(59, 130, 246, 0.22), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 10% 80%, rgba(34, 211, 238, 0.12), transparent 70%);
+}
+.df-hero-grid {
+  background-image:
+    linear-gradient(rgba(85, 221, 242, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(85, 221, 242, 0.16) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(520px) rotateX(62deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+  -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+  animation: df-grid-drift 14s linear infinite;
+}
+.df-hero-net { opacity: 0.9; animation: df-net-float 16s ease-in-out infinite alternate; }
+.df-card { transition: border-color 0.25s ease, transform 0.25s ease; }
+.df-card:hover { border-color: rgba(85, 221, 242, 0.45); transform: translateY(-2px); }
+
+@keyframes df-grid-drift { from { background-position: 0 0; } to { background-position: 0 64px; } }
+@keyframes df-net-float { from { transform: translateY(0) scale(1); } to { transform: translateY(-14px) scale(1.03); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .df-hero-grid, .df-hero-net { animation: none; }
+  .df-card, .df-card:hover { transition: none; transform: none; }
+  html { scroll-behavior: auto; }
+}

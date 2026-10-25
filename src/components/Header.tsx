@@ -1,24 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActiveTab, AuthUser } from '../types';
-import { 
-  ShieldAlert, 
-  Search, 
-  BookOpen, 
-  CheckSquare, 
-  Gamepad2, 
-  Bot, 
-  BarChart3, 
-  FileText, 
-  AlertTriangle,
-  Menu,
-  X,
-  Sparkles,
-  Info,
-  UserRound,
-  ShieldCheck,
-  Link2,
-  LayoutDashboard,
-  Clock
+import { isMarketingTab } from '../lib/routes';
+import {
+  ShieldAlert, Menu, X, UserRound, ShieldCheck, LogOut, ChevronDown,
+  LayoutDashboard, Search, Link2, Bot, Clock, FileText, CheckSquare, BookOpen, Gamepad2, BarChart3, AlertTriangle,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,164 +11,125 @@ interface HeaderProps {
   onTabChange: (tab: ActiveTab) => void;
   aiConfigured: boolean | null;
   currentUser?: AuthUser | null;
+  authLoading?: boolean;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfigured, currentUser = null }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+const PRIMARY = [
+  { id: 'app' as ActiveTab, label: 'Tổng quan', icon: LayoutDashboard },
+  { id: 'scanner' as ActiveTab, label: 'AI Scanner', icon: Search },
+  { id: 'link-scanner' as ActiveTab, label: 'Link Scanner', icon: Link2 },
+  { id: 'safebot' as ActiveTab, label: 'SafeBot', icon: Bot },
+  { id: 'history' as ActiveTab, label: 'Lịch sử', icon: Clock },
+  { id: 'report' as ActiveTab, label: 'Báo cáo', icon: FileText },
+];
+const MORE = [
+  { id: 'evidence-lab' as ActiveTab, label: 'Kiểm chứng', icon: CheckSquare },
+  { id: 'academy' as ActiveTab, label: 'Học viện', icon: BookOpen },
+  { id: 'simulator' as ActiveTab, label: 'Tình huống', icon: Gamepad2 },
+  { id: 'research' as ActiveTab, label: 'Nghiên cứu', icon: BarChart3 },
+  { id: 'emergency' as ActiveTab, label: 'Ứng phó khẩn', icon: AlertTriangle },
+];
 
-  const navItems = [
-    { id: 'home' as ActiveTab, label: 'Trang chủ', icon: ShieldAlert },
-    ...(currentUser ? [{ id: 'app' as ActiveTab, label: 'Bảng điều khiển', icon: LayoutDashboard }] : []),
-    { id: 'scanner' as ActiveTab, label: 'Quét Ảnh & Video', icon: Search },
-    { id: 'link-scanner' as ActiveTab, label: 'Quét Link', icon: Link2 },
-    ...(currentUser ? [{ id: 'history' as ActiveTab, label: 'Lịch sử', icon: Clock }] : []),
-    { id: 'evidence-lab' as ActiveTab, label: 'Kiểm chứng', icon: CheckSquare },
-    { id: 'academy' as ActiveTab, label: 'Học viện', icon: BookOpen },
-    { id: 'simulator' as ActiveTab, label: 'Tình huống', icon: Gamepad2 },
-    { id: 'safebot' as ActiveTab, label: 'SafeBot AI', icon: Bot },
-    { id: 'research' as ActiveTab, label: 'Nghiên cứu', icon: BarChart3 },
-    { id: 'emergency' as ActiveTab, label: 'Ứng phó khẩn', icon: AlertTriangle, highlight: true },
-  ];
+const Brand: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button onClick={onClick} className="flex items-center gap-3 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2] rounded-lg">
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#55DDF2]/25 to-[#0b1426] border border-[#55DDF2]/40 flex items-center justify-center text-[#55DDF2] group-hover:border-[#55DDF2] transition-colors">
+      <ShieldAlert className="w-5 h-5" />
+    </div>
+    <div className="leading-tight">
+      <div className="font-extrabold text-sm sm:text-base tracking-[0.14em] text-white">DEEPFAKE SCANNER</div>
+      <p className="text-[9px] sm:text-[10px] text-[#55DDF2]/80 font-medium tracking-[0.28em]">DIGITAL SAFETY CENTER</p>
+    </div>
+  </button>
+);
 
-  const handleSelectTab = (tab: ActiveTab) => {
-    onTabChange(tab);
-    setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfigured, currentUser = null, authLoading = false, onLogout }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
 
-  return (
-    <header className="sticky top-0 z-50 bg-[#101C32]/95 backdrop-blur-md border-b border-[#172941]">
-      {/* Top Banner: Official Research Topic */}
-      <div className="bg-gradient-to-r from-[#172941] via-[#101C32] to-[#172941] border-b border-[#55DDF2]/15 py-1.5 px-4 text-center">
-        <p className="text-xs text-[#A9D8F0] tracking-wide flex items-center justify-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-[#55DDF2] bg-[#55DDF2]/10 px-2 py-0.5 rounded">
-            Đề tài NCKH
-          </span>
-          <span className="font-medium text-slate-200">
-            GIẢI PHÁP GIÚP HỌC SINH TRUNG HỌC CƠ SỞ TRÁNH MỘT SỐ TÁC ĐỘNG RỦI RO TỪ DEEPFAKE KHI SỬ DỤNG MẠNG XÃ HỘI
-          </span>
-        </p>
-      </div>
+  // App shell for signed-in users on any non-marketing page; marketing pages stay minimal.
+  const inApp: boolean = currentUser !== null && !isMarketingTab(activeTab) && activeTab !== 'login' && activeTab !== 'register';
 
-      {/* Main Nav Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo & Brand */}
-          <button 
-            onClick={() => handleSelectTab('home')}
-            className="flex items-center gap-3 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#55DDF2]/20 to-[#172941] border border-[#55DDF2]/40 flex items-center justify-center text-[#55DDF2] shadow-sm group-hover:border-[#55DDF2] transition-colors">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-wider text-white">DEEPFAKE SCANNER</span>
-                <span className="text-[10px] text-[#55DDF2] font-semibold tracking-widest uppercase">EDU</span>
-              </div>
-              <p className="text-[11px] text-[#A9D8F0] font-medium tracking-tight">TRUNG TÂM AN TOÀN SỐ</p>
-            </div>
-          </button>
+  useEffect(() => {
+    const close = (e: MouseEvent) => { if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1" aria-label="Main Navigation">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleSelectTab(item.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2] ${
-                    item.highlight
-                      ? isActive
-                        ? 'bg-[#CF5B65] text-white shadow-sm'
-                        : 'text-[#CF5B65] hover:bg-[#CF5B65]/10 border border-[#CF5B65]/30'
-                      : isActive
-                      ? 'bg-[#172941] text-[#55DDF2] border border-[#55DDF2]/30 shadow-sm'
-                      : 'text-slate-300 hover:text-white hover:bg-[#172941]/60'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${item.highlight ? 'text-inherit' : isActive ? 'text-[#55DDF2]' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+  const go = (tab: ActiveTab) => { onTabChange(tab); setMobileOpen(false); setMoreOpen(false); };
+  const shell = 'sticky top-0 z-50 border-b border-white/5 bg-[#070d1a]/80 backdrop-blur-xl';
 
-          {/* AI Connection Status Indicator */}
-          {/* AI Connection Status Indicator & Account */}
-          <div className="hidden sm:flex items-center gap-3">
-            <div 
-              title={aiConfigured ? "Đã cấu hình API key; trạng thái gọi mô hình vẫn cần được xác minh khi phân tích" : "Chế độ kiểm chứng thủ công & kịch bản"}
-              className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#172941] border border-[#1f3554] text-[11px]"
-            >
-              <span className={`w-2 h-2 rounded-full ${aiConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span className="text-slate-300 font-mono text-[10px]">
-                {aiConfigured ? 'AI KEY SET' : 'MANUAL MODE'}
-              </span>
-            </div>
-            <button
-              onClick={() => handleSelectTab('account')}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${activeTab === 'account' ? 'border-[#55DDF2]/50 bg-[#172941] text-[#55DDF2]' : 'border-[#35506d] text-slate-200 hover:bg-[#172941]'}`}
-            >
-              {currentUser?.role === 'admin' ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserRound className="w-4 h-4" />}
-              <span>{currentUser?.role === 'admin' ? 'Quản trị' : currentUser ? 'Tài khoản' : 'Đăng nhập'}</span>
-            </button>
-          </div>
-
-          {/* Mobile menu toggle button */}
-          <div className="lg:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#172941] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"
-              aria-label="Toggle mobile menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+  if (!inApp) {
+    return (
+      <header className={shell}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <Brand onClick={() => go('home')} />
+          <div className="flex items-center gap-2 sm:gap-3">
+            {authLoading ? null : currentUser ? (
+              <>
+                <button onClick={() => go('app')} className="px-4 py-2 rounded-lg bg-[#55DDF2] text-[#08121f] text-sm font-bold hover:bg-cyan-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white">Vào ứng dụng</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => go('login')} className="px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]">Đăng nhập</button>
+                <button onClick={() => go('register')} className="px-3 sm:px-4 py-2 rounded-lg bg-[#55DDF2] text-[#08121f] text-sm font-bold hover:bg-cyan-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white whitespace-nowrap">Tạo tài khoản</button>
+              </>
+            )}
           </div>
         </div>
+      </header>
+    );
+  }
+
+  const isAdmin = (currentUser as AuthUser | null)?.role === 'admin';
+  const linkCls = (active: boolean) => `flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2] ${active ? 'bg-[#172941] text-[#55DDF2] border border-[#55DDF2]/30' : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'}`;
+
+  return (
+    <header className={shell}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        <Brand onClick={() => go('app')} />
+
+        <nav className="hidden lg:flex items-center gap-1" aria-label="Điều hướng ứng dụng">
+          {PRIMARY.map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => go(id)} aria-current={activeTab === id ? 'page' : undefined} className={linkCls(activeTab === id)}><Icon className="w-3.5 h-3.5" />{label}</button>
+          ))}
+          <div className="relative" ref={moreRef}>
+            <button onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen} aria-haspopup="menu" className={linkCls(MORE.some((m) => m.id === activeTab))}>Thêm <ChevronDown className="w-3.5 h-3.5" /></button>
+            {moreOpen && (
+              <div role="menu" className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#0b1426] p-1 shadow-2xl">
+                {MORE.map(({ id, label, icon: Icon }) => (
+                  <button key={id} role="menuitem" onClick={() => go(id)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-200 hover:bg-white/5 text-left"><Icon className="w-4 h-4 text-slate-400" />{label}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        </nav>
+
+        <div className="hidden lg:flex items-center gap-2">
+          <span title={aiConfigured ? 'Đã cấu hình API key AI' : 'Chế độ kiểm chứng thủ công'} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 text-[10px] text-slate-300 font-mono">
+            <span className={`w-1.5 h-1.5 rounded-full ${aiConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />{aiConfigured ? 'AI READY' : 'MANUAL'}
+          </span>
+          <button onClick={() => go('account')} className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${activeTab === 'account' || activeTab === 'admin' ? 'border-[#55DDF2]/50 bg-[#172941] text-[#55DDF2]' : 'border-white/10 text-slate-200 hover:bg-white/5'}`}>
+            {isAdmin ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserRound className="w-4 h-4" />}{isAdmin ? 'Quản trị' : 'Tài khoản'}
+          </button>
+          <button onClick={onLogout} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5"><LogOut className="w-4 h-4" />Đăng xuất</button>
+        </div>
+
+        <button onClick={() => setMobileOpen((v) => !v)} className="lg:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]" aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'} aria-expanded={mobileOpen}>
+          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#101C32] border-b border-[#172941] px-4 pt-2 pb-4 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#172941]">
-            <span className="text-xs text-slate-400 font-medium">Hệ thống điều hướng an toàn số</span>
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
-              <span className={`w-1.5 h-1.5 rounded-full ${aiConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-              <span>{aiConfigured ? 'Đã cấu hình AI' : 'Kiểm chứng thủ công'}</span>
-            </div>
+      {mobileOpen && (
+        <div className="lg:hidden max-h-[80dvh] overflow-y-auto border-t border-white/5 bg-[#070d1a] px-4 py-3 space-y-1">
+          {[...PRIMARY, ...MORE].map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => go(id)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${activeTab === id ? 'bg-[#172941] text-[#55DDF2]' : 'text-slate-300 hover:bg-white/5'}`}><Icon className="w-4 h-4" />{label}</button>
+          ))}
+          <div className="border-t border-white/5 pt-2 mt-2 space-y-1">
+            <button onClick={() => go('account')} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold text-slate-200 hover:bg-white/5">{isAdmin ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserRound className="w-4 h-4" />}{isAdmin ? 'Quản trị & Tài khoản' : 'Tài khoản'}</button>
+            <button onClick={() => { setMobileOpen(false); onLogout?.(); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-slate-300 hover:bg-white/5"><LogOut className="w-4 h-4" />Đăng xuất</button>
           </div>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleSelectTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  item.highlight
-                    ? isActive
-                      ? 'bg-[#CF5B65] text-white'
-                      : 'text-[#CF5B65] bg-[#CF5B65]/10'
-                    : isActive
-                    ? 'bg-[#172941] text-[#55DDF2] border border-[#55DDF2]/30'
-                    : 'text-slate-300 hover:bg-[#172941]/50 hover:text-white'
-                }`}
-              >
-                <Icon className="w-4 h-4 text-inherit" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-          <button
-            onClick={() => handleSelectTab('account')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'account' ? 'bg-[#172941] text-[#55DDF2] border border-[#55DDF2]/30' : 'text-slate-200 hover:bg-[#172941]/50'}`}
-          >
-            {currentUser?.role === 'admin' ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserRound className="w-4 h-4" />}
-            <span>{currentUser?.role === 'admin' ? 'Quản trị' : currentUser ? 'Tài khoản' : 'Đăng nhập'}</span>
-          </button>
         </div>
       )}
     </header>
