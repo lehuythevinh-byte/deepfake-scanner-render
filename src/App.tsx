@@ -17,6 +17,7 @@ import { AccountModule } from './components/AccountModule';
 import { HistoryModule } from './components/HistoryModule';
 import { SurveyModal } from './components/SurveyModal';
 import { TAB_PATHS, pathToTab, isPublicTab, loginUrlFor, getSafeNextTab } from './lib/routes';
+import { DEFAULT_SITE_CONFIG, SiteConfig } from './lib/siteConfig';
 
 const VALID_HASH_TABS = new Set<string>(Object.keys(TAB_PATHS));
 
@@ -38,6 +39,7 @@ export default function App() {
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
   const [surveyOpen, setSurveyOpen] = useState(false);
   const [surveyMax, setSurveyMax] = useState(1000);
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>(DEFAULT_SITE_CONFIG);
   const promptedThisLoad = useRef(false);
 
   const refreshAuth = useCallback(async () => {
@@ -57,6 +59,22 @@ export default function App() {
   useEffect(() => {
     void refreshAuth();
   }, [refreshAuth]);
+
+  // Load the latest public website configuration saved by an administrator.
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (value: unknown) => {
+      if (!value || typeof value !== 'object') return;
+      if (!cancelled) setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...(value as Partial<SiteConfig>) });
+    };
+    fetch('/api/site-config', { credentials: 'same-origin', cache: 'no-store' })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => apply(data?.config))
+      .catch(() => undefined);
+    const onConfigUpdated = (event: Event) => apply((event as CustomEvent<SiteConfig>).detail);
+    window.addEventListener('df-site-config-updated', onConfigUpdated);
+    return () => { cancelled = true; window.removeEventListener('df-site-config-updated', onConfigUpdated); };
+  }, []);
 
   // Check backend health and AI configuration status on startup
   useEffect(() => {
@@ -164,7 +182,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#101C32] text-[#F5F7FA]">
+    <div className="min-h-screen flex flex-col text-[#F5F7FA]" style={{ backgroundColor: siteConfig.backgroundColor }}>
       {/* Top Header */}
       <Header
         activeTab={activeTab}
@@ -173,6 +191,7 @@ export default function App() {
         currentUser={currentUser}
         authLoading={!authLoaded}
         onLogout={() => void handleLogout()}
+        siteConfig={siteConfig}
       />
 
       {/* Main Content Area */}
@@ -187,6 +206,7 @@ export default function App() {
             onTabChange={handleTabChange}
             currentUser={currentUser}
             aiConfigured={aiConfigured}
+            siteConfig={siteConfig}
           />
         )}
 
@@ -265,7 +285,7 @@ export default function App() {
       </main>
 
       {/* Unified Global Footer */}
-      <Footer onTabChange={handleTabChange} signedIn={Boolean(currentUser)} />
+      <Footer onTabChange={handleTabChange} signedIn={Boolean(currentUser)} siteConfig={siteConfig} />
 
       <SurveyModal
         open={surveyOpen && Boolean(currentUser)}
