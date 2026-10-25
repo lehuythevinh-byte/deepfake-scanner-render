@@ -61,6 +61,24 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
   const [drafts, setDrafts] = useState<Record<string, { role: 'user' | 'admin'; status: 'active' | 'disabled' }>>({});
   const [adminLoading, setAdminLoading] = useState(false);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagReport, setDiagReport] = useState<any>(null);
+
+  const runDiagnostic = async () => {
+    setDiagLoading(true);
+    try {
+      const res = await fetch('/api/auth/diagnostic', { cache: 'no-store' });
+      const data = await res.json();
+      setDiagReport(data);
+      setDiagOpen(true);
+    } catch (err: any) {
+      setDiagReport({ diagnoses: [err?.message || 'Không thể gọi API chẩn đoán'] });
+      setDiagOpen(true);
+    } finally {
+      setDiagLoading(false);
+    }
+  };
 
   const loadAdmin = useCallback(async () => {
     if (user?.role !== 'admin') return;
@@ -212,6 +230,44 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
               <button disabled={busy || databaseConfigured === false} type="submit" className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#55DDF2] px-4 py-3 font-bold text-[#101C32] hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50">{busy ? <RefreshCw className="w-4 h-4 animate-spin" /> : showRegister ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}{busy ? 'Đang xử lý…' : showRegister ? 'Tạo tài khoản' : 'Đăng nhập'}</button>
             </form>
             <p className="text-sm text-slate-400 mt-5">{showRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'} <button disabled={databaseConfigured === false} className="font-semibold text-[#55DDF2] hover:underline disabled:opacity-50" onClick={() => { setShowRegister((value) => !value); setError(null); setNotice(null); }}>{showRegister ? 'Đăng nhập' : 'Đăng ký'}</button></p>
+
+            {/* Diagnostic helper for admin/database connection */}
+            <div className="mt-5 pt-4 border-t border-[#243956]">
+              <button
+                type="button"
+                onClick={runDiagnostic}
+                disabled={diagLoading}
+                className="inline-flex items-center gap-1.5 text-xs text-[#55DDF2] hover:underline font-medium"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                {diagLoading ? 'Đang kiểm tra kết nối...' : 'Kiểm tra chẩn đoán Admin & Database'}
+              </button>
+
+              {diagOpen && diagReport && (
+                <div className="mt-3 p-3.5 rounded-xl bg-[#0e1a2d] border border-[#243956] text-xs space-y-2">
+                  <div className="flex items-center justify-between font-semibold text-slate-200 border-b border-[#243956] pb-1.5">
+                    <span>Kết quả chẩn đoán hệ thống:</span>
+                    <button onClick={() => setDiagOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-slate-300">
+                    <div>PostgreSQL: <strong className={diagReport.database?.connected ? 'text-emerald-400' : 'text-rose-400'}>{diagReport.database?.connected ? 'Đã kết nối' : 'Chưa kết nối'}</strong></div>
+                    <div>ADMIN_EMAIL: <strong className={diagReport.environmentAdmin?.isEmailSet ? 'text-emerald-400' : 'text-amber-400'}>{diagReport.environmentAdmin?.emailMasked || 'Chưa đặt'}</strong></div>
+                    <div>ADMIN_PASSWORD: <strong className={diagReport.environmentAdmin?.isPasswordSet ? 'text-emerald-400' : 'text-amber-400'}>{diagReport.environmentAdmin?.isPasswordSet ? `Đã đặt (${diagReport.environmentAdmin.passwordLength} ký tự)` : 'Chưa đặt'}</strong></div>
+                    <div>Admin trong DB: <strong className={diagReport.databaseState?.totalAdmins > 0 ? 'text-emerald-400' : 'text-amber-400'}>{diagReport.databaseState?.totalAdmins ?? 0}</strong></div>
+                  </div>
+                  {Array.isArray(diagReport.diagnoses) && diagReport.diagnoses.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-[#243956]/60">
+                      <div className="text-slate-400 font-medium mb-1">Gợi ý xử lý:</div>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                        {diagReport.diagnoses.map((d: string, idx: number) => (
+                          <li key={idx}>{d}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
           <section className="rounded-2xl border border-[#243956] bg-[#13233b] p-5 sm:p-7 space-y-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-[#55DDF2]" /> Quyền truy cập được bảo vệ</h2>

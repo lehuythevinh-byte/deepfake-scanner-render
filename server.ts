@@ -242,23 +242,26 @@ async function ensureDatabase(): Promise<void> {
       `);
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_created_at_idx ON scan_audit(created_at DESC)');
 
-      // A first admin is created only when an operator explicitly sets both secrets in Render.
-      const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-      const adminPassword = String(process.env.ADMIN_PASSWORD || '');
-      const activeAdminCount = await dbPool.query("SELECT COUNT(*)::int AS count FROM app_users WHERE role = 'admin' AND status = 'active'");
-      if (Number(activeAdminCount.rows[0]?.count || 0) === 0 && adminEmail && adminPassword && adminPassword.length >= 12 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+      // Synchronize configured administrator from Render Environment
+      const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+      const adminPassword = String(process.env.ADMIN_PASSWORD || '').trim().replace(/^["']|["']$/g, '');
+      if (adminEmail && adminPassword && adminPassword.length >= 6 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
         const passwordHash = await hashPassword(adminPassword);
         await dbPool.query(
           `INSERT INTO app_users(email, display_name, password_hash, role, status)
            VALUES($1, 'Quản trị viên', $2, 'admin', 'active')
            ON CONFLICT(email) DO UPDATE SET
-             display_name = 'Quản trị viên', password_hash = EXCLUDED.password_hash,
-             role = 'admin', status = 'active'`,
+             display_name = 'Quản trị viên',
+             password_hash = $2,
+             role = 'admin',
+             status = 'active'`,
           [adminEmail, passwordHash],
         );
-        console.info('[Auth] Initial admin bootstrap completed. Email is not logged.');
-      } else if (Number(activeAdminCount.rows[0]?.count || 0) === 0) {
-        console.warn('[Auth] No active admin found. Set ADMIN_EMAIL and ADMIN_PASSWORD (at least 12 characters) in Render Environment to bootstrap one.');
+        console.info('[Auth] Administrator account synchronized for configured ADMIN_EMAIL.');
+      } else if (!adminEmail || !adminPassword) {
+        console.warn('[Auth] Set ADMIN_EMAIL and ADMIN_PASSWORD in Environment to configure admin login.');
+      } else if (adminPassword.length < 6) {
+        console.warn('[Auth] ADMIN_PASSWORD must be at least 6 characters.');
       }
       console.info('[Postgres] Account tables are ready.');
     })().catch((error) => {
@@ -388,6 +391,92 @@ app.get('/api/auth/me', async (req, res) => {
   } catch (error: any) {
     console.error('[Auth] Session check failed:', String(error?.message || error).slice(0, 160));
     res.status(503).json({ authenticated: false, databaseConfigured: true, error: 'DATABASE_UNAVAILABLE', message: 'Cơ sở dữ liệu tài khoản đang tạm thời không khả dụng.' });
+  }
+});
+
+// Diagnostic endpoint to troubleshoot database and admin connection issues
+app.get('/api/auth/diagnostic', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const envAdminEmail = String(process.env.ADMIN_EMAIL || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+  const envAdminPassword = String(process.env.ADMIN_PASSWORD || '').trim().replace(/^["']|["']$/g, '');
+
+  const report: any = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: {
+      configured: Boolean(dbPool),
+      connected: false,
+      tablesReady: false,
+      error: null as string | null,
+    },
+    environmentAdmin: {
+      isEmailSet: Boolean(envAdminEmail),
+      emailMasked: envAdminEmail ? `${envAdminEmail.slice(0, 3)}***@${envAdminEmail.split('@')[1] || ''}` : null,
+      isPasswordSet: Boolean(envAdminPassword),
+      passwordLength: envAdminPassword.length,
+      passwordValidLength: envAdminPassword.length >= 6,
+    },
+    databaseState: {
+      totalUsers: 0,
+      totalAdmins: 0,
+      hasConfiguredAdminUser: false,
+      configuredAdminRole: null as string | null,
+      configuredAdminStatus: null as string | null,
+    },
+    diagnoses: [] as string[],
+  };
+
+  if (!dbPool) {
+    report.diagnoses.push('DATABASE_URL chưa được cấu hình trong mục Environment trên Render.');
+    return res.json(report);
+  }
+
+  try {
+    await ensureDatabase();
+    report.database.connected = true;
+    report.database.tablesReady = true;
+
+    // Check counts
+    const usersCountRes = await dbPool.query('SELECT COUNT(*)::int AS total FROM app_users');
+    report.databaseState.totalUsers = Number(usersCountRes.rows[0]?.total || 0);
+
+    const adminsCountRes = await dbPool.query("SELECT COUNT(*)::int AS admins FROM app_users WHERE role = 'admin' AND status = 'active'");
+    report.databaseState.totalAdmins = Number(adminsCountRes.rows[0]?.admins || 0);
+
+    if (envAdminEmail) {
+      const userRes = await dbPool.query('SELECT id, role, status FROM app_users WHERE email = $1 LIMIT 1', [envAdminEmail]);
+      if (userRes.rows[0]) {
+        report.databaseState.hasConfiguredAdminUser = true;
+        report.databaseState.configuredAdminRole = userRes.rows[0].role;
+        report.databaseState.configuredAdminStatus = userRes.rows[0].status;
+      }
+    }
+
+    // Diagnostics suggestions
+    if (!envAdminEmail) {
+      report.diagnoses.push('Biến ADMIN_EMAIL chưa được đặt trong mục Environment trên Render.');
+    }
+    if (!envAdminPassword) {
+      report.diagnoses.push('Biến ADMIN_PASSWORD chưa được đặt trong mục Environment trên Render.');
+    } else if (envAdminPassword.length < 6) {
+      report.diagnoses.push(`ADMIN_PASSWORD quá ngắn (${envAdminPassword.length} ký tự). Mật khẩu cần tối thiểu 6 ký tự.`);
+    }
+
+    if (report.databaseState.totalAdmins === 0) {
+      report.diagnoses.push('Chưa có tài khoản admin hoạt động trong database. Hãy kiểm tra ADMIN_EMAIL và ADMIN_PASSWORD trên Render và lưu lại.');
+    } else if (!report.databaseState.hasConfiguredAdminUser && envAdminEmail) {
+      report.diagnoses.push(`Email ${report.environmentAdmin.emailMasked} chưa tồn tại trong app_users. Đảm bảo email khi đăng nhập trùng khớp hoàn toàn với ADMIN_EMAIL.`);
+    }
+
+    if (report.diagnoses.length === 0) {
+      report.diagnoses.push('Cấu hình database và tài khoản admin bình thường. Nếu không đăng nhập được, hãy kiểm tra lại mật khẩu bạn gõ có khớp với ADMIN_PASSWORD trên Render hay không.');
+    }
+
+    return res.json(report);
+  } catch (dbErr: any) {
+    report.database.error = String(dbErr?.message || dbErr).slice(0, 200);
+    report.diagnoses.push(`Lỗi kết nối PostgreSQL: ${report.database.error}`);
+    return res.status(500).json(report);
   }
 });
 
