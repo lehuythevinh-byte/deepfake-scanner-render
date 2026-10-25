@@ -14,21 +14,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleStartScan = (targetTab: ActiveTab = 'scanner') => {
-    if (currentUser) {
-      onTabChange(targetTab);
-    } else {
-      try {
-        sessionStorage.setItem('dfscanner_next_tab', targetTab);
-      } catch {}
-      onTabChange('login');
-    }
+  // Guarding is handled centrally by the router (App.tsx): signed-out visitors land on
+  // /login?next=<tool> and return to the chosen tool after signing in.
+  const handleStartScan = (targetTab: ActiveTab = 'app') => {
+    onTabChange(targetTab);
   };
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
   };
 
@@ -53,149 +48,85 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   return (
     <div className="space-y-16 pb-16">
-      {/* 5.1 Hero Section */}
-      <section className="relative overflow-hidden pt-12 md:pt-20 pb-16 md:pb-24 border-b border-slate-800">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(59,130,246,0.22),rgba(255,255,255,0))]" />
+      {/* Cinematic hero: pure CSS/SVG layers (no heavy image or video, so it loads instantly) */}
+      <section className="df-hero relative isolate overflow-hidden min-h-[calc(100dvh-4rem)] md:min-h-[calc(92dvh-4rem)] flex items-center -mt-16 pt-16 border-b border-white/5" aria-labelledby="hero-title">
+        <div className="df-hero-bg absolute inset-0 -z-10" aria-hidden="true">
+          <div className="df-hero-glow absolute inset-0" />
+          <div className="df-hero-grid absolute inset-x-0 bottom-0 h-[55%]" />
+          <svg className="df-hero-net absolute inset-0 w-full h-full" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" fill="none">
+            <defs>
+              <linearGradient id="dfLine" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#55DDF2" stopOpacity="0.0" />
+                <stop offset="0.5" stopColor="#55DDF2" stopOpacity="0.55" />
+                <stop offset="1" stopColor="#3B82F6" stopOpacity="0.0" />
+              </linearGradient>
+              <radialGradient id="dfNode"><stop offset="0" stopColor="#bff6ff" /><stop offset="1" stopColor="#55DDF2" stopOpacity="0" /></radialGradient>
+            </defs>
+            <g stroke="url(#dfLine)" strokeWidth="1">
+              <path d="M-20 520 C 220 420, 360 560, 560 430 S 900 300, 1220 380" />
+              <path d="M-20 420 C 180 330, 400 420, 600 300 S 940 180, 1220 250" />
+              <path d="M120 700 C 260 560, 480 600, 700 470 S 1000 420, 1220 520" />
+              <path d="M300 -10 C 380 140, 520 120, 640 220 S 880 160, 960 -10" />
+            </g>
+            <g fill="url(#dfNode)">
+              <circle cx="560" cy="430" r="14" /><circle cx="600" cy="300" r="12" /><circle cx="700" cy="470" r="10" />
+              <circle cx="360" cy="560" r="9" /><circle cx="900" cy="300" r="11" /><circle cx="640" cy="220" r="9" />
+            </g>
+          </svg>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050a14]/70 via-transparent to-[#050a14]" />
+        </div>
 
-        <div className="max-w-6xl mx-auto px-4 relative z-10 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-300 border border-blue-500/25 mb-6 backdrop-blur-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            ĐỀ TÀI NGHIÊN CỨU KHOA HỌC — BẢO VỆ HỌC SINH THCS TRƯỚC DEEPFAKE & LỪA ĐẢO SỐ
-          </div>
-
-          {/* Heading (Exact copy requirement from Section 5.1) */}
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mx-auto">
-            Nhận diện dấu hiệu giả mạo.{' '}
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-              Bảo vệ bạn trong thế giới số.
-            </span>
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-16 text-center">
+          <p className="text-[11px] sm:text-xs font-semibold tracking-[0.35em] text-[#55DDF2]">AI-ASSISTED DIGITAL SAFETY</p>
+          <h1 id="hero-title" className="mt-5 text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.08] text-balance">
+            Tin tưởng có cơ sở.<br />
+            <span className="bg-gradient-to-r from-[#8be9fb] via-[#55DDF2] to-[#60a5fa] bg-clip-text text-transparent">An toàn trong thế giới số.</span>
           </h1>
-
-          {/* Description (Exact copy requirement from Section 5.1) */}
-          <p className="mt-6 text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Phân tích tín hiệu đáng ngờ trong nội dung số, kiểm tra liên kết và tìm hiểu cách phòng tránh lừa đảo trực tuyến với sự hỗ trợ của AI.
+          <p className="mt-6 text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto leading-relaxed">
+            Phát hiện dấu hiệu đáng ngờ trong nội dung số, kiểm tra liên kết và học cách bảo vệ bản thân trước các chiêu trò lừa đảo trực tuyến.
           </p>
-
-          {/* Call to Action Buttons */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <button
-              onClick={() => handleStartScan('scanner')}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl text-base shadow-xl shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => handleStartScan('app')}
+              className="w-full sm:w-auto min-w-[200px] px-8 py-4 rounded-xl bg-[#55DDF2] text-[#06101d] font-bold text-base shadow-[0_0_40px_-8px_rgba(85,221,242,0.7)] hover:bg-cyan-200 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#050a14] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>Bắt đầu quét</span>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
+              Bắt đầu ngay
             </button>
-
             <button
-              onClick={() => scrollToSection('features')}
-              className="w-full sm:w-auto px-6 py-4 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 font-semibold rounded-xl text-base border border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => scrollToSection('about')}
+              className="w-full sm:w-auto px-6 py-4 rounded-xl text-slate-200 font-semibold text-base border border-white/15 hover:border-white/40 hover:bg-white/5 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"
             >
-              <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-              <span>Khám phá tính năng</span>
+              Khám phá nền tảng
             </button>
           </div>
-
-          {/* Quick Metrics */}
-          <div className="mt-12 pt-8 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-6 text-left max-w-4xl mx-auto">
-            <div>
-              <div className="text-2xl font-bold text-white">4 Lớp</div>
-              <div className="text-xs text-slate-400 mt-0.5">Phân tích đa chiều</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-400">Zero-SSRF</div>
-              <div className="text-xs text-slate-400 mt-0.5">Kiểm tra link bảo vệ tuyệt đối</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-indigo-400">111 & 156</div>
-              <div className="text-xs text-slate-400 mt-0.5">Đường dây nóng quốc gia</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-emerald-400">100% Free</div>
-              <div className="text-xs text-slate-400 mt-0.5">Phi lợi nhuận vì học đường</div>
-            </div>
-          </div>
+          <p className="mt-6 text-xs text-slate-500">AI chỉ hỗ trợ phân tích và có thể sai sót — kết quả cần được đối chiếu thêm.</p>
         </div>
       </section>
 
-      {/* Quick Tool Launcher Section */}
-      <section className="max-w-6xl mx-auto px-4">
-        <div className="bg-[#142036] border border-blue-500/20 rounded-2xl p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
-            <div>
-              <h2 className="text-lg md:text-xl font-bold text-white">Khu Vực Phân Tích Nhanh</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Chọn loại nội dung bạn cần kiểm tra an toàn:</p>
+      {/* Intro + three illustrative blocks (informational only: no live tools on the public page) */}
+      <section id="about" className="max-w-6xl mx-auto px-4 scroll-mt-20">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold tracking-[0.3em] text-[#55DDF2]">MỤC TIÊU</p>
+          <h2 className="mt-3 text-2xl md:text-3xl font-extrabold text-white">Giúp bạn dừng lại, kiểm tra và quyết định có cơ sở.</h2>
+          <p className="mt-3 text-slate-400 leading-relaxed">DEEPFAKE SCANNER là trung tâm an toàn số hỗ trợ nhận diện tín hiệu đáng ngờ trong ảnh, video, tin nhắn và liên kết, đồng thời cung cấp kiến thức để người dùng tự bảo vệ mình.</p>
+        </div>
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { t: 'Phân tích nội dung số', d: 'Tìm dấu hiệu bất thường trong ảnh và khung hình video.', icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zm10 3a3 3 0 100-6 3 3 0 000 6z' },
+            { t: 'Kiểm tra liên kết', d: 'Đánh giá cấu trúc đường dẫn và các mẫu lừa đảo thường gặp.', icon: 'M10 14a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1m2 6a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1' },
+            { t: 'Học an toàn số', d: 'Hướng dẫn, tình huống mô phỏng và trợ lý SafeBot.', icon: 'M12 3l9 4-9 4-9-4 9-4zm-5 8v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4' },
+          ].map((item) => (
+            <div key={item.t} className="df-card group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-6">
+              <div className="w-11 h-11 rounded-xl border border-[#55DDF2]/30 bg-[#55DDF2]/10 text-[#55DDF2] flex items-center justify-center mb-4">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={item.icon} /></svg>
+              </div>
+              <h3 className="font-bold text-white">{item.t}</h3>
+              <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">{item.d}</p>
             </div>
-            {currentUser && (
-              <button
-                onClick={() => onTabChange('app')}
-                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
-              >
-                Vào Không Gian Thành Viên →
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <button
-              onClick={() => handleStartScan('scanner')}
-              className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60 hover:border-blue-500/50 hover:bg-[#121f36] transition text-left group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                Quét Ảnh & Khung Hình Video
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Phát hiện khuôn mặt cắt ghép, ánh sáng bất thường, mạo danh.
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleStartScan('link-scanner')}
-              className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60 hover:border-indigo-500/50 hover:bg-[#121f36] transition text-left group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-              </div>
-              <div className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">
-                Quét Liên Kết & Web Độc Hại
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Kiểm tra link rút gọn, tên miền mạo danh, Zero-SSRF an toàn tuyệt đối.
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleStartScan('safebot')}
-              className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60 hover:border-purple-500/50 hover:bg-[#121f36] transition text-left group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-              </div>
-              <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
-                Trợ Lý SafeBot AI 24/7
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Hỏi đáp cách ứng xử khi bị đe dọa, tống tiền hoặc nghi ngờ lừa đảo.
-              </div>
-            </button>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Feature Highlights Section */}
       <section id="features" className="max-w-6xl mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Tính năng cốt lõi</div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ActiveTab, AuthUser } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -15,51 +15,18 @@ import { ResearchReportModule } from './components/ResearchReportModule';
 import { EmergencyModule } from './components/EmergencyModule';
 import { AccountModule } from './components/AccountModule';
 import { HistoryModule } from './components/HistoryModule';
+import { SurveyModal } from './components/SurveyModal';
+import { TAB_PATHS, pathToTab, isPublicTab, loginUrlFor, getSafeNextTab } from './lib/routes';
 
-// Pathname to Tab resolver
+const VALID_HASH_TABS = new Set<string>(Object.keys(TAB_PATHS));
+
+// URL -> tab. Pathname wins; legacy "#tab" links keep working.
 function resolveInitialTab(): ActiveTab {
   if (typeof window === 'undefined') return 'home';
-
-  // 1. Check pathname first (e.g., /app, /app/scanner, /link-scanner, /login, /app/history)
-  const pathname = window.location.pathname.toLowerCase().replace(/\/+$/, '');
-  if (pathname === '/app') return 'app';
-  if (pathname === '/app/scanner' || pathname === '/scanner') return 'scanner';
-  if (pathname === '/app/link-scanner' || pathname === '/link-scanner') return 'link-scanner';
-  if (pathname === '/app/history' || pathname === '/history') return 'history';
-  if (pathname === '/app/safebot' || pathname === '/safebot') return 'safebot';
-  if (pathname === '/login' || pathname === '/register' || pathname === '/account' || pathname === '/admin') return 'account';
-  if (pathname === '/features') return 'features';
-  if (pathname === '/how-it-works') return 'how-it-works';
-  if (pathname === '/safety-guide') return 'safety-guide';
-
-  // 2. Check hash fallback
+  const fromPath = pathToTab(window.location.pathname);
+  if (fromPath) return fromPath;
   const hash = window.location.hash.replace('#', '').toLowerCase();
-  const validTabs: ActiveTab[] = [
-    'home',
-    'landing',
-    'features',
-    'how-it-works',
-    'safety-guide',
-    'app',
-    'scanner',
-    'link-scanner',
-    'evidence-lab',
-    'academy',
-    'simulator',
-    'safebot',
-    'research',
-    'report',
-    'emergency',
-    'account',
-    'admin',
-    'login',
-    'register',
-  ];
-
-  if (hash && validTabs.includes(hash as ActiveTab)) {
-    return hash as ActiveTab;
-  }
-
+  if (hash && VALID_HASH_TABS.has(hash)) return hash as ActiveTab;
   return 'home';
 }
 
@@ -67,7 +34,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>(resolveInitialTab);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
+  const [surveyOpen, setSurveyOpen] = useState(false);
+  const [surveyMax, setSurveyMax] = useState(1000);
+  const promptedThisLoad = useRef(false);
 
   const refreshAuth = useCallback(async () => {
     try {
@@ -78,6 +49,8 @@ export default function App() {
     } catch {
       setCurrentUser(null);
       setDatabaseConfigured(null);
+    } finally {
+      setAuthLoaded(true);
     }
   }, []);
 
@@ -108,29 +81,87 @@ export default function App() {
     checkBackendStatus();
   }, []);
 
-  // Sync tab change with URL hash & browser history
-  const handleTabChange = (tab: ActiveTab) => {
+  // Navigation = real URLs (history API). Guarding is applied when rendering AND enforced again by the backend.
+  const handleTabChange = useCallback((tab: ActiveTab) => {
+    const target = TAB_PATHS[tab] ?? '/';
+    if (window.location.pathname !== target || window.location.search || window.location.hash) {
+      window.history.pushState({}, '', target);
+    }
     setActiveTab(tab);
-    window.location.hash = tab;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  // Listen to browser navigation (back / forward / hash changes)
   useEffect(() => {
-    const handleNavigation = () => {
-      const resolved = resolveInitialTab();
-      if (resolved !== activeTab) {
-        setActiveTab(resolved);
-      }
-    };
-
-    window.addEventListener('hashchange', handleNavigation);
+    const handleNavigation = () => setActiveTab(resolveInitialTab());
     window.addEventListener('popstate', handleNavigation);
+    window.addEventListener('hashchange', handleNavigation);
     return () => {
-      window.removeEventListener('hashchange', handleNavigation);
       window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('hashchange', handleNavigation);
     };
-  }, [activeTab]);
+  }, []);
+
+  // ---- Route guard ----
+  const needsLogin = !isPublicTab(activeTab);
+  const redirectToLogin = authLoaded && !currentUser && needsLogin;
+  const redirectToApp = authLoaded && Boolean(currentUser) && (activeTab === 'login' || activeTab === 'register');
+
+  useEffect(() => {
+    if (redirectToLogin) {
+      // Keep the intended internal destination in ?next= (validated again after login).
+      window.history.replaceState({}, '', loginUrlFor(activeTab));
+      setActiveTab('login');
+    }
+  }, [redirectToLogin, activeTab]);
+
+  useEffect(() => {
+    if (redirectToApp) handleTabChange(getSafeNextTab());
+  }, [redirectToApp, handleTabChange]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+    } catch {
+      /* cookie is also cleared server-side on next request; continue */
+    }
+    promptedThisLoad.current = false;
+    setSurveyOpen(false);
+    await refreshAuth();
+    handleTabChange('home');
+  }, [refreshAuth, handleTabChange]);
+
+  // ---- Survey invitation (server decides; never while a task is on screen) ----
+  useEffect(() => {
+    if (!currentUser || activeTab !== 'app' || promptedThisLoad.current) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch('/api/survey/status', { credentials: 'same-origin', cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok || !data.shouldPrompt) return;
+        promptedThisLoad.current = true;
+        if (typeof data.maxCommentLength === 'number') setSurveyMax(data.maxCommentLength);
+        setSurveyOpen(true);
+      } catch {
+        /* survey failures must never affect the app */
+      }
+    }, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [currentUser?.id, activeTab]);
+
+  const deferSurvey = useCallback(async (kind: 'snooze' | 'dismiss') => {
+    setSurveyOpen(false); // never trap the user, even if the request fails
+    try {
+      await fetch('/api/survey/defer', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind }),
+      });
+    } catch {
+      /* ignored: the invitation is only shown once per page load anyway */
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#101C32] text-[#F5F7FA]">
@@ -140,10 +171,16 @@ export default function App() {
         onTabChange={handleTabChange}
         aiConfigured={aiConfigured}
         currentUser={currentUser}
+        authLoading={!authLoaded}
+        onLogout={() => void handleLogout()}
       />
 
       {/* Main Content Area */}
       <main className="flex-1">
+        {/* Protected route while the session is still being verified / redirecting: render nothing sensitive */}
+        {needsLogin && (!authLoaded || !currentUser) ? (
+          <div className="py-24 text-center text-sm text-slate-400" role="status">Đang kiểm tra phiên đăng nhập…</div>
+        ) : (<>
         {/* Landing and overview routes */}
         {(activeTab === 'home' || activeTab === 'landing' || activeTab === 'features' || activeTab === 'how-it-works' || activeTab === 'safety-guide') && (
           <LandingPage
@@ -220,12 +257,23 @@ export default function App() {
             databaseConfigured={databaseConfigured}
             onAuthChanged={refreshAuth}
             onTabChange={handleTabChange}
+            initialMode={activeTab === 'register' ? 'register' : 'login'}
+            onOpenSurvey={() => setSurveyOpen(true)}
           />
         )}
+        </>)}
       </main>
 
       {/* Unified Global Footer */}
-      <Footer onTabChange={handleTabChange} />
+      <Footer onTabChange={handleTabChange} signedIn={Boolean(currentUser)} />
+
+      <SurveyModal
+        open={surveyOpen && Boolean(currentUser)}
+        maxCommentLength={surveyMax}
+        onClose={() => void deferSurvey('snooze')}
+        onDefer={deferSurvey}
+        onSubmitted={() => setSurveyOpen(false)}
+      />
     </div>
   );
 }

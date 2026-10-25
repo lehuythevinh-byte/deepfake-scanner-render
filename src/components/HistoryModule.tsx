@@ -167,8 +167,7 @@ export const HistoryModule: React.FC<HistoryModuleProps> = ({ user, onTabChange 
         </p>
         <button
           onClick={() => {
-            sessionStorage.setItem('dfscanner_next_tab', 'history');
-            onTabChange('login');
+            onTabChange('history'); // router sends signed-out users to /login?next=/app/history
           }}
           className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer"
         >

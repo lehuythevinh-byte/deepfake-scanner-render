@@ -1,8 +1,10 @@
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import { ActiveTab, AuthUser } from '../types';
+import { getSafeNextTab } from '../lib/routes';
+import { FeedbackAdminPanel } from './FeedbackAdminPanel';
 import {
   AlertCircle, BarChart3, Check, Clock3, Database, LogIn, LogOut, RefreshCw,
-  ShieldCheck, UserPlus, Users, UserRound, Activity, LockKeyhole, ShieldAlert,
+  ShieldCheck, UserPlus, Users, UserRound, Activity, LockKeyhole, ShieldAlert, Eye, EyeOff, Star,
 } from 'lucide-react';
 
 interface ScanAuditRow {
@@ -29,6 +31,8 @@ interface AccountModuleProps {
   databaseConfigured: boolean | null;
   onAuthChanged: () => Promise<void>;
   onTabChange?: (tab: ActiveTab) => void;
+  initialMode?: 'login' | 'register';
+  onOpenSurvey?: () => void;
 }
 
 const EMPTY_STATS: AdminStats = { users: 0, activeUsers: 0, admins: 0, scans: 0, scansLast7Days: 0, heuristicScans: 0 };
@@ -41,13 +45,22 @@ function formatDate(value?: string | null): string {
 }
 
 async function readApiResponse(response: Response): Promise<any> {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    if (response.status === 404) {
+      throw new Error('Máy chủ chưa có API này (404 Not Found). Hãy kiểm tra file server.ts trên Render đã được cập nhật phiên bản mới nhất chưa.');
+    }
+    throw new Error(`Máy chủ phản hồi định dạng HTML thay vì JSON (Mã ${response.status}). Vui lòng kiểm tra lại server.ts trên Render.`);
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.message || `Yêu cầu thất bại (${response.status})`);
   return data;
 }
 
-export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConfigured, onAuthChanged, onTabChange }) => {
-  const [showRegister, setShowRegister] = useState(false);
+export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConfigured, onAuthChanged, onTabChange, initialMode = 'login', onOpenSurvey }) => {
+  const [showRegister, setShowRegister] = useState(initialMode === 'register');
+  const [showPassword, setShowPassword] = useState(false);
+  useEffect(() => { setShowRegister(initialMode === 'register'); }, [initialMode]);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -70,6 +83,10 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
     setDiagLoading(true);
     try {
       const res = await fetch('/api/auth/diagnostic', { cache: 'no-store' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Endpoint /api/auth/diagnostic chưa được cập nhật trên backend Render (Trả về HTML thay vì JSON). Hãy đẩy file server.ts mới nhất lên GitHub.');
+      }
       const data = await res.json();
       setDiagReport(data);
       setDiagOpen(true);
@@ -148,17 +165,8 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
       setNotice(showRegister ? 'Tạo tài khoản thành công.' : 'Đăng nhập thành công.');
       await onAuthChanged();
       if (data.user?.role === 'admin') await loadAdmin();
-      if (onTabChange) {
-        let nextTab: ActiveTab = 'app';
-        try {
-          const saved = sessionStorage.getItem('dfscanner_next_tab') as ActiveTab;
-          if (saved) {
-            nextTab = saved;
-            sessionStorage.removeItem('dfscanner_next_tab');
-          }
-        } catch {}
-        onTabChange(nextTab);
-      }
+      // Destination comes from a validated internal ?next= value (see lib/routes.ts); default is the dashboard.
+      if (onTabChange) onTabChange(getSafeNextTab());
     } catch (authError: any) {
       setError(authError?.message || 'Không thể xác thực tài khoản.');
     } finally {
@@ -241,7 +249,12 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
             <form onSubmit={handleAuth} className="space-y-4">
               {showRegister && <label className="block text-sm text-slate-300">Tên hiển thị <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={80} className="mt-1.5 w-full rounded-lg border border-[#35506d] bg-[#0e1a2d] px-3 py-2.5 text-white outline-none focus:border-[#55DDF2]" placeholder="Tên của bạn" /></label>}
               <label className="block text-sm text-slate-300">Email <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} className="mt-1.5 w-full rounded-lg border border-[#35506d] bg-[#0e1a2d] px-3 py-2.5 text-white outline-none focus:border-[#55DDF2]" placeholder="ten@example.com" /></label>
-              <label className="block text-sm text-slate-300">Mật khẩu <input required type="password" autoComplete={showRegister ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} minLength={showRegister ? 10 : 1} maxLength={128} className="mt-1.5 w-full rounded-lg border border-[#35506d] bg-[#0e1a2d] px-3 py-2.5 text-white outline-none focus:border-[#55DDF2]" placeholder={showRegister ? 'Tối thiểu 10 ký tự' : 'Nhập mật khẩu'} /></label>
+              <label className="block text-sm text-slate-300">Mật khẩu
+                <span className="mt-1.5 relative block">
+                  <input required type={showPassword ? 'text' : 'password'} autoComplete={showRegister ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} minLength={showRegister ? 10 : 1} maxLength={128} className="w-full rounded-lg border border-[#35506d] bg-[#0e1a2d] px-3 py-2.5 pr-11 text-white outline-none focus:border-[#55DDF2]" placeholder={showRegister ? 'Tối thiểu 10 ký tự' : 'Nhập mật khẩu'} />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-md text-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </span>
+              </label>
               <button disabled={busy || databaseConfigured === false} type="submit" className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#55DDF2] px-4 py-3 font-bold text-[#101C32] hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50">{busy ? <RefreshCw className="w-4 h-4 animate-spin" /> : showRegister ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}{busy ? 'Đang xử lý…' : showRegister ? 'Tạo tài khoản' : 'Đăng nhập'}</button>
             </form>
             <p className="text-sm text-slate-400 mt-5">{showRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'} <button disabled={databaseConfigured === false} className="font-semibold text-[#55DDF2] hover:underline disabled:opacity-50" onClick={() => { setShowRegister((value) => !value); setError(null); setNotice(null); }}>{showRegister ? 'Đăng nhập' : 'Đăng ký'}</button></p>
@@ -298,6 +311,7 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
           <section className="rounded-2xl border border-[#243956] bg-[#13233b] p-5 sm:p-7">
             <div className="flex items-start gap-4"><div className="w-14 h-14 rounded-xl bg-[#55DDF2]/10 flex items-center justify-center text-[#55DDF2]"><UserRound className="w-7 h-7" /></div><div className="flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-bold text-white">Xin chào, {user.displayName || user.email}</h2><span className="rounded-full bg-slate-500/15 px-2.5 py-1 text-xs text-slate-300 border border-slate-400/20">Người dùng</span></div><p className="text-sm text-slate-400 mt-1">{user.email}</p><p className="text-sm text-slate-400 mt-3">Tài khoản của bạn đang ở trạng thái <strong className="text-emerald-300">hoạt động</strong>. Quyền quản trị chỉ có thể được cấp bởi một quản trị viên hiện có.</p></div></div>
           </section>
+          {onOpenSurvey && <section className="rounded-2xl border border-[#243956] bg-[#13233b] p-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold text-white flex items-center gap-2"><Star className="w-5 h-5 text-amber-300" /> Đánh giá chất lượng</h2><p className="text-xs text-slate-400 mt-1">Chia sẻ mức độ hài lòng của bạn để giúp chúng tôi cải thiện sản phẩm.</p></div><button onClick={onOpenSurvey} className="rounded-lg border border-[#35506d] px-4 py-2 text-sm text-slate-100 hover:bg-[#172941]">Đánh giá ngay</button></section>}
           <section className="rounded-2xl border border-[#243956] bg-[#13233b] overflow-hidden">
             <div className="p-4 sm:p-5 border-b border-[#243956] flex items-center justify-between"><div><h2 className="font-bold text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-[#55DDF2]" /> Lịch sử quét của tôi</h2><p className="text-xs text-slate-400 mt-1">Tối đa 50 lượt gần nhất · nội dung ảnh/tin nhắn không được lưu.</p></div><button onClick={() => void loadOwnScans()} disabled={ownScansLoading} className="inline-flex items-center gap-2 rounded-lg border border-[#35506d] px-3 py-2 text-sm text-slate-200 hover:bg-[#172941] disabled:opacity-50"><RefreshCw className={`w-4 h-4 ${ownScansLoading ? 'animate-spin' : ''}`} /> Làm mới</button></div>
             {ownScansLoading && ownScans.length === 0 ? <div className="p-6 text-sm text-slate-400">Đang tải lịch sử…</div> : ownScans.length === 0 ? <div className="p-6 text-sm text-slate-400">Chưa có lịch sử quét gắn với tài khoản này. Các lượt quét khi chưa đăng nhập sẽ không được ghi lại.</div> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-xs text-slate-400 bg-[#0e1a2d]"><tr><th className="text-left font-medium p-3">Thời gian</th><th className="text-left font-medium p-3">Chế độ</th><th className="text-left font-medium p-3">AI</th><th className="text-right font-medium p-3">Thời gian xử lý</th></tr></thead><tbody className="divide-y divide-[#243956]">{ownScans.map((scan) => <tr key={scan.id}><td className="p-3 text-slate-300 whitespace-nowrap">{formatDate(scan.createdAt)}</td><td className="p-3 text-slate-300">{scan.scanMode}</td><td className="p-3"><span className={`rounded-full px-2 py-1 text-xs ${scan.engine === 'gemini' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-300/10 text-amber-200'}`}>{scan.engine === 'gemini' ? scan.model || 'Gemini' : 'Heuristic'}</span></td><td className="p-3 text-right text-slate-300 whitespace-nowrap">{(scan.durationMs / 1000).toFixed(1)} giây</td></tr>)}</tbody></table></div>}
@@ -330,6 +344,7 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
             <div className="p-4 sm:p-5 border-b border-[#243956]"><h2 className="font-bold text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-[#55DDF2]" /> Lượt quét gần đây</h2><p className="text-xs text-slate-400 mt-1">Chỉ ghi metadata khi người dùng đã đăng nhập; không lưu nội dung ảnh hoặc tin nhắn.</p></div>
             {recentScans.length === 0 ? <div className="p-5 text-sm text-slate-400">Chưa có lượt quét của người dùng đã đăng nhập.</div> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-xs text-slate-400 bg-[#0e1a2d]"><tr><th className="text-left font-medium p-3">Thời gian</th><th className="text-left font-medium p-3">Tài khoản</th><th className="text-left font-medium p-3">Chế độ</th><th className="text-left font-medium p-3">AI</th><th className="text-right font-medium p-3">Thời gian</th></tr></thead><tbody className="divide-y divide-[#243956]">{recentScans.map((scan) => <tr key={scan.id}><td className="p-3 text-slate-300 whitespace-nowrap">{formatDate(scan.createdAt)}</td><td className="p-3 text-slate-300">{scan.email}</td><td className="p-3 text-slate-300">{scan.scanMode}</td><td className="p-3"><span className={`rounded-full px-2 py-1 text-xs ${scan.engine === 'gemini' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-300/10 text-amber-200'}`}>{scan.engine === 'gemini' ? scan.model || 'Gemini' : 'Heuristic'}</span></td><td className="p-3 text-right text-slate-300 whitespace-nowrap">{(scan.durationMs / 1000).toFixed(1)} giây</td></tr>)}</tbody></table></div>}
           </section>
+          <FeedbackAdminPanel />
         </div>
       )}
     </div>

@@ -334,6 +334,34 @@ async function requireAdmin(req: express.Request, res: express.Response): Promis
   return user;
 }
 
+async function requireUser(req: express.Request, res: express.Response): Promise<PublicUser | null> {
+  if (!dbPool) {
+    res.status(503).json({ error: 'DATABASE_NOT_CONFIGURED', message: 'Chức năng tài khoản cần cấu hình DATABASE_URL trên Render.' });
+    return null;
+  }
+  try {
+    const user = await getRequestUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'AUTH_REQUIRED', message: 'Vui lòng đăng nhập để sử dụng công cụ này.' });
+      return null;
+    }
+    return user;
+  } catch (error: any) {
+    console.error('[Auth] Session check failed:', String(error?.message || error).slice(0, 160));
+    res.status(503).json({ error: 'DATABASE_UNAVAILABLE', message: 'Cơ sở dữ liệu tài khoản đang tạm thời không khả dụng.' });
+    return null;
+  }
+}
+
+// Express middleware: protected tool endpoints must be called with a valid session (checked server-side).
+async function authRequired(req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> {
+  const user = await requireUser(req, res);
+  if (user) {
+    (req as any).authUser = user;
+    next();
+  }
+}
+
 const authRateBuckets = new Map<string, { count: number; resetAt: number }>();
 function authRateLimit(req: express.Request, res: express.Response, next: express.NextFunction): void {
   const key = `${String(req.ip || req.socket.remoteAddress || 'unknown')}:${req.path}`;
@@ -749,6 +777,298 @@ app.get('/api/admin/scans', async (req, res) => {
 });
 
 
+// ============================================================================
+// QUALITY SURVEY (star rating) — eligibility, submission and admin review.
+// All state is kept in PostgreSQL (never localStorage). Tunable via env vars.
+// ============================================================================
+function envInt(name: string, fallback: number, min: number, max: number): number {
+  const parsed = Number.parseInt(String(process.env[name] ?? ''), 10);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+const SURVEY_CONFIG = {
+  minTasks: envInt('SURVEY_MIN_TASKS', 5, 1, 1000),
+  minDays: envInt('SURVEY_MIN_DAYS', 7, 1, 3650),
+  snoozeDays: envInt('SURVEY_SNOOZE_DAYS', 3, 1, 365),
+  dismissDays: envInt('SURVEY_DISMISS_DAYS', 30, 1, 365),
+  cooldownDays: envInt('SURVEY_COOLDOWN_DAYS', 30, 30, 3650),
+  maxCommentLength: 1000,
+};
+const SURVEY_POSITIVE = new Set(['ui', 'speed', 'analysis_quality', 'clear_reports', 'safety_guides', 'other']);
+const SURVEY_IMPROVE = new Set(['ai_no_response', 'unclear_results', 'slow', 'hard_ui', 'missing_features', 'technical_errors', 'other']);
+const SURVEY_STATUSES = ['new', 'reviewing', 'acknowledged', 'resolved', 'no_action'] as const;
+
+// Reject cross-site state-changing requests (defence in depth on top of SameSite=Lax).
+function sameOriginOnly(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  const origin = req.headers.origin;
+  if (origin) {
+    let originHost = '';
+    try { originHost = new URL(String(origin)).host; } catch { /* invalid */ }
+    if (!originHost || originHost !== req.headers.host) {
+      res.status(403).json({ error: 'CROSS_ORIGIN_BLOCKED', message: 'Yêu cầu không hợp lệ.' });
+      return;
+    }
+  }
+  next();
+}
+
+const surveySubmitLimiter = createRateLimiter(10, 60 * 60 * 1000, 'survey-submit');
+const surveyStateLimiter = createRateLimiter(60, 60 * 1000, 'survey-state');
+
+function recordUsageEvent(req: express.Request, kind: string): void {
+  const user = (req as any).authUser as PublicUser | undefined;
+  if (!dbPool || !user) return;
+  void dbPool.query('INSERT INTO usage_events(user_id, kind) VALUES($1, $2)', [user.id, kind]).catch((error: any) => {
+    console.warn('[Survey] Unable to record usage event:', String(error?.message || error).slice(0, 120));
+  });
+}
+
+async function evaluateSurveyEligibility(user: PublicUser) {
+  const db = dbPool!;
+  const [stateRes, tasksRes, userRes] = await Promise.all([
+    db.query('SELECT snoozed_until, dismissed_until, last_submitted_at FROM survey_invitation_state WHERE user_id = $1', [user.id]),
+    db.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM scan_audit WHERE user_id = $1 AND COALESCE(status, 'completed') = 'completed'
+            AND ($2::timestamptz IS NULL OR created_at > $2)) +
+         (SELECT COUNT(*)::int FROM usage_events WHERE user_id = $1 AND kind = 'safebot'
+            AND ($2::timestamptz IS NULL OR created_at > $2)) AS tasks`,
+      [user.id, null],
+    ),
+    db.query('SELECT created_at FROM app_users WHERE id = $1', [user.id]),
+  ]);
+  const state = stateRes.rows[0] || {};
+  const now = Date.now();
+  const lastSubmittedAt: Date | null = state.last_submitted_at ? new Date(state.last_submitted_at) : null;
+
+  // Count only tasks completed since the last submitted survey (if any).
+  let tasks = Number(tasksRes.rows[0]?.tasks || 0);
+  if (lastSubmittedAt) {
+    const sinceRes = await db.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM scan_audit WHERE user_id = $1 AND COALESCE(status, 'completed') = 'completed' AND created_at > $2) +
+         (SELECT COUNT(*)::int FROM usage_events WHERE user_id = $1 AND kind = 'safebot' AND created_at > $2) AS tasks`,
+      [user.id, lastSubmittedAt],
+    );
+    tasks = Number(sinceRes.rows[0]?.tasks || 0);
+  }
+
+  const accountCreated = userRes.rows[0]?.created_at ? new Date(userRes.rows[0].created_at).getTime() : now;
+  const baseline = lastSubmittedAt ? lastSubmittedAt.getTime() : accountCreated;
+  const daysSinceBaseline = (now - baseline) / 86_400_000;
+  const meetsUsage = tasks >= SURVEY_CONFIG.minTasks || (daysSinceBaseline >= SURVEY_CONFIG.minDays && tasks >= 1);
+
+  let reason = 'eligible';
+  if (lastSubmittedAt && now - lastSubmittedAt.getTime() < SURVEY_CONFIG.cooldownDays * 86_400_000) reason = 'cooldown';
+  else if (state.dismissed_until && new Date(state.dismissed_until).getTime() > now) reason = 'dismissed';
+  else if (state.snoozed_until && new Date(state.snoozed_until).getTime() > now) reason = 'snoozed';
+  else if (!meetsUsage) reason = 'not_enough_usage';
+
+  return { eligible: reason === 'eligible', reason, completedTasks: tasks };
+}
+
+// Should the dashboard invite this user right now?
+app.get('/api/survey/status', surveyStateLimiter, authRequired, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const user = (req as any).authUser as PublicUser;
+    const result = await evaluateSurveyEligibility(user);
+    res.json({ success: true, shouldPrompt: result.eligible, reason: result.reason, maxCommentLength: SURVEY_CONFIG.maxCommentLength });
+  } catch (error: any) {
+    console.error('[Survey] Status failed:', String(error?.message || error).slice(0, 160));
+    // Survey problems must never block the product: report "do not prompt".
+    res.json({ success: true, shouldPrompt: false, reason: 'unavailable', maxCommentLength: SURVEY_CONFIG.maxCommentLength });
+  }
+});
+
+// "Để sau" (snooze) or "Không phải lúc này" (dismiss).
+app.post('/api/survey/defer', sameOriginOnly, surveyStateLimiter, authRequired, async (req, res) => {
+  const user = (req as any).authUser as PublicUser;
+  const kind = req.body?.kind === 'dismiss' ? 'dismiss' : req.body?.kind === 'snooze' ? 'snooze' : null;
+  if (!kind) return res.status(400).json({ error: 'INVALID_KIND', message: 'Thao tác không hợp lệ.' });
+  try {
+    const days = kind === 'dismiss' ? SURVEY_CONFIG.dismissDays : SURVEY_CONFIG.snoozeDays;
+    const until = new Date(Date.now() + days * 86_400_000);
+    await dbPool!.query(
+      `INSERT INTO survey_invitation_state(user_id, snoozed_until, dismissed_until, last_prompted_at)
+       VALUES($1, $2, $3, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         snoozed_until = COALESCE($2, survey_invitation_state.snoozed_until),
+         dismissed_until = COALESCE($3, survey_invitation_state.dismissed_until),
+         last_prompted_at = NOW(), updated_at = NOW()`,
+      [user.id, kind === 'snooze' ? until : null, kind === 'dismiss' ? until : null],
+    );
+    res.json({ success: true, until: until.toISOString() });
+  } catch (error: any) {
+    console.error('[Survey] Defer failed:', String(error?.message || error).slice(0, 160));
+    res.status(503).json({ error: 'SURVEY_UNAVAILABLE', message: 'Không ghi nhận được lựa chọn lúc này. Bạn vẫn có thể tiếp tục sử dụng bình thường.' });
+  }
+});
+
+function cleanChoices(value: unknown, allowed: Set<string>): string[] | null {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value) || value.length > allowed.size) return null;
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || !allowed.has(item)) return null;
+    if (!out.includes(item)) out.push(item);
+  }
+  return out;
+}
+
+app.post('/api/survey/submit', sameOriginOnly, surveySubmitLimiter, authRequired, async (req, res) => {
+  const user = (req as any).authUser as PublicUser;
+  const body = req.body || {};
+  const rating = Number(body.rating);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'INVALID_RATING', message: 'Vui lòng chọn số sao từ 1 đến 5.' });
+  }
+  const positive = cleanChoices(body.positiveAspects, SURVEY_POSITIVE);
+  const improve = cleanChoices(body.improvementAreas, SURVEY_IMPROVE);
+  if (!positive || !improve) return res.status(400).json({ error: 'INVALID_CHOICES', message: 'Lựa chọn khảo sát không hợp lệ.' });
+  const comment = typeof body.comment === 'string' ? body.comment.replace(/\u0000/g, '').trim() : '';
+  if (comment.length > SURVEY_CONFIG.maxCommentLength) {
+    return res.status(400).json({ error: 'COMMENT_TOO_LONG', message: `Góp ý tối đa ${SURVEY_CONFIG.maxCommentLength} ký tự.` });
+  }
+  const contactConsent = body.contactConsent === true;
+  try {
+    const client = await dbPool!.connect();
+    try {
+      await client.query('BEGIN');
+      // Serialise per user so double-clicks / parallel tabs cannot create duplicate rows.
+      await client.query('SELECT pg_advisory_xact_lock($1)', [Number(user.id)]);
+      const recent = await client.query(
+        `SELECT 1 FROM survey_feedback WHERE user_id = $1 AND created_at > NOW() - ($2::int * INTERVAL '1 day') LIMIT 1`,
+        [user.id, SURVEY_CONFIG.cooldownDays],
+      );
+      if (recent.rowCount) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'ALREADY_SUBMITTED', message: 'Bạn đã gửi đánh giá gần đây. Cảm ơn bạn, hẹn bạn ở lần đánh giá tiếp theo.' });
+      }
+      const inserted = await client.query(
+        `INSERT INTO survey_feedback(user_id, rating, positive_aspects, improvement_areas, comment, contact_consent)
+         VALUES($1, $2, $3, $4, $5, $6) RETURNING id`,
+        [user.id, rating, positive, improve, comment, contactConsent],
+      );
+      await client.query(
+        `INSERT INTO survey_invitation_state(user_id, last_submitted_at, last_prompted_at)
+         VALUES($1, NOW(), NOW())
+         ON CONFLICT (user_id) DO UPDATE SET last_submitted_at = NOW(), last_prompted_at = NOW(), updated_at = NOW()`,
+        [user.id],
+      );
+      await client.query('COMMIT');
+      // Success is reported ONLY after the row is committed.
+      res.status(201).json({ success: true, id: String(inserted.rows[0].id) });
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error: any) {
+    console.error('[Survey] Submit failed:', String(error?.message || error).slice(0, 160));
+    res.status(503).json({ error: 'SURVEY_UNAVAILABLE', message: 'Chưa gửi được đánh giá. Nội dung của bạn vẫn được giữ lại, hãy thử gửi lại sau ít phút.' });
+  }
+});
+
+// ---- Admin: feedback review (admin role enforced here, not in the UI) ----
+function feedbackRow(row: any) {
+  return {
+    id: String(row.id),
+    rating: Number(row.rating),
+    positiveAspects: row.positive_aspects || [],
+    improvementAreas: row.improvement_areas || [],
+    comment: row.comment || '',
+    contactConsent: Boolean(row.contact_consent),
+    status: row.status,
+    adminNote: row.admin_note || '',
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+    // Identity is shown to admins only; contact email only if the user opted in.
+    userDisplayName: row.display_name || null,
+    userEmail: row.contact_consent ? row.email || null : null,
+  };
+}
+
+app.get('/api/admin/feedback', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    res.setHeader('Cache-Control', 'no-store');
+    const q = req.query;
+    const where: string[] = [];
+    const params: any[] = [];
+    const rating = Number.parseInt(String(q.rating ?? ''), 10);
+    if (rating >= 1 && rating <= 5) { params.push(rating); where.push(`f.rating = $${params.length}`); }
+    const status = String(q.status ?? '');
+    if ((SURVEY_STATUSES as readonly string[]).includes(status)) { params.push(status); where.push(`f.status = $${params.length}`); }
+    const area = String(q.area ?? '');
+    if (SURVEY_IMPROVE.has(area)) { params.push(area); where.push(`$${params.length} = ANY(f.improvement_areas)`); }
+    const from = String(q.from ?? ''), to = String(q.to ?? '');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(from)) { params.push(from); where.push(`f.created_at >= $${params.length}::date`); }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(to)) { params.push(to); where.push(`f.created_at < ($${params.length}::date + INTERVAL '1 day')`); }
+    const search = String(q.search ?? '').trim().slice(0, 100);
+    if (search) { params.push(`%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`); where.push(`f.comment ILIKE $${params.length}`); }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const pageSize = 20;
+    const page = Math.max(1, Number.parseInt(String(q.page ?? '1'), 10) || 1);
+
+    const [list, count, summary, dist, areas] = await Promise.all([
+      dbPool!.query(
+        `SELECT f.*, u.display_name, u.email FROM survey_feedback f LEFT JOIN app_users u ON u.id = f.user_id
+         ${whereSql} ORDER BY f.created_at DESC LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`, params),
+      dbPool!.query(`SELECT COUNT(*)::int AS total FROM survey_feedback f ${whereSql}`, params),
+      dbPool!.query(`SELECT COUNT(*)::int AS total, ROUND(AVG(rating)::numeric, 2) AS average,
+                       COUNT(*) FILTER (WHERE status = 'new')::int AS unhandled,
+                       MIN(created_at) AS since FROM survey_feedback`),
+      dbPool!.query('SELECT rating, COUNT(*)::int AS count FROM survey_feedback GROUP BY rating'),
+      dbPool!.query('SELECT area, COUNT(*)::int AS count FROM survey_feedback, UNNEST(improvement_areas) AS area GROUP BY area ORDER BY count DESC LIMIT 7'),
+    ]);
+    const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    for (const row of dist.rows) distribution[String(row.rating)] = Number(row.count);
+    res.json({
+      success: true,
+      summary: {
+        total: Number(summary.rows[0]?.total || 0),
+        average: summary.rows[0]?.average === null || summary.rows[0]?.average === undefined ? null : Number(summary.rows[0].average),
+        unhandled: Number(summary.rows[0]?.unhandled || 0),
+        since: summary.rows[0]?.since ? new Date(summary.rows[0].since).toISOString() : null,
+        distribution,
+        topIssues: areas.rows.map((r: any) => ({ area: r.area, count: Number(r.count) })),
+      },
+      items: list.rows.map(feedbackRow),
+      page, pageSize, totalItems: Number(count.rows[0]?.total || 0),
+    });
+  } catch (error: any) {
+    console.error('[Admin] Feedback query failed:', String(error?.message || error).slice(0, 160));
+    res.status(503).json({ error: 'ADMIN_DATA_UNAVAILABLE', message: 'Không tải được phản hồi người dùng.' });
+  }
+});
+
+app.patch('/api/admin/feedback/:id', sameOriginOnly, async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const id = String(req.params.id || '');
+    if (!/^\d{1,18}$/.test(id)) return res.status(400).json({ error: 'INVALID_ID', message: 'Mã phản hồi không hợp lệ.' });
+    const status = req.body?.status;
+    const adminNote = req.body?.adminNote;
+    if ((status !== undefined && !(SURVEY_STATUSES as readonly string[]).includes(status)) ||
+        (adminNote !== undefined && (typeof adminNote !== 'string' || adminNote.length > 1000)) ||
+        (status === undefined && adminNote === undefined)) {
+      return res.status(400).json({ error: 'INVALID_UPDATE', message: 'Trạng thái hoặc ghi chú không hợp lệ.' });
+    }
+    const updated = await dbPool!.query(
+      `UPDATE survey_feedback SET status = COALESCE($1, status), admin_note = COALESCE($2, admin_note) WHERE id = $3
+       RETURNING *`, [status ?? null, adminNote ?? null, id]);
+    if (!updated.rows[0]) return res.status(404).json({ error: 'NOT_FOUND', message: 'Không tìm thấy phản hồi.' });
+    console.info(`[AdminAudit] feedback ${id} updated by admin ${admin.id}`);
+    res.json({ success: true, item: feedbackRow({ ...updated.rows[0] }) });
+  } catch (error: any) {
+    console.error('[Admin] Feedback update failed:', String(error?.message || error).slice(0, 160));
+    res.status(503).json({ error: 'ADMIN_UPDATE_FAILED', message: 'Không cập nhật được phản hồi.' });
+  }
+});
+
 // Health & Config status endpoint
 app.get('/api/health', (req, res) => {
   const ai = getGeminiClient();
@@ -764,7 +1084,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Multi-Layered Social Threat Scanner endpoint
-app.post('/api/scan', scanRateLimiter, async (req, res) => {
+app.post('/api/scan', authRequired, scanRateLimiter, async (req, res) => {
   const requestStartedAt = performance.now();
   let geminiPrimaryMs: number | null = null;
   let geminiFallbackMs: number | null = null;
@@ -1379,7 +1699,7 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
 });
 
 // Dedicated Link Safety Scanner endpoint (Strictly SSRF-safe; analyzes syntax, brand patterns, homographs, shorteners)
-app.post('/api/link-scan', scanRateLimiter, async (req, res) => {
+app.post('/api/link-scan', authRequired, scanRateLimiter, async (req, res) => {
   const requestStartedAt = performance.now();
   const { url } = req.body || {};
 
@@ -1671,7 +1991,7 @@ app.post('/api/link-scan', scanRateLimiter, async (req, res) => {
 });
 
 // SafeBot AI Chat endpoint
-app.post('/api/chat', chatRateLimiter, async (req, res) => {
+app.post('/api/chat', authRequired, chatRateLimiter, async (req, res) => {
   const chatStartedAt = performance.now();
   try {
     const { messages } = req.body || {};
@@ -1789,6 +2109,7 @@ Quy tắc ứng xử và bảo vệ học sinh:
     const reply = response.text || 'SafeBot đang gặp gián đoạn tạm thời. Em hãy giữ bình tĩnh và trao đổi ngay với người lớn đáng tin cậy nhé!';
     console.info('[ChatTiming] completed', JSON.stringify({ model: chatUsedModel, primaryMs: chatPrimaryMs, fallbackMs: chatFallbackMs, totalMs: Math.round(performance.now() - chatStartedAt) }));
 
+    recordUsageEvent(req, 'safebot');
     res.json({
       success: true,
       reply,

@@ -4,9 +4,10 @@ import { ActiveTab } from '../types';
 
 interface FooterProps {
   onTabChange: (tab: ActiveTab) => void;
+  signedIn?: boolean;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
+export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false }) => {
   return (
     <footer className="bg-[#0b1322] border-t border-[#172941] text-slate-400 text-xs mt-16">
       {/* 4-Step Quick Action Banner */}
@@ -51,7 +52,8 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
             </p>
           </div>
 
-          {/* Col 2: Quick Links */}
+          {/* Col 2: internal modules are listed for signed-in users only */}
+          {signedIn ? (
           <div className="space-y-2">
             <p className="font-semibold text-white uppercase tracking-wider text-[11px] text-[#55DDF2]">Hệ thống phân hệ</p>
             <ul className="space-y-1.5 text-[11px]">
@@ -87,6 +89,14 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
               </li>
             </ul>
           </div>
+
+          ) : (
+          <div className="space-y-2">
+            <p className="font-semibold uppercase tracking-wider text-[11px] text-[#55DDF2]">Bắt đầu</p>
+            <p className="text-[11px]">Tạo tài khoản miễn phí để sử dụng các công cụ phân tích an toàn số.</p>
+            <button onClick={() => onTabChange('register')} className="text-[11px] font-semibold text-[#55DDF2] hover:underline">Tạo tài khoản →</button>
+          </div>
+          )}
 
           {/* Col 3: Hotlines */}
           <div className="space-y-2">
