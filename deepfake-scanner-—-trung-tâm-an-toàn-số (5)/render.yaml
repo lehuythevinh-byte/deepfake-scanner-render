@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: deepfake-scanner-safety-center
+    runtime: node
+    buildCommand: npm install --include=dev --no-audit --no-fund && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: GEMINI_FALLBACK_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_PRIMARY_TIMEOUT_MS
+        value: '18000'
+      - key: GEMINI_FALLBACK_TIMEOUT_MS
+        value: '10000'
+
+# Hệ thống Quản trị & Tài khoản Người dùng (Cấu hình trên Render > Environment):
+# DATABASE_URL: Internal Database URL từ dịch vụ Render PostgreSQL (tạo miễn phí)
+# ADMIN_EMAIL: Địa chỉ email của quản trị viên đầu tiên
+# ADMIN_PASSWORD: Mật khẩu quản trị viên (tối thiểu 12 ký tự)

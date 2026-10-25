@@ -1,0 +1,10 @@
+# Static frontend configuration only. The Express API in server.ts needs a Node.js host.
+# See README.md for full-stack deployment instructions.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

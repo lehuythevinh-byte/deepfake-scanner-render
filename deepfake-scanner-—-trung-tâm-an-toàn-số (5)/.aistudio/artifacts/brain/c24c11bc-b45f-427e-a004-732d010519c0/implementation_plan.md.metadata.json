@@ -1,0 +1,6 @@
+{
+  "summary":  "Kế hoạch tối ưu hóa tốc độ xử lý AI cho Deepfake & Social Threat Scanner:\n1. Chuyển đổi mô hình phân tích và chat sang Gemini 3.1 Flash Lite với cấu hình tối ưu độ trễ (thinking budget tối thiểu).\n2. Tích hợp bộ tiền xử lý và nén ảnh tự động phía trình duyệt (Canvas Resizer) giúp giảm kích thước payload từ hàng chục MB xuống còn dưới 300KB.\n3. Xây dựng giao diện thanh tiến trình trực quan 5 bước hiển thị trạng thái phân tích theo thời gian thực.\n4. Tối ưu hóa độ dài prompt hệ thống và xác thực lại toàn bộ quy trình biên dịch.",
+  "updatedAt":  "2026-10-24T05:35:30.218264636Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
