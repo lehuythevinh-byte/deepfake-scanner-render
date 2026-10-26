@@ -7,6 +7,7 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { Pool } from 'pg';
 import { GoogleGenAI, Type } from '@google/genai';
 import { runMigrations } from './scripts/migrate.mjs';
+import { DEFAULT_SITE_CONFIG, SITE_CONFIG_BOOLEAN_KEYS, SITE_CONFIG_TEXT_LIMITS, SiteConfig } from './src/lib/siteConfig';
 
 dotenv.config();
 
@@ -258,6 +259,19 @@ async function ensureDatabase(): Promise<void> {
       `);
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_created_at_idx ON scan_audit(created_at DESC)');
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_user_id_idx ON scan_audit(user_id)');
+
+      await dbPool.query(`
+        CREATE TABLE IF NOT EXISTS site_settings (
+          id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+          config JSONB NOT NULL,
+          updated_by BIGINT REFERENCES app_users(id) ON DELETE SET NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await dbPool.query(
+        'INSERT INTO site_settings(id, config) VALUES(1, $1::jsonb) ON CONFLICT(id) DO NOTHING',
+        [JSON.stringify(DEFAULT_SITE_CONFIG)],
+      );
 
       // Synchronize configured administrator from Render Environment
       const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
@@ -694,6 +708,90 @@ app.post('/api/auth/logout', async (req, res) => {
 });
 
 // Admin-only endpoints. User-supplied role fields are never accepted during public registration.
+function validateSiteConfig(input: unknown, base: SiteConfig): SiteConfig | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const merged = { ...base, ...(input as Record<string, unknown>) } as Record<string, unknown>;
+  const result = { ...DEFAULT_SITE_CONFIG } as SiteConfig;
+
+  for (const key of Object.keys(SITE_CONFIG_TEXT_LIMITS) as (keyof SiteConfig)[]) {
+    const value = merged[key];
+    const maximum = SITE_CONFIG_TEXT_LIMITS[key] || 1000;
+    if (typeof value !== 'string' || value.length > maximum) return null;
+    (result as any)[key] = value.trim();
+  }
+  if (!String(result.siteName).trim() || !String(result.heroTitle).trim()) return null;
+
+  for (const key of SITE_CONFIG_BOOLEAN_KEYS) {
+    if (typeof merged[key] !== 'boolean') return null;
+    (result as any)[key] = merged[key];
+  }
+  for (const key of ['accentColor', 'backgroundColor'] as const) {
+    const value = merged[key];
+    if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) return null;
+    result[key] = value.toUpperCase();
+  }
+  return result;
+}
+
+// Public read-only config. Defaults keep the homepage usable when PostgreSQL is not configured.
+app.get('/api/site-config', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!dbPool) return res.json({ success: true, persisted: false, config: DEFAULT_SITE_CONFIG });
+  try {
+    // Do not bootstrap or run migrations on public GET requests. Admin sign-in initializes the schema.
+    const result = await dbPool.query('SELECT config, updated_at FROM site_settings WHERE id = 1');
+    return res.json({
+      success: true,
+      persisted: Boolean(result.rows[0]),
+      updatedAt: result.rows[0]?.updated_at ? new Date(result.rows[0].updated_at).toISOString() : null,
+      config: { ...DEFAULT_SITE_CONFIG, ...(result.rows[0]?.config || {}) },
+    });
+  } catch (error: any) {
+    console.warn('[SiteConfig] Public config read failed; using defaults:', String(error?.message || error).slice(0, 140));
+    return res.json({ success: true, persisted: false, config: DEFAULT_SITE_CONFIG });
+  }
+});
+
+app.get('/api/admin/site-config', async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    await ensureDatabase();
+    const result = await dbPool!.query('SELECT config, updated_at FROM site_settings WHERE id = 1');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ success: true, config: { ...DEFAULT_SITE_CONFIG, ...(result.rows[0]?.config || {}) }, updatedAt: result.rows[0]?.updated_at || null });
+  } catch (error: any) {
+    console.error('[SiteConfig] Admin read failed:', String(error?.message || error).slice(0, 140));
+    return res.status(503).json({ success: false, message: 'Không tải được cấu hình website từ PostgreSQL.' });
+  }
+});
+
+app.put('/api/admin/site-config', sameOriginOnly, async (req, res) => {
+  try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    await ensureDatabase();
+    const currentResult = await dbPool!.query('SELECT config FROM site_settings WHERE id = 1');
+    const current = { ...DEFAULT_SITE_CONFIG, ...(currentResult.rows[0]?.config || {}) } as SiteConfig;
+    const next = validateSiteConfig(req.body?.config, current);
+    if (!next) {
+      return res.status(400).json({ success: false, error: 'INVALID_SITE_CONFIG', message: 'Cấu hình không hợp lệ. Hãy kiểm tra độ dài nội dung, các mục bắt buộc và mã màu HEX.' });
+    }
+    const updated = await dbPool!.query(
+      `INSERT INTO site_settings(id, config, updated_by, updated_at) VALUES(1, $1::jsonb, $2, NOW())
+       ON CONFLICT(id) DO UPDATE SET config = EXCLUDED.config, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+       RETURNING config, updated_at`,
+      [JSON.stringify(next), admin.id],
+    );
+    console.info(`[AdminAudit] site settings updated by admin ${admin.id}`);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ success: true, config: { ...DEFAULT_SITE_CONFIG, ...(updated.rows[0]?.config || {}) }, updatedAt: updated.rows[0]?.updated_at || null });
+  } catch (error: any) {
+    console.error('[SiteConfig] Admin update failed:', String(error?.message || error).slice(0, 140));
+    return res.status(503).json({ success: false, error: 'SITE_CONFIG_UPDATE_FAILED', message: 'Không lưu được cấu hình website. Hãy kiểm tra PostgreSQL.' });
+  }
+});
+
 app.get('/api/admin/overview', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
