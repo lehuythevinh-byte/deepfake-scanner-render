@@ -12,7 +12,6 @@ export type ActiveTab =
   | 'simulator'
   | 'safebot'
   | 'research'
-  | 'report'
   | 'emergency'
   | 'account'
   | 'admin'

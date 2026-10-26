@@ -10,7 +10,6 @@ import { AcademyModule } from './components/AcademyModule';
 import { SimulatorModule } from './components/SimulatorModule';
 import { SafeBotModule } from './components/SafeBotModule';
 import { ResearchDashboardModule } from './components/ResearchDashboardModule';
-import { ResearchReportModule } from './components/ResearchReportModule';
 import { EmergencyModule } from './components/EmergencyModule';
 import { AccountModule } from './components/AccountModule';
 import { HistoryModule } from './components/HistoryModule';
@@ -82,6 +81,12 @@ export default function App() {
     }
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    const legacyReportPaths = new Set(['/app/reports', '/reports', '/report']);
+    const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+    if (legacyReportPaths.has(currentPath)) window.history.replaceState({}, '', TAB_PATHS.app);
   }, []);
 
   useEffect(() => {
@@ -201,7 +206,7 @@ export default function App() {
           <LinkScannerModule onTabChange={handleTabChange} />
         )}
 
-        {/* Scan History & Reports */}
+        {/* Scan History */}
         {activeTab === 'history' && (
           <HistoryModule user={currentUser} onTabChange={handleTabChange} />
         )}
@@ -224,11 +229,6 @@ export default function App() {
         {/* Research Dashboard & Survey Data */}
         {activeTab === 'research' && (
           <ResearchDashboardModule onTabChange={handleTabChange} />
-        )}
-
-        {/* Scientific Research Report */}
-        {activeTab === 'report' && (
-          <ResearchReportModule onTabChange={handleTabChange} />
         )}
 
         {/* Emergency Response & Hotlines */}

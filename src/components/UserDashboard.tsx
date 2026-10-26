@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MessageRiskCheck } from './MessageRiskCheck';
 import { ActiveTab, AuthUser } from '../types';
 
 interface UserDashboardProps {
@@ -183,10 +184,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </svg>
             </div>
             <h3 className="text-base font-bold text-white mb-1.5 group-hover:text-amber-300 transition-colors">
-              Nhật Ký Quét & Quản Lý Báo Cáo
+              Nhật Ký Quét & Kết Quả Phân Tích
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Xem lại các mã báo cáo đã thực hiện, lọc theo phân loại, xuất file CSV và quản lý nhật ký cá nhân an toàn.
+              Xem lại các lượt quét, lọc theo phân loại, xuất dữ liệu và quản lý nhật ký cá nhân an toàn.
             </p>
             <div className="text-xs font-semibold text-amber-400 flex items-center gap-1">
               Xem lịch sử quét →
@@ -194,6 +195,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      <MessageRiskCheck />
 
       {/* Recent activity */}
       <section aria-labelledby="recent-activity">

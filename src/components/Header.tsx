@@ -4,7 +4,7 @@ import { isMarketingTab } from '../lib/routes';
 import { DEFAULT_SITE_CONFIG, SiteConfig } from '../lib/siteConfig';
 import {
   ShieldAlert, Menu, X, UserRound, ShieldCheck, LogOut, ChevronDown,
-  LayoutDashboard, Search, Link2, Bot, Clock, FileText, BookOpen, Gamepad2, BarChart3, AlertTriangle,
+  LayoutDashboard, Search, Link2, Bot, Clock, BookOpen, Gamepad2, BarChart3, AlertTriangle,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -22,7 +22,6 @@ const PRIMARY = [
   { id: 'link-scanner' as ActiveTab, label: 'Link Scanner', icon: Link2 },
   { id: 'safebot' as ActiveTab, label: 'SafeBot', icon: Bot },
   { id: 'history' as ActiveTab, label: 'Lịch sử', icon: Clock },
-  { id: 'report' as ActiveTab, label: 'Báo cáo', icon: FileText },
 ];
 const MORE = [
   { id: 'academy' as ActiveTab, label: 'Học viện', icon: BookOpen },

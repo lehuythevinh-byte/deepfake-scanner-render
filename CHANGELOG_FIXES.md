@@ -1,5 +1,14 @@
 # DEEPFAKE SCANNER — Bản vá, nâng cấp và ghi chú kiểm thử
 
+## Bản cập nhật giao diện và công cụ nâng cao
+- Gỡ mục điều hướng **Báo cáo** khỏi menu desktop, menu mobile và các liên kết phân hệ ở chân trang. Các URL cũ `/app/reports`, `/reports`, `/report` chuyển về trang tổng quan ứng dụng.
+- Thêm **Bộ sàng lọc tin nhắn đáng ngờ** trên trang tổng quan: rà soát các nhóm dấu hiệu về áp lực thời gian, giữ bí mật, tiền/OTP, mạo danh, quà tặng, đe dọa và đường link.
+- Kết quả hiển thị điểm cảnh báo theo trọng số quy tắc, giải thích tín hiệu và hướng dẫn xử lý; có mẫu tình huống, sao chép hồ sơ, tải TXT và xóa nội dung nhập.
+- Công cụ sàng lọc mới xử lý văn bản trong trình duyệt, không gửi văn bản đến API và không lưu nội dung vào lịch sử. Điểm số không phải xác suất lừa đảo; nội dung cần được kiểm chứng qua kênh độc lập.
+- Kiểm tra cú pháp TypeScript/TSX bằng bộ chuyển đổi TypeScript thành công. Chưa xác nhận được Vite build trong môi trường đóng gói này vì không cài được các dependency qua `npm install`.
+
+---
+
 ## Tổng quan phiên bản nâng cấp
 
 Phiên bản này nâng cấp toàn diện **DEEPFAKE SCANNER — TRUNG TÂM AN TOÀN SỐ** theo các tiêu chuẩn cao nhất về hiệu năng, độ tin cậy, tính trung thực khoa học, trải nghiệm giáo dục STEM và bảo mật thông tin.

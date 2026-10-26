@@ -17,7 +17,8 @@ Hệ thống bao gồm 5 phân hệ tích hợp:
    - **Chế độ C — Message & Scam Scanner:** Rà soát tin nhắn đòi tiền gấp, trộm OTP 6 số, trúng thưởng đóng phí, tống tiền ảnh nhạy cảm; trích dẫn chính xác câu chữ cụ thể làm căn cứ.
    - **10 Kịch bản kiểm tra chiêu trò tích hợp:** Bao quát từ giả giọng người thân, link phishing, hack nick đến áp lực tâm lý FOMO.
    - **Tối ưu hóa tốc độ cao:** Tự động nén ảnh phía client (giảm 95% dung lượng), thanh tiến trình 5 bước với đồng hồ bấm giờ thời gian thực, mô hình `gemini-3.1-flash-lite` với độ trễ tối thiểu (`thinkingBudget: 0`).
-   - **Thanh công cụ báo cáo:** Hỗ trợ sao chép báo cáo, xuất JSON có nguồn gốc, xuất CSV tương thích Excel, và in báo cáo; các mục phân tích có thể đóng/mở dạng accordion.
+   - **Thanh công cụ xuất kết quả:** Hỗ trợ sao chép kết quả phân tích, xuất JSON có nguồn gốc, xuất CSV tương thích Excel và in/lưu PDF; các mục phân tích có thể đóng/mở dạng accordion.
+   - **Bộ sàng lọc tin nhắn đáng ngờ:** Chạy trực tiếp trong trình duyệt, nhận diện các nhóm tín hiệu như gây áp lực, mạo danh, dụ chuyển tiền, lấy OTP, tống tiền và liên kết bất thường; hiển thị điểm cảnh báo theo quy tắc, giải thích từng tín hiệu, có mẫu thử, sao chép và xuất hồ sơ TXT. Nội dung nhập vào công cụ này không được gửi tới API.
 2. **Evidence Lab:** Phòng kiểm chứng độc lập với checklist tương tác giúp học sinh không phụ thuộc hoàn toàn vào AI; giải thích tác động của hiện tượng nén ảnh từ mạng xã hội (TikTok, Zalo).
 3. **Safety Simulator:** Hệ thống mô phỏng 7 tình huống thực tế thường gặp trên mạng xã hội (chuyển tiền gấp, xin mã OTP, trúng thưởng đóng phí, mạo danh giáo viên, tống tiền ảnh nhạy cảm,...).
 4. **SafeBot AI:** Trợ lý tư vấn an toàn số chuẩn mực, ân cần, bảo vệ học sinh, tích hợp bộ hướng dẫn khẩn cấp và đường dây nóng 111.
@@ -113,6 +114,7 @@ Khai báo trong tệp `.env` hoặc cấu hình máy chủ:
 4. **Safety Simulator:** Lần lượt trải nghiệm 7 tình huống thực tế và đọc phản hồi giáo dục.
 5. **SafeBot AI:** Nhập câu hỏi tình huống hoặc chọn các câu hỏi gợi ý nhanh để nhận tư vấn.
 6. **Research Dashboard:** Thử làm phiếu khảo sát và xuất CSV. Dataset N=320 có sẵn trong source là dữ liệu minh họa để trình diễn giao diện, không được trích dẫn như kết quả nghiên cứu thật.
+7. **Bộ sàng lọc tin nhắn đáng ngờ:** Chọn một mẫu thử hoặc dán tin nhắn, bấm phân tích, đọc các nhóm tín hiệu/khuyến nghị, rồi thử sao chép hoặc tải hồ sơ TXT. Dùng nút Xóa nội dung để làm sạch văn bản đang mở.
 
 ---
 
@@ -120,6 +122,7 @@ Khai báo trong tệp `.env` hoặc cấu hình máy chủ:
 
 Theo đúng quy tắc trung thực khoa học:
 1. **Phân tích âm thanh tự động thời gian thực (Real-time Audio Waveform Forensics):** Chưa có bộ phân tích phổ tần số âm thanh chuyên sâu trong source hiện tại.
-2. **Không đảm bảo chính xác 100%:** Các mô hình trí tuệ nhân tạo hoạt động dựa trên xác suất nhận dạng mẫu pixel và đặc trưng văn bản. Kết quả "Chưa phát hiện dấu hiệu bất thường" KHÔNG đồng nghĩa chắc chắn 100% nội dung là thật.
+2. **Không đảm bảo chính xác 100%:** Các mô hình trí tuệ nhân tạo hoạt động dựa trên nhận dạng mẫu pixel và đặc trưng văn bản. Bộ sàng lọc tin nhắn là bộ quy tắc từ khóa/ngôn ngữ, không phải mô hình xác suất hoặc kết luận AI; kết quả "Chưa phát hiện dấu hiệu bất thường" KHÔNG đồng nghĩa chắc chắn 100% nội dung là thật.
 3. **Tác động từ thuật toán nén mạng xã hội:** Ảnh hoặc video bị nén nhiều lần khi gửi qua mạng xã hội (như Zalo, Facebook Messenger, TikTok) có thể làm mờ các chi tiết vi mô, gây khó khăn cho việc phân tích.
-4. **Vai trò con người là quyết định:** Mọi kết quả phân tích kỹ thuật số chỉ đóng vai trò tham khảo. Kỹ năng xác minh qua kênh độc lập (gọi điện thoại trực tiếp qua mạng di động, kiểm tra báo chí chính thống) vẫn là chốt chặn quan trọng nhất.
+4. **Đường dẫn Báo cáo cũ:** Mục điều hướng Báo cáo riêng đã được gỡ khỏi menu; các đường dẫn cũ `/app/reports`, `/reports` và `/report` được chuyển về trang tổng quan ứng dụng.
+5. **Vai trò con người là quyết định:** Mọi kết quả phân tích kỹ thuật số chỉ đóng vai trò tham khảo. Kỹ năng xác minh qua kênh độc lập (gọi điện thoại trực tiếp qua mạng di động, kiểm tra báo chí chính thống) vẫn là chốt chặn quan trọng nhất.

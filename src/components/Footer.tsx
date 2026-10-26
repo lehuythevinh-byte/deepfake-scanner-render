@@ -79,11 +79,6 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, s
                   Trung tâm dữ liệu & Khảo sát học sinh
                 </button>
               </li>
-              <li>
-                <button onClick={() => onTabChange('report')} className="hover:text-white transition-colors">
-                  Báo cáo nghiên cứu khoa học đề tài
-                </button>
-              </li>
             </ul>
           </div>
 
