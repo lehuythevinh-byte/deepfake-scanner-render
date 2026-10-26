@@ -79,7 +79,7 @@ Dự án có API Express trong `server.ts`; cần nền tảng chạy Node.js (v
 3. Build command: `npm install --include=dev --no-audit --no-fund && npm run build`.
 4. Start command: `npm start`.
 5. Cấu hình biến môi trường `GEMINI_API_KEY` trong phần Environment Variables của máy chủ. Có thể đặt `GEMINI_MODEL=gemini-3.1-flash-lite` hoặc các model tương thích.
-6. Sau khi deploy, mở `/api/health` trên tên miền của service để kiểm tra backend có phản hồi (phản hồi `status: ok`; tình trạng AI chi tiết chỉ xem được trong khu vực Admin).
+6. Sau khi deploy, mở `/api/health` trên tên miền của service để kiểm tra backend có phản hồi (`aiConfigured: true`).
 
 ---
 
