@@ -6,6 +6,7 @@ import { LandingPage } from './components/LandingPage';
 import { UserDashboard } from './components/UserDashboard';
 import { ScannerModule } from './components/ScannerModule';
 import { LinkScannerModule } from './components/LinkScannerModule';
+import { EvidenceLabModule } from './components/EvidenceLabModule';
 import { AcademyModule } from './components/AcademyModule';
 import { SimulatorModule } from './components/SimulatorModule';
 import { SafeBotModule } from './components/SafeBotModule';
@@ -16,7 +17,6 @@ import { AccountModule } from './components/AccountModule';
 import { HistoryModule } from './components/HistoryModule';
 import { SurveyModal } from './components/SurveyModal';
 import { TAB_PATHS, pathToTab, isPublicTab, loginUrlFor, getSafeNextTab } from './lib/routes';
-import { DEFAULT_SITE_CONFIG, SiteConfig } from './lib/siteConfig';
 
 const VALID_HASH_TABS = new Set<string>(Object.keys(TAB_PATHS));
 
@@ -32,12 +32,12 @@ function resolveInitialTab(): ActiveTab {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>(resolveInitialTab);
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
   const [surveyOpen, setSurveyOpen] = useState(false);
   const [surveyMax, setSurveyMax] = useState(1000);
-  const [siteConfig, setSiteConfig] = useState<SiteConfig>(DEFAULT_SITE_CONFIG);
   const promptedThisLoad = useRef(false);
 
   const refreshAuth = useCallback(async () => {
@@ -58,20 +58,27 @@ export default function App() {
     void refreshAuth();
   }, [refreshAuth]);
 
-  // Load the latest public website configuration saved by an administrator.
+  // Check backend health and AI configuration status on startup
   useEffect(() => {
-    let cancelled = false;
-    const apply = (value: unknown) => {
-      if (!value || typeof value !== 'object') return;
-      if (!cancelled) setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...(value as Partial<SiteConfig>) });
+    const checkBackendStatus = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          setAiConfigured(Boolean(data.aiConfigured));
+          if (typeof data.databaseConfigured === 'boolean') {
+            setDatabaseConfigured(data.databaseConfigured);
+          }
+        } else {
+          setAiConfigured(false);
+        }
+      } catch (e) {
+        console.warn('Backend health check error, falling back to manual mode:', e);
+        setAiConfigured(false);
+      }
     };
-    fetch('/api/site-config', { credentials: 'same-origin', cache: 'no-store' })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => apply(data?.config))
-      .catch(() => undefined);
-    const onConfigUpdated = (event: Event) => apply((event as CustomEvent<SiteConfig>).detail);
-    window.addEventListener('df-site-config-updated', onConfigUpdated);
-    return () => { cancelled = true; window.removeEventListener('df-site-config-updated', onConfigUpdated); };
+
+    checkBackendStatus();
   }, []);
 
   // Navigation = real URLs (history API). Guarding is applied when rendering AND enforced again by the backend.
@@ -157,15 +164,15 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col text-[#F5F7FA]" style={{ backgroundColor: siteConfig.backgroundColor }}>
+    <div className="min-h-screen flex flex-col bg-[#101C32] text-[#F5F7FA]">
       {/* Top Header */}
       <Header
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        aiConfigured={aiConfigured}
         currentUser={currentUser}
         authLoading={!authLoaded}
         onLogout={() => void handleLogout()}
-        siteConfig={siteConfig}
       />
 
       {/* Main Content Area */}
@@ -179,7 +186,7 @@ export default function App() {
           <LandingPage
             onTabChange={handleTabChange}
             currentUser={currentUser}
-                siteConfig={siteConfig}
+            aiConfigured={aiConfigured}
           />
         )}
 
@@ -188,12 +195,14 @@ export default function App() {
           <UserDashboard
             user={currentUser}
             onTabChange={handleTabChange}
-              />
+            aiConfigured={aiConfigured}
+            databaseConfigured={databaseConfigured}
+          />
         )}
 
         {/* Threat Scanner (Image & Video frame sampling) */}
         {activeTab === 'scanner' && (
-          <ScannerModule onTabChange={handleTabChange} />
+          <ScannerModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
         )}
 
         {/* Link Safety Scanner */}
@@ -204,6 +213,11 @@ export default function App() {
         {/* Scan History & Reports */}
         {activeTab === 'history' && (
           <HistoryModule user={currentUser} onTabChange={handleTabChange} />
+        )}
+
+        {/* Forensic Evidence Lab */}
+        {activeTab === 'evidence-lab' && (
+          <EvidenceLabModule onTabChange={handleTabChange} />
         )}
 
         {/* Academy & STEM Knowledge Base */}
@@ -218,7 +232,7 @@ export default function App() {
 
         {/* SafeBot AI Chat */}
         {activeTab === 'safebot' && (
-          <SafeBotModule onTabChange={handleTabChange} />
+          <SafeBotModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
         )}
 
         {/* Research Dashboard & Survey Data */}
@@ -251,7 +265,7 @@ export default function App() {
       </main>
 
       {/* Unified Global Footer */}
-      <Footer onTabChange={handleTabChange} signedIn={Boolean(currentUser)} siteConfig={siteConfig} />
+      <Footer onTabChange={handleTabChange} signedIn={Boolean(currentUser)} />
 
       <SurveyModal
         open={surveyOpen && Boolean(currentUser)}

@@ -7,7 +7,6 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { Pool } from 'pg';
 import { GoogleGenAI, Type } from '@google/genai';
 import { runMigrations } from './scripts/migrate.mjs';
-import { DEFAULT_SITE_CONFIG, SITE_CONFIG_BOOLEAN_KEYS, SITE_CONFIG_TEXT_LIMITS, SiteConfig } from './src/lib/siteConfig';
 
 dotenv.config();
 
@@ -259,19 +258,6 @@ async function ensureDatabase(): Promise<void> {
       `);
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_created_at_idx ON scan_audit(created_at DESC)');
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_user_id_idx ON scan_audit(user_id)');
-
-      await dbPool.query(`
-        CREATE TABLE IF NOT EXISTS site_settings (
-          id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-          config JSONB NOT NULL,
-          updated_by BIGINT REFERENCES app_users(id) ON DELETE SET NULL,
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `);
-      await dbPool.query(
-        'INSERT INTO site_settings(id, config) VALUES(1, $1::jsonb) ON CONFLICT(id) DO NOTHING',
-        [JSON.stringify(DEFAULT_SITE_CONFIG)],
-      );
 
       // Synchronize configured administrator from Render Environment
       const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
@@ -708,90 +694,6 @@ app.post('/api/auth/logout', async (req, res) => {
 });
 
 // Admin-only endpoints. User-supplied role fields are never accepted during public registration.
-function validateSiteConfig(input: unknown, base: SiteConfig): SiteConfig | null {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
-  const merged = { ...base, ...(input as Record<string, unknown>) } as Record<string, unknown>;
-  const result = { ...DEFAULT_SITE_CONFIG } as SiteConfig;
-
-  for (const key of Object.keys(SITE_CONFIG_TEXT_LIMITS) as (keyof SiteConfig)[]) {
-    const value = merged[key];
-    const maximum = SITE_CONFIG_TEXT_LIMITS[key] || 1000;
-    if (typeof value !== 'string' || value.length > maximum) return null;
-    (result as any)[key] = value.trim();
-  }
-  if (!String(result.siteName).trim() || !String(result.heroTitle).trim()) return null;
-
-  for (const key of SITE_CONFIG_BOOLEAN_KEYS) {
-    if (typeof merged[key] !== 'boolean') return null;
-    (result as any)[key] = merged[key];
-  }
-  for (const key of ['accentColor', 'backgroundColor'] as const) {
-    const value = merged[key];
-    if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) return null;
-    result[key] = value.toUpperCase();
-  }
-  return result;
-}
-
-// Public read-only config. Defaults keep the homepage usable when PostgreSQL is not configured.
-app.get('/api/site-config', async (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  if (!dbPool) return res.json({ success: true, persisted: false, config: DEFAULT_SITE_CONFIG });
-  try {
-    // Do not bootstrap or run migrations on public GET requests. Admin sign-in initializes the schema.
-    const result = await dbPool.query('SELECT config, updated_at FROM site_settings WHERE id = 1');
-    return res.json({
-      success: true,
-      persisted: Boolean(result.rows[0]),
-      updatedAt: result.rows[0]?.updated_at ? new Date(result.rows[0].updated_at).toISOString() : null,
-      config: { ...DEFAULT_SITE_CONFIG, ...(result.rows[0]?.config || {}) },
-    });
-  } catch (error: any) {
-    console.warn('[SiteConfig] Public config read failed; using defaults:', String(error?.message || error).slice(0, 140));
-    return res.json({ success: true, persisted: false, config: DEFAULT_SITE_CONFIG });
-  }
-});
-
-app.get('/api/admin/site-config', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    await ensureDatabase();
-    const result = await dbPool!.query('SELECT config, updated_at FROM site_settings WHERE id = 1');
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json({ success: true, config: { ...DEFAULT_SITE_CONFIG, ...(result.rows[0]?.config || {}) }, updatedAt: result.rows[0]?.updated_at || null });
-  } catch (error: any) {
-    console.error('[SiteConfig] Admin read failed:', String(error?.message || error).slice(0, 140));
-    return res.status(503).json({ success: false, message: 'Không tải được cấu hình website từ PostgreSQL.' });
-  }
-});
-
-app.put('/api/admin/site-config', sameOriginOnly, async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    await ensureDatabase();
-    const currentResult = await dbPool!.query('SELECT config FROM site_settings WHERE id = 1');
-    const current = { ...DEFAULT_SITE_CONFIG, ...(currentResult.rows[0]?.config || {}) } as SiteConfig;
-    const next = validateSiteConfig(req.body?.config, current);
-    if (!next) {
-      return res.status(400).json({ success: false, error: 'INVALID_SITE_CONFIG', message: 'Cấu hình không hợp lệ. Hãy kiểm tra độ dài nội dung, các mục bắt buộc và mã màu HEX.' });
-    }
-    const updated = await dbPool!.query(
-      `INSERT INTO site_settings(id, config, updated_by, updated_at) VALUES(1, $1::jsonb, $2, NOW())
-       ON CONFLICT(id) DO UPDATE SET config = EXCLUDED.config, updated_by = EXCLUDED.updated_by, updated_at = NOW()
-       RETURNING config, updated_at`,
-      [JSON.stringify(next), admin.id],
-    );
-    console.info(`[AdminAudit] site settings updated by admin ${admin.id}`);
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json({ success: true, config: { ...DEFAULT_SITE_CONFIG, ...(updated.rows[0]?.config || {}) }, updatedAt: updated.rows[0]?.updated_at || null });
-  } catch (error: any) {
-    console.error('[SiteConfig] Admin update failed:', String(error?.message || error).slice(0, 140));
-    return res.status(503).json({ success: false, error: 'SITE_CONFIG_UPDATE_FAILED', message: 'Không lưu được cấu hình website. Hãy kiểm tra PostgreSQL.' });
-  }
-});
-
 app.get('/api/admin/overview', async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -1167,144 +1069,18 @@ app.patch('/api/admin/feedback/:id', sameOriginOnly, async (req, res) => {
   }
 });
 
-// ---- Runtime AI state: reflects what Gemini ACTUALLY did most recently (never assumed). ----
-const aiRuntime: { lastOkAt: number | null; lastFailAt: number | null; lastFailStatus: number | null } = {
-  lastOkAt: null, lastFailAt: null, lastFailStatus: null,
-};
-function noteAiOutcome(ok: boolean, error?: unknown): void {
-  if (ok) { aiRuntime.lastOkAt = Date.now(); return; }
-  // Only count failures that come from Gemini itself while it is configured.
-  if (!getGeminiClient()) return;
-  aiRuntime.lastFailAt = Date.now();
-  aiRuntime.lastFailStatus = (getGeminiErrorStatus(error) as number | undefined) ?? null;
-}
-
-// Minimal public liveness probe for Render. Operational detail lives in /api/admin/system-status.
-app.get('/api/health', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Admin-only operational status (authenticated and authorised on the server).
-// Never returns keys, connection strings, environment variables or raw error text.
-app.get('/api/admin/system-status', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    res.setHeader('Cache-Control', 'no-store');
-    const aiConfigured = Boolean(getGeminiClient());
-    let ai: 'active' | 'not_configured' | 'unavailable' | 'unknown' = 'unknown';
-    if (!aiConfigured) ai = 'not_configured';
-    else if (aiRuntime.lastFailAt && (!aiRuntime.lastOkAt || aiRuntime.lastFailAt > aiRuntime.lastOkAt)) ai = 'unavailable';
-    else if (aiRuntime.lastOkAt) ai = 'active';
-    let database: 'active' | 'unavailable' = 'unavailable';
-    try { await dbPool!.query('SELECT 1'); database = 'active'; } catch { /* reported as unavailable */ }
-    res.json({
-      success: true,
-      ai,
-      aiModel: aiConfigured ? GEMINI_MODEL : null,
-      aiLastSuccessAt: aiRuntime.lastOkAt ? new Date(aiRuntime.lastOkAt).toISOString() : null,
-      aiLastFailureAt: aiRuntime.lastFailAt ? new Date(aiRuntime.lastFailAt).toISOString() : null,
-      aiLastFailureStatus: aiRuntime.lastFailStatus,
-      database,
-      website: 'active',
-      checkedAt: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('[Admin] System status failed:', String(error?.message || error).slice(0, 160));
-    res.status(503).json({ error: 'ADMIN_DATA_UNAVAILABLE', message: 'Không tải được tình trạng hệ thống.' });
-  }
-});
-
-// ============================================================================
-// RESULT FEEDBACK — inline "Bạn thấy kết quả này thế nào?" under each scan result.
-// Stores module, result id, sentiment, optional short comment. No media/URLs/chats.
-// ============================================================================
-const RESULT_MODULES = new Set(['scanner', 'link_scanner']);
-const RESULT_SENTIMENTS = new Set(['helpful', 'okay', 'not_helpful']);
-const RESULT_COMMENT_MAX = 500;
-const resultFeedbackLimiter = createRateLimiter(30, 60 * 60 * 1000, 'result-feedback');
-
-app.post('/api/result-feedback', sameOriginOnly, resultFeedbackLimiter, authRequired, async (req, res) => {
-  const user = (req as any).authUser as PublicUser;
-  const body = req.body || {};
-  const module = typeof body.module === 'string' ? body.module : '';
-  const resultId = typeof body.resultId === 'string' ? body.resultId.trim() : '';
-  const sentiment = typeof body.sentiment === 'string' ? body.sentiment : '';
-  const comment = typeof body.comment === 'string' ? body.comment.replace(/\u0000/g, '').trim() : '';
-  if (!RESULT_MODULES.has(module) || !RESULT_SENTIMENTS.has(sentiment) || !/^[A-Za-z0-9_.:-]{4,80}$/.test(resultId)) {
-    return res.status(400).json({ error: 'INVALID_FEEDBACK', message: 'Góp ý chưa hợp lệ. Bạn thử lại nhé.' });
-  }
-  if (comment.length > RESULT_COMMENT_MAX) {
-    return res.status(400).json({ error: 'COMMENT_TOO_LONG', message: `Góp ý tối đa ${RESULT_COMMENT_MAX} ký tự.` });
-  }
-  try {
-    const inserted = await dbPool!.query(
-      `INSERT INTO result_feedback(user_id, module, result_id, sentiment, comment)
-       VALUES($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id, module, result_id) DO NOTHING
-       RETURNING id`,
-      [user.id, module, resultId, sentiment, comment],
-    );
-    if (!inserted.rowCount) {
-      return res.status(409).json({ error: 'ALREADY_SUBMITTED', message: 'Bạn đã đánh giá kết quả này rồi. Cảm ơn bạn nhé!' });
-    }
-    res.status(201).json({ success: true });
-  } catch (error: any) {
-    console.error('[ResultFeedback] Submit failed:', String(error?.message || error).slice(0, 160));
-    res.status(503).json({ error: 'FEEDBACK_UNAVAILABLE', message: 'Chưa gửi được góp ý. Bạn thử lại sau nhé.' });
-  }
-});
-
-app.get('/api/admin/result-feedback', async (req, res) => {
-  try {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
-    res.setHeader('Cache-Control', 'no-store');
-    const q = req.query;
-    const where: string[] = [];
-    const params: any[] = [];
-    const module = String(q.module ?? '');
-    if (RESULT_MODULES.has(module)) { params.push(module); where.push(`f.module = $${params.length}`); }
-    const sentiment = String(q.sentiment ?? '');
-    if (RESULT_SENTIMENTS.has(sentiment)) { params.push(sentiment); where.push(`f.sentiment = $${params.length}`); }
-    const onlyComments = String(q.withComment ?? '') === '1';
-    if (onlyComments) where.push(`f.comment <> ''`);
-    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    const pageSize = 20;
-    const page = Math.max(1, Number.parseInt(String(q.page ?? '1'), 10) || 1);
-    const [list, count, dist] = await Promise.all([
-      dbPool!.query(
-        `SELECT f.id, f.module, f.result_id, f.sentiment, f.comment, f.created_at, u.display_name, u.email
-         FROM result_feedback f LEFT JOIN app_users u ON u.id = f.user_id
-         ${whereSql} ORDER BY f.created_at DESC LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`, params),
-      dbPool!.query(`SELECT COUNT(*)::int AS total FROM result_feedback f ${whereSql}`, params),
-      dbPool!.query('SELECT module, sentiment, COUNT(*)::int AS count FROM result_feedback GROUP BY module, sentiment'),
-    ]);
-    const stats: Record<string, Record<string, number>> = {
-      all: { helpful: 0, okay: 0, not_helpful: 0 },
-      scanner: { helpful: 0, okay: 0, not_helpful: 0 },
-      link_scanner: { helpful: 0, okay: 0, not_helpful: 0 },
-    };
-    for (const row of dist.rows) {
-      if (stats[row.module] && row.sentiment in stats[row.module]) {
-        stats[row.module][row.sentiment] += Number(row.count);
-        stats.all[row.sentiment] += Number(row.count);
-      }
-    }
-    res.json({
-      success: true,
-      stats,
-      items: list.rows.map((r: any) => ({
-        id: String(r.id), module: r.module, resultId: r.result_id, sentiment: r.sentiment, comment: r.comment,
-        createdAt: new Date(r.created_at).toISOString(), userDisplayName: r.display_name || null, userEmail: r.email || null,
-      })),
-      page, pageSize, totalItems: Number(count.rows[0]?.total || 0),
-    });
-  } catch (error: any) {
-    console.error('[Admin] Result feedback query failed:', String(error?.message || error).slice(0, 160));
-    res.status(503).json({ error: 'ADMIN_DATA_UNAVAILABLE', message: 'Không tải được phản hồi về kết quả quét.' });
-  }
+// Health & Config status endpoint
+app.get('/api/health', (req, res) => {
+  const ai = getGeminiClient();
+  res.json({
+    status: 'ok',
+    aiConfigured: Boolean(ai),
+    databaseConfigured: Boolean(dbPool),
+    model: GEMINI_MODEL,
+    fallbackModel: GEMINI_FALLBACK_MODEL,
+    timestamp: new Date().toISOString(),
+    project: 'DEEPFAKE SCANNER — TRUNG TÂM AN TOÀN SỐ',
+  });
 });
 
 // Multi-Layered Social Threat Scanner endpoint
@@ -1707,7 +1483,6 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
       totalMs,
       imageBytes: hasImage ? Math.round((imageBase64.replace(/^data:[^;]+;base64,/i, '').length * 3) / 4) : 0,
     }));
-    noteAiOutcome(true);
     recordScanAudit(req, scanMode, 'gemini', usedModel, totalMs, {
       reportId,
       status: 'completed',
@@ -1727,7 +1502,6 @@ QUY TẮC PHÂN TÍCH BẮT BUỘC:
     });
   } catch (error: any) {
     const totalMs = Math.round(performance.now() - requestStartedAt);
-    noteAiOutcome(false, error);
     console.warn('[ScanTiming] using heuristic fallback', JSON.stringify({
       scanMode,
       engine: 'heuristic',
@@ -2251,24 +2025,22 @@ app.post('/api/chat', authRequired, chatRateLimiter, async (req, res) => {
       return res.status(413).json({ error: 'CHAT_TOO_LARGE', message: 'Hội thoại quá dài. Vui lòng bắt đầu cuộc trò chuyện mới.' });
     }
 
-    const systemInstruction = `Bạn là SafeBot - trợ lý an toàn số thân thiện của học sinh THCS (11-15 tuổi), phụ huynh và thầy cô tại Việt Nam. Đề tài: "Giải pháp giúp học sinh THCS tránh một số tác động rủi ro từ Deepfake khi sử dụng mạng xã hội".
+    const systemInstruction = `Bạn là SafeBot - Trợ lý An toàn Số thân thiện, trách nhiệm và thông thái dành cho học sinh Trung học Cơ sở (THCS, độ tuổi 11-15 tuổi), phụ huynh và thầy cô giáo tại Việt Nam.
+Dự án: Đề tài Nghiên cứu Khoa học "Giải pháp giúp học sinh trung học cơ sở tránh một số tác động rủi ro từ Deepfake khi sử dụng mạng xã hội".
 
-PHONG CÁCH TRẢ LỜI (quan trọng nhất):
-- Trả lời thẳng vào câu hỏi ngay câu đầu tiên. Không nhắc lại câu hỏi, không mở đầu kiểu "Tôi rất vui được hỗ trợ bạn".
-- Mặc định 2-4 câu ngắn. Hướng dẫn thao tác thì tối đa 1-3 bước rõ ràng. Chỉ viết dài hơn khi người dùng yêu cầu phân tích chuyên sâu.
-- Không tự tạo mục "Báo cáo phân tích", "Đánh giá tổng quan", "Kết luận", "Khuyến nghị bổ sung" nếu không được yêu cầu.
-- Không lặp lại cùng một lời cảnh báo hay lời khuyên ở cuối mọi câu trả lời. Chỉ nhắc điều chưa nói trong hội thoại.
-- Tiếng Việt tự nhiên, ấm áp, dễ hiểu; xưng hô theo cách người dùng xưng hô. Có thể vui nhẹ nhàng khi tình huống bình thường. Dùng tối đa 1 emoji, ít câu cảm thán, không khen sáo rỗng.
-- Điều chỉnh theo người hỏi: học sinh - giải thích đơn giản; phụ huynh - rõ ràng, thực tế; người đang bị lừa - bình tĩnh, đồng cảm, nói rõ việc cần làm ngay.
-- Tình huống bị tống tiền, bắt nạt, đe dọa, hoặc người dùng đang hoảng sợ: không đùa. Trấn an ngắn gọn ("em không có lỗi"), rồi nêu hành động bảo vệ: không chuyển tiền, lưu bằng chứng, nói với người lớn tin cậy, gọi 111 khi cần.
-
-TRUNG THỰC VÀ AN TOÀN:
-- Chỉ trả lời đúng ý định của người dùng. Không bịa kết quả quét; không khẳng định chắc chắn một ảnh/video/liên kết là Deepfake hay an toàn khi không đủ bằng chứng. Phân biệt rõ: dấu hiệu nghi vấn, mức độ rủi ro, và điều chưa thể xác định.
-- Khi cần hành động, dùng khung: Dừng lại - Kiểm chứng - Bảo vệ - Báo cáo, nhưng chỉ nêu bước liên quan.
-- Đường dây hỗ trợ chính thức (chỉ nhắc khi liên quan): Tổng đài Quốc gia Bảo vệ Trẻ em 111 (miễn phí 24/7); cảnh báo lừa đảo/tin nhắn rác: 156 hoặc 5656; công an gần nhất khi bị tống tiền hoặc chiếm đoạt tài sản.
-- Bạn là trợ lý hỗ trợ kỹ năng, không phải cơ quan điều tra hay chuyên gia tâm lý lâm sàng. Không khuyên đối đầu với kẻ xấu. Không yêu cầu người dùng gửi mật khẩu, mã OTP hay thông tin riêng tư.
-
-Ví dụ giọng điệu: Người dùng hỏi "Có nên bấm vào link này không?" -> "Khoan bấm nhé! 🔎 Kiểm tra tên miền và người gửi trước đã. Bạn gửi link vào Link Scanner để xem dấu hiệu đáng ngờ; kết quả chỉ giúp đánh giá rủi ro, không đảm bảo an toàn tuyệt đối."`;
+Quy tắc ứng xử và bảo vệ học sinh:
+1. Phong cách trả lời: Ân cần, đồng cảm, bình tĩnh, rõ ràng, gãy gọn; không dùng từ ngữ phán xét, không đổ lỗi cho nạn nhân.
+2. Quy trình hành động 4 bước cốt lõi:
+   - DỪNG LẠI (Không vội tin, không chuyển tiền, không bấm link lạ, không lan truyền).
+   - KIỂM CHỨNG (Gọi lại kênh quen thuộc, kiểm tra tài khoản, tìm kiếm độc lập).
+   - BẢO VỆ (Đổi mật khẩu, bật 2FA, không gửi thêm ảnh/video riêng tư, lưu bằng chứng).
+   - BÁO CÁO (Nói với cha mẹ, thầy cô, báo cáo nền tảng MXH, gọi 111 nếu nghiêm trọng).
+3. Hướng dẫn các đường dây nóng hỗ trợ chính thức tại Việt Nam khi cần:
+   - Tổng đài Quốc gia Bảo vệ Trẻ em: 111 (miễn phí 24/7).
+   - Đầu số cảnh báo lừa đảo/tin nhắn rác: 156 hoặc 5656 (Bộ TT&TT / Cục An toàn thông tin).
+   - Cơ quan Công an gần nhất khi có dấu hiệu tống tiền, lừa đảo chiếm đoạt tài sản.
+4. Giới hạn: Bạn là trợ lý hỗ trợ kỹ năng, không phải cơ quan điều tra pháp lý hay chuyên gia tâm lý lâm sàng. Không đưa ra lời khuyên đối đầu nguy hiểm.
+5. Trả lời bằng tiếng Việt chuẩn mực, có gạch đầu dòng rõ ràng, dễ áp dụng ngay trên điện thoại di động.`;
 
     // Format chat history
     const formattedContents = recentMessages.map((m: { role: string; content: string }) => ({
@@ -2290,7 +2062,7 @@ Ví dụ giọng điệu: Người dùng hỏi "Có nên bấm vào link này kh
           temperature: 0.7,
           topP: 0.9,
           thinkingConfig: { thinkingBudget: 0 },
-          maxOutputTokens: 600,
+          maxOutputTokens: 900,
           abortSignal: AbortSignal.timeout(GEMINI_PRIMARY_TIMEOUT_MS),
           httpOptions: { timeout: GEMINI_PRIMARY_TIMEOUT_MS, retryOptions: NO_SDK_RETRIES },
         }),
@@ -2315,7 +2087,7 @@ Ví dụ giọng điệu: Người dùng hỏi "Có nên bấm vào link này kh
             temperature: 0.7,
             topP: 0.9,
             thinkingConfig: { thinkingBudget: 0 },
-            maxOutputTokens: 600,
+            maxOutputTokens: 900,
             abortSignal: AbortSignal.timeout(GEMINI_FALLBACK_TIMEOUT_MS),
             httpOptions: { timeout: GEMINI_FALLBACK_TIMEOUT_MS, retryOptions: NO_SDK_RETRIES },
           }),
@@ -2334,24 +2106,25 @@ Ví dụ giọng điệu: Người dùng hỏi "Có nên bấm vào link này kh
       }
     }
 
-    const reply = response.text || 'Mình đang bận một chút. Bạn thử lại sau nhé, và nếu việc gấp hãy nói với người lớn tin cậy.';
+    const reply = response.text || 'SafeBot đang gặp gián đoạn tạm thời. Em hãy giữ bình tĩnh và trao đổi ngay với người lớn đáng tin cậy nhé!';
     console.info('[ChatTiming] completed', JSON.stringify({ model: chatUsedModel, primaryMs: chatPrimaryMs, fallbackMs: chatFallbackMs, totalMs: Math.round(performance.now() - chatStartedAt) }));
 
-    noteAiOutcome(true);
     recordUsageEvent(req, 'safebot');
     res.json({
       success: true,
       reply,
     });
   } catch (error: any) {
-    noteAiOutcome(false, error);
     console.warn('[ChatTiming] using prepared guidance', JSON.stringify({ totalMs: Math.round(performance.now() - chatStartedAt), status: getGeminiErrorStatus(error) ?? null, message: shortGeminiError(error) }));
     console.warn('[Chat] Fallback guidance activated:', error?.message || error);
 
     // If Gemini model is experiencing high demand (503), return structured expert guidance with notice
     const fallbackAnswers = [
-      "Mình chưa trả lời được lúc này, bạn thử lại sau ít phút nhé.",
-      "Trong lúc chờ: dừng lại, không chuyển tiền hay gửi mã OTP, rồi gọi trực tiếp cho người thân để xác minh. Nếu bị đe dọa hoặc tống tiền, hãy nói ngay với người lớn tin cậy hoặc gọi 111 (miễn phí 24/7).",
+      "SafeBot xin hướng dẫn em quy trình xử lý khẩn cấp 4 bước:",
+      "1. DỪNG LẠI (Stop): Tuyệt đối không chuyển tiền, không đọc mã OTP hoặc gửi thông tin riêng tư.",
+      "2. KIỂM CHỨNG (Check): Hãy gọi điện thoại trực tiếp bằng số SIM thông thường trong danh bạ hoặc hỏi người thân đang ở cạnh.",
+      "3. BẢO VỆ (Protect): Kích hoạt xác thực 2 lớp (2FA), đặt 'Mật khẩu gia đình' để xác minh khi khẩn cấp.",
+      "4. BÁO CÁO (Report): Nếu có dấu hiệu bị tống tiền hoặc đe dọa, hãy chia sẻ ngay với cha mẹ, thầy cô hoặc gọi Tổng đài Quốc gia Bảo vệ Trẻ em 111 (miễn phí 24/7).",
     ].join('\n\n');
 
     res.json({

@@ -2,9 +2,6 @@ import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import { ActiveTab, AuthUser } from '../types';
 import { getSafeNextTab } from '../lib/routes';
 import { FeedbackAdminPanel } from './FeedbackAdminPanel';
-import { ResultFeedbackAdminPanel } from './ResultFeedbackAdminPanel';
-import { SystemStatusPanel } from './SystemStatusPanel';
-import { SiteCustomizerAdminPanel } from './SiteCustomizerAdminPanel';
 import {
   AlertCircle, BarChart3, Check, Clock3, Database, LogIn, LogOut, RefreshCw,
   ShieldCheck, UserPlus, Users, UserRound, Activity, LockKeyhole, ShieldAlert, Eye, EyeOff, Star,
@@ -347,9 +344,6 @@ export const AccountModule: React.FC<AccountModuleProps> = ({ user, databaseConf
             <div className="p-4 sm:p-5 border-b border-[#243956]"><h2 className="font-bold text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-[#55DDF2]" /> Lượt quét gần đây</h2><p className="text-xs text-slate-400 mt-1">Chỉ ghi metadata khi người dùng đã đăng nhập; không lưu nội dung ảnh hoặc tin nhắn.</p></div>
             {recentScans.length === 0 ? <div className="p-5 text-sm text-slate-400">Chưa có lượt quét của người dùng đã đăng nhập.</div> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="text-xs text-slate-400 bg-[#0e1a2d]"><tr><th className="text-left font-medium p-3">Thời gian</th><th className="text-left font-medium p-3">Tài khoản</th><th className="text-left font-medium p-3">Chế độ</th><th className="text-left font-medium p-3">AI</th><th className="text-right font-medium p-3">Thời gian</th></tr></thead><tbody className="divide-y divide-[#243956]">{recentScans.map((scan) => <tr key={scan.id}><td className="p-3 text-slate-300 whitespace-nowrap">{formatDate(scan.createdAt)}</td><td className="p-3 text-slate-300">{scan.email}</td><td className="p-3 text-slate-300">{scan.scanMode}</td><td className="p-3"><span className={`rounded-full px-2 py-1 text-xs ${scan.engine === 'gemini' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-300/10 text-amber-200'}`}>{scan.engine === 'gemini' ? scan.model || 'Gemini' : 'Heuristic'}</span></td><td className="p-3 text-right text-slate-300 whitespace-nowrap">{(scan.durationMs / 1000).toFixed(1)} giây</td></tr>)}</tbody></table></div>}
           </section>
-          <SiteCustomizerAdminPanel />
-          <SystemStatusPanel />
-          <ResultFeedbackAdminPanel />
           <FeedbackAdminPanel />
         </div>
       )}
