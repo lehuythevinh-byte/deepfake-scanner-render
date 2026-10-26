@@ -4,8 +4,7 @@ import {
   Bot, 
   Send, 
   Trash2, 
-  Sparkles, 
-  ShieldAlert, 
+    ShieldAlert, 
   PhoneCall, 
   User, 
   HelpCircle, 
@@ -16,7 +15,6 @@ import {
 
 interface SafeBotModuleProps {
   onTabChange: (tab: ActiveTab) => void;
-  aiConfigured: boolean | null;
 }
 
 // Pre-scripted knowledge base for offline fallback
@@ -63,12 +61,12 @@ Các bước hành động khẩn cấp:
 - Cam kết: Bảo mật 100% danh tính học sinh, có sự tham gia của luật sư và chuyên gia tâm lý để can thiệp bảo vệ em an toàn.`,
 };
 
-export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiConfigured }) => {
+export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Xin chào em! SafeBot là Trợ lý An toàn Số đồng hành cùng học sinh THCS trong việc phòng tránh rủi ro Deepfake, lừa đảo công nghệ cao và bảo vệ quyền riêng tư trên mạng xã hội. Em đang gặp băn khoăn hay cần hướng dẫn xử lý tình huống nào?',
+      content: 'Chào bạn! Mình là SafeBot. Bạn đang gặp tình huống gì trên mạng, kể mình nghe nhé.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -129,7 +127,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
         setMessages((prev) => [...prev, botReply]);
       } else {
         // Fallback to offline script if AI not configured or error
-        let fallbackReply = 'Thầy/cô và SafeBot khuyên em luôn giữ bình tĩnh. Hãy áp dụng quy trình 4 bước: DỪNG LẠI (không chuyển tiền/không gửi mã) → KIỂM CHỨNG (gọi điện thoại trực tiếp) → BẢO VỆ (đổi mật khẩu) → BÁO CÁO (nói với bố mẹ hoặc gọi Tổng đài 111).';
+        let fallbackReply = 'Bạn cứ bình tĩnh nhé. Dừng lại, đừng chuyển tiền hay gửi mã OTP, gọi trực tiếp cho người quen để xác minh, và nói với người lớn tin cậy. Nếu bị đe dọa, gọi 111 (miễn phí 24/7).';
 
         const lowerText = text.toLowerCase();
         if (lowerText.includes('tiền') || lowerText.includes('giọng') || lowerText.includes('chuyển khoản')) {
@@ -174,7 +172,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
       {
         id: 'welcome',
         role: 'assistant',
-        content: 'Cuộc trò chuyện đã được làm mới. Em cần hỗ trợ vấn đề an toàn số nào khác không?',
+        content: 'Mình đã làm mới cuộc trò chuyện. Bạn muốn hỏi gì tiếp?',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -191,7 +189,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">SafeBot AI: Trợ Lý Hướng Dẫn Phòng Vệ</h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-            Luôn lắng nghe, bảo mật và hướng dẫn các bước ứng phó thực tế khi học sinh gặp nguy cơ trên mạng.
+            Hỏi nhanh, nhận câu trả lời ngắn gọn và việc cần làm ngay khi gặp rủi ro trên mạng.
           </p>
         </div>
 
@@ -204,18 +202,6 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
           <span className="hidden sm:inline">Làm mới hội thoại</span>
         </button>
       </div>
-
-      {/* Scripted mode notice if AI is not connected */}
-      {aiConfigured === false && (
-        <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/60 text-xs text-slate-300 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#55DDF2] shrink-0" />
-            <span>
-              <strong>Chế độ hướng dẫn an toàn số theo kịch bản chuyên gia:</strong> Các câu trả lời được biên soạn chuẩn mực theo cẩm nang Bộ GD&ĐT và Cục Trẻ em.
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Suggested Quick Prompts */}
       <div className="space-y-2">
@@ -279,7 +265,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
               <span className="w-2 h-2 rounded-full bg-[#55DDF2] animate-bounce" />
               <span className="w-2 h-2 rounded-full bg-[#55DDF2] animate-bounce [animation-delay:0.2s]" />
               <span className="w-2 h-2 rounded-full bg-[#55DDF2] animate-bounce [animation-delay:0.4s]" />
-              <span className="text-slate-400 text-[11px] ml-1">SafeBot đang soạn câu trả lời an toàn...</span>
+              <span className="text-slate-400 text-[11px] ml-1">Mình đang soạn câu trả lời…</span>
             </div>
           </div>
         )}
@@ -294,7 +280,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
           value={inputPrompt}
           onChange={(e) => setInputPrompt(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-          placeholder="Nhập câu hỏi hoặc tình huống em đang gặp..."
+          placeholder="Bạn muốn hỏi gì? Kể tình huống của bạn ở đây…"
           className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none"
         />
         <button
@@ -315,13 +301,13 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
       <div className="p-3 rounded-xl bg-[#CF5B65]/10 border border-[#CF5B65]/30 flex items-center justify-between text-xs text-slate-300">
         <div className="flex items-center gap-2 text-[#CF5B65] font-semibold">
           <PhoneCall className="w-4 h-4" />
-          <span>Nếu em đang bị đe dọa vũ lực hoặc tống tiền nguy hiểm:</span>
+          <span>Đang bị đe dọa hoặc tống tiền?</span>
         </div>
         <button
           onClick={() => onTabChange('emergency')}
           className="text-xs text-white font-bold underline hover:text-[#55DDF2]"
         >
-          Xem danh bạ Tổng đài 111 & Công an →
+          Xem số điện thoại hỗ trợ khẩn cấp →
         </button>
       </div>
     </div>

@@ -6,7 +6,6 @@ import { LandingPage } from './components/LandingPage';
 import { UserDashboard } from './components/UserDashboard';
 import { ScannerModule } from './components/ScannerModule';
 import { LinkScannerModule } from './components/LinkScannerModule';
-import { EvidenceLabModule } from './components/EvidenceLabModule';
 import { AcademyModule } from './components/AcademyModule';
 import { SimulatorModule } from './components/SimulatorModule';
 import { SafeBotModule } from './components/SafeBotModule';
@@ -33,7 +32,6 @@ function resolveInitialTab(): ActiveTab {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>(resolveInitialTab);
-  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
@@ -74,29 +72,6 @@ export default function App() {
     const onConfigUpdated = (event: Event) => apply((event as CustomEvent<SiteConfig>).detail);
     window.addEventListener('df-site-config-updated', onConfigUpdated);
     return () => { cancelled = true; window.removeEventListener('df-site-config-updated', onConfigUpdated); };
-  }, []);
-
-  // Check backend health and AI configuration status on startup
-  useEffect(() => {
-    const checkBackendStatus = async () => {
-      try {
-        const res = await fetch('/api/health');
-        if (res.ok) {
-          const data = await res.json();
-          setAiConfigured(Boolean(data.aiConfigured));
-          if (typeof data.databaseConfigured === 'boolean') {
-            setDatabaseConfigured(data.databaseConfigured);
-          }
-        } else {
-          setAiConfigured(false);
-        }
-      } catch (e) {
-        console.warn('Backend health check error, falling back to manual mode:', e);
-        setAiConfigured(false);
-      }
-    };
-
-    checkBackendStatus();
   }, []);
 
   // Navigation = real URLs (history API). Guarding is applied when rendering AND enforced again by the backend.
@@ -187,7 +162,6 @@ export default function App() {
       <Header
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        aiConfigured={aiConfigured}
         currentUser={currentUser}
         authLoading={!authLoaded}
         onLogout={() => void handleLogout()}
@@ -205,8 +179,7 @@ export default function App() {
           <LandingPage
             onTabChange={handleTabChange}
             currentUser={currentUser}
-            aiConfigured={aiConfigured}
-            siteConfig={siteConfig}
+                siteConfig={siteConfig}
           />
         )}
 
@@ -215,14 +188,12 @@ export default function App() {
           <UserDashboard
             user={currentUser}
             onTabChange={handleTabChange}
-            aiConfigured={aiConfigured}
-            databaseConfigured={databaseConfigured}
-          />
+              />
         )}
 
         {/* Threat Scanner (Image & Video frame sampling) */}
         {activeTab === 'scanner' && (
-          <ScannerModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
+          <ScannerModule onTabChange={handleTabChange} />
         )}
 
         {/* Link Safety Scanner */}
@@ -233,11 +204,6 @@ export default function App() {
         {/* Scan History & Reports */}
         {activeTab === 'history' && (
           <HistoryModule user={currentUser} onTabChange={handleTabChange} />
-        )}
-
-        {/* Forensic Evidence Lab */}
-        {activeTab === 'evidence-lab' && (
-          <EvidenceLabModule onTabChange={handleTabChange} />
         )}
 
         {/* Academy & STEM Knowledge Base */}
@@ -252,7 +218,7 @@ export default function App() {
 
         {/* SafeBot AI Chat */}
         {activeTab === 'safebot' && (
-          <SafeBotModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
+          <SafeBotModule onTabChange={handleTabChange} />
         )}
 
         {/* Research Dashboard & Survey Data */}

@@ -49,7 +49,7 @@ export const HomeModule: React.FC<HomeModuleProps> = ({ onTabChange, aiConfigure
       details: [
         'Dùng phương pháp Lateral Reading (đọc ngang): Mở tab mới tra cứu trên báo chí uy tín.',
         'Kiểm tra ngày tạo tài khoản, lịch sử hoạt động và các dấu vết bất thường về hình ảnh/giọng nói.',
-        'Sử dụng công cụ AI Scanner & Evidence Lab trên website này để rà soát kỹ thuật.',
+        'Dùng AI Scanner và Link Scanner trên website này để rà soát dấu hiệu đáng ngờ.',
       ],
       color: 'border-[#55DDF2]/40 text-[#55DDF2] bg-[#55DDF2]/10',
     },
@@ -352,7 +352,7 @@ export const HomeModule: React.FC<HomeModuleProps> = ({ onTabChange, aiConfigure
           </div>
 
           <div 
-            onClick={() => onTabChange('evidence-lab')}
+            onClick={() => onTabChange('link-scanner')}
             className="p-6 rounded-2xl bg-[#172941]/70 border border-[#1f3554] hover:border-[#55DDF2]/50 transition-all cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-4">
@@ -361,9 +361,9 @@ export const HomeModule: React.FC<HomeModuleProps> = ({ onTabChange, aiConfigure
               </div>
               <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Quy trình kiểm chứng thông tin (Evidence Lab)</h3>
+            <h3 className="text-lg font-bold text-white mb-2">Kiểm tra liên kết đáng ngờ (Link Scanner)</h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Checklist tương tác giúp học sinh không phụ thuộc hoàn toàn vào AI. Rèn luyện phương pháp đọc ngang (Lateral Reading) và đối chiếu nguồn tin độc lập.
+              Xem nhanh dấu hiệu đáng ngờ của một đường link trước khi bấm, và rèn thói quen đối chiếu nguồn tin độc lập.
             </p>
           </div>
 

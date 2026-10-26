@@ -65,11 +65,6 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, s
                 </button>
               </li>
               <li>
-                <button onClick={() => onTabChange('evidence-lab')} className="hover:text-white transition-colors">
-                  Phòng kiểm chứng thông tin (Evidence Lab)
-                </button>
-              </li>
-              <li>
                 <button onClick={() => onTabChange('simulator')} className="hover:text-white transition-colors">
                   Mô phỏng tình huống (Safety Simulator)
                 </button>

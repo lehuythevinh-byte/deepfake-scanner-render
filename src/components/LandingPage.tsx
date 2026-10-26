@@ -5,14 +5,12 @@ import { DEFAULT_SITE_CONFIG, SiteConfig } from '../lib/siteConfig';
 interface LandingPageProps {
   onTabChange: (tab: ActiveTab) => void;
   currentUser: AuthUser | null;
-  aiConfigured: boolean | null;
   siteConfig?: SiteConfig;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onTabChange,
   currentUser,
-  aiConfigured,
   siteConfig = DEFAULT_SITE_CONFIG,
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
