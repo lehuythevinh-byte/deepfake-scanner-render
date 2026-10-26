@@ -8,7 +8,6 @@ export type ActiveTab =
   | 'scanner'
   | 'link-scanner'
   | 'history'
-  | 'evidence-lab'
   | 'academy'
   | 'simulator'
   | 'safebot'
@@ -31,6 +30,7 @@ export interface LinkFinding {
 }
 
 export interface LinkScanResult {
+  reportId?: string;
   url: string;
   normalizedUrl: string;
   protocol: string;

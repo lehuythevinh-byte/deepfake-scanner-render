@@ -16,7 +16,6 @@ export const TAB_PATHS: Record<ActiveTab, string> = {
   'link-scanner': '/app/link-scanner',
   safebot: '/app/safebot',
   history: '/app/history',
-  'evidence-lab': '/app/evidence-lab',
   simulator: '/app/simulator',
   research: '/app/research',
   report: '/app/reports',
@@ -30,6 +29,9 @@ const PATH_ALIASES: Record<string, ActiveTab> = {
   '/link-scanner': 'link-scanner',
   '/history': 'history',
   '/safebot': 'safebot',
+  // Retired section: old bookmarks land on the dashboard instead of a dead page.
+  '/app/evidence-lab': 'app',
+  '/evidence-lab': 'app',
 };
 
 const PATH_TO_TAB: Record<string, ActiveTab> = (() => {

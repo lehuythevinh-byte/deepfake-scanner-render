@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { ActiveTab, AuthUser } from '../types';
+import { DEFAULT_SITE_CONFIG, SiteConfig } from '../lib/siteConfig';
 
 interface LandingPageProps {
   onTabChange: (tab: ActiveTab) => void;
   currentUser: AuthUser | null;
-  aiConfigured: boolean | null;
+  siteConfig?: SiteConfig;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onTabChange,
   currentUser,
-  aiConfigured,
+  siteConfig = DEFAULT_SITE_CONFIG,
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -29,26 +30,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   const faqs = [
     {
-      q: 'Hệ thống có lưu trữ ảnh hoặc video tải lên của tôi không?',
-      a: 'Tuyệt đối không. Hệ thống tuân thủ chính sách quyền riêng tư nghiêm ngặt: hình ảnh và khung hình video chỉ được nén tạm thời trên bộ nhớ đệm trình duyệt để đối chiếu và không bao giờ được lưu vĩnh viễn trong cơ sở dữ liệu.',
+      q: siteConfig.faqQ1,
+      a: siteConfig.faqA1,
     },
     {
-      q: 'Hệ thống kiểm tra liên kết (Link Scanner) có bị lộ thông tin khi bấm quét không?',
-      a: 'Không. Máy quét liên kết hoạt động theo nguyên tắc Zero-SSRF (Server-Side Request Forgery Safe): phân tích cú pháp tĩnh, cấu trúc tên miền, chứng chỉ và các mẫu tấn công đã biết mà không thực thi mã JavaScript độc hại hay gửi cookie người dùng ra ngoài.',
+      q: siteConfig.faqQ2,
+      a: siteConfig.faqA2,
     },
     {
-      q: 'Học sinh THCS và phụ huynh có phải trả phí để sử dụng không?',
-      a: 'Không. Toàn bộ nền tảng được phát triển phục vụ đề tài nghiên cứu khoa học an toàn số học đường, hoàn toàn miễn phí, không thu phí và không có quảng cáo thương mại.',
+      q: siteConfig.faqQ3,
+      a: siteConfig.faqA3,
     },
     {
-      q: 'Nếu lỡ gửi tiền hoặc bị kẻ xấu tống tiền bằng ảnh ghép Deepfake thì phải làm gì?',
-      a: 'Hãy lập tức giữ bình tĩnh, chụp ảnh màn hình lưu bằng chứng, không làm theo lời đe dọa, chia sẻ ngay với cha mẹ/thầy cô và gọi đến Tổng đài Quốc gia Bảo vệ Trẻ em 111 hoặc đầu số 156/5656.',
+      q: siteConfig.faqQ4,
+      a: siteConfig.faqA4,
     },
   ];
 
   return (
     <div className="space-y-16 pb-16">
+      {siteConfig.announcementEnabled && siteConfig.announcementText.trim() && (
+        <div role="status" className="mx-auto max-w-6xl px-4 pt-4">
+          <div className="rounded-xl border bg-white/[0.04] px-4 py-3 text-sm" style={{ borderColor: siteConfig.accentColor, color: siteConfig.accentColor }}>{siteConfig.announcementText}</div>
+        </div>
+      )}
       {/* Cinematic hero: pure CSS/SVG layers (no heavy image or video, so it loads instantly) */}
+      {siteConfig.showHero && (
       <section className="df-hero relative isolate overflow-hidden min-h-[calc(100dvh-4rem)] md:min-h-[calc(92dvh-4rem)] flex items-center -mt-16 pt-16 border-b border-white/5" aria-labelledby="hero-title">
         <div className="df-hero-bg absolute inset-0 -z-10" aria-hidden="true">
           <div className="df-hero-glow absolute inset-0" />
@@ -77,44 +84,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-16 text-center">
-          <p className="text-[11px] sm:text-xs font-semibold tracking-[0.35em] text-[#55DDF2]">AI-ASSISTED DIGITAL SAFETY</p>
+          <p className="text-[11px] sm:text-xs font-semibold tracking-[0.35em] " style={{ color: siteConfig.accentColor }}>{siteConfig.heroEyebrow}</p>
           <h1 id="hero-title" className="mt-5 text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.08] text-balance">
-            Tin tưởng có cơ sở.<br />
-            <span className="bg-gradient-to-r from-[#8be9fb] via-[#55DDF2] to-[#60a5fa] bg-clip-text text-transparent">An toàn trong thế giới số.</span>
+            {siteConfig.heroTitle}<br />
+            <span style={{ color: siteConfig.accentColor }}>{siteConfig.heroAccentTitle}</span>
           </h1>
           <p className="mt-6 text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto leading-relaxed">
-            Phát hiện dấu hiệu đáng ngờ trong nội dung số, kiểm tra liên kết và học cách bảo vệ bản thân trước các chiêu trò lừa đảo trực tuyến.
+            {siteConfig.heroDescription}
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <button
               onClick={() => handleStartScan('app')}
-              className="w-full sm:w-auto min-w-[200px] px-8 py-4 rounded-xl bg-[#55DDF2] text-[#06101d] font-bold text-base shadow-[0_0_40px_-8px_rgba(85,221,242,0.7)] hover:bg-cyan-200 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#050a14] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: siteConfig.accentColor }} className="w-full sm:w-auto min-w-[200px] px-8 py-4 rounded-xl text-[#06101d] font-bold text-base shadow-lg hover:brightness-110 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#050a14] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Bắt đầu ngay
+              {siteConfig.primaryCtaLabel}
             </button>
             <button
               onClick={() => scrollToSection('about')}
               className="w-full sm:w-auto px-6 py-4 rounded-xl text-slate-200 font-semibold text-base border border-white/15 hover:border-white/40 hover:bg-white/5 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"
             >
-              Khám phá nền tảng
+              {siteConfig.secondaryCtaLabel}
             </button>
           </div>
           <p className="mt-6 text-xs text-slate-500">AI chỉ hỗ trợ phân tích và có thể sai sót — kết quả cần được đối chiếu thêm.</p>
         </div>
       </section>
+      )}
 
       {/* Intro + three illustrative blocks (informational only: no live tools on the public page) */}
+      {siteConfig.showAbout && (
       <section id="about" className="max-w-6xl mx-auto px-4 scroll-mt-20">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold tracking-[0.3em] text-[#55DDF2]">MỤC TIÊU</p>
-          <h2 className="mt-3 text-2xl md:text-3xl font-extrabold text-white">Giúp bạn dừng lại, kiểm tra và quyết định có cơ sở.</h2>
-          <p className="mt-3 text-slate-400 leading-relaxed">DEEPFAKE SCANNER là trung tâm an toàn số hỗ trợ nhận diện tín hiệu đáng ngờ trong ảnh, video, tin nhắn và liên kết, đồng thời cung cấp kiến thức để người dùng tự bảo vệ mình.</p>
+          <p className="text-xs font-semibold tracking-[0.3em] " style={{ color: siteConfig.accentColor }}>{siteConfig.aboutEyebrow}</p>
+          <h2 className="mt-3 text-2xl md:text-3xl font-extrabold text-white">{siteConfig.aboutTitle}</h2>
+          <p className="mt-3 text-slate-400 leading-relaxed">{siteConfig.aboutDescription}</p>
         </div>
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { t: 'Phân tích nội dung số', d: 'Tìm dấu hiệu bất thường trong ảnh và khung hình video.', icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zm10 3a3 3 0 100-6 3 3 0 000 6z' },
-            { t: 'Kiểm tra liên kết', d: 'Đánh giá cấu trúc đường dẫn và các mẫu lừa đảo thường gặp.', icon: 'M10 14a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1m2 6a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1' },
-            { t: 'Học an toàn số', d: 'Hướng dẫn, tình huống mô phỏng và trợ lý SafeBot.', icon: 'M12 3l9 4-9 4-9-4 9-4zm-5 8v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4' },
+            { t: siteConfig.introCard1Title, d: siteConfig.introCard1Description, icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zm10 3a3 3 0 100-6 3 3 0 000 6z' },
+            { t: siteConfig.introCard2Title, d: siteConfig.introCard2Description, icon: 'M10 14a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1m2 6a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1' },
+            { t: siteConfig.introCard3Title, d: siteConfig.introCard3Description, icon: 'M12 3l9 4-9 4-9-4 9-4zm-5 8v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4' },
           ].map((item) => (
             <div key={item.t} className="df-card group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-6">
               <div className="w-11 h-11 rounded-xl border border-[#55DDF2]/30 bg-[#55DDF2]/10 text-[#55DDF2] flex items-center justify-center mb-4">
@@ -126,15 +135,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           ))}
         </div>
       </section>
+      )}
 
+      {siteConfig.showFeatures && (
       <section id="features" className="max-w-6xl mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Tính năng cốt lõi</div>
+          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: siteConfig.accentColor }}>{siteConfig.featuresEyebrow}</div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-white">
-            Bộ Công Cụ Phòng Vệ Toàn Diện Cho Học Đường
+            {siteConfig.featuresTitle}
           </h2>
           <p className="mt-3 text-sm md:text-base text-slate-400">
-            Kết hợp trí tuệ nhân tạo Gemini đa phương thức và quy tắc an toàn thông tin chuyên sâu.
+            {siteConfig.featuresDescription}
           </p>
         </div>
 
@@ -147,16 +158,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Quét Ảnh & Khung Hình Video</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{siteConfig.feature1Title}</h3>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-                Rà soát các bất thường thị giác: đồng tử không đều, biên mặt mờ nhòe, ánh sáng phi lý, văn bản cắt ghép và thủ đoạn mạo danh người thân.
+                {siteConfig.feature1Description}
               </p>
             </div>
             <button
               onClick={() => handleStartScan('scanner')}
               className="mt-6 text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
             >
-              Mở máy quét ảnh →
+              {siteConfig.feature1ActionLabel}
             </button>
           </div>
 
@@ -168,16 +179,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Máy Quét Liên Kết & Lừa Đảo</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{siteConfig.feature2Title}</h3>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-                Phát hiện liên kết giả mạo ngân hàng, mạng xã hội, tên miền đồng hình Punycode, link rút gọn giấu mặt và lộ mã OTP nguy hiểm.
+                {siteConfig.feature2Description}
               </p>
             </div>
             <button
               onClick={() => handleStartScan('link-scanner')}
               className="mt-6 text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
             >
-              Kiểm tra đường link →
+              {siteConfig.feature2ActionLabel}
             </button>
           </div>
 
@@ -189,22 +200,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">SafeBot — Trợ Lý An Toàn 24/7</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{siteConfig.feature3Title}</h3>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-                Tư vấn tâm lý, hướng dẫn bình tĩnh khi gặp tin nhắn đe dọa, tống tiền bằng ảnh ghép và hướng dẫn liên hệ cha mẹ, thầy cô đúng cách.
+                {siteConfig.feature3Description}
               </p>
             </div>
             <button
               onClick={() => handleStartScan('safebot')}
               className="mt-6 text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
             >
-              Trò chuyện cùng SafeBot →
+              {siteConfig.feature3ActionLabel}
             </button>
           </div>
         </div>
       </section>
+      )}
 
       {/* 5.2 Section: Giới hạn của AI & Tính trung thực khoa học */}
+      {siteConfig.showAiLimitations && (
       <section className="max-w-6xl mx-auto px-4">
         <div className="bg-[#111c30] border border-amber-500/30 rounded-2xl p-6 md:p-8 space-y-4">
           <div className="flex items-center gap-2.5">
@@ -232,8 +245,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </ul>
         </div>
       </section>
+      )}
 
       {/* How it Works Section */}
+      {siteConfig.showHowItWorks && (
       <section id="how-it-works" className="max-w-6xl mx-auto px-4">
         <div className="bg-gradient-to-b from-[#131d33] to-[#0f172a] border border-slate-800 rounded-3xl p-8 md:p-12">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -276,8 +291,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* Safety Guide Section */}
+      {siteConfig.showSafetyGuide && (
       <section id="safety-guide" className="max-w-6xl mx-auto px-4">
         <div className="bg-[#142036] border border-blue-500/20 rounded-2xl p-6 md:p-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -320,8 +337,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* 5.2 Section: Chính sách quyền riêng tư */}
+      {siteConfig.showPrivacy && (
       <section className="max-w-6xl mx-auto px-4">
         <div className="bg-[#142036] border border-slate-800 rounded-2xl p-6 md:p-8 space-y-3">
           <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
@@ -349,12 +368,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* FAQ Section */}
+      {siteConfig.showFaq && (
       <section className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h3 className="text-xl md:text-2xl font-bold text-white">Câu Hỏi Thường Gặp</h3>
-          <p className="text-xs md:text-sm text-slate-400 mt-1">Giải đáp các thắc mắc về bảo mật và cách vận hành</p>
+          <h3 className="text-xl md:text-2xl font-bold text-white">{siteConfig.faqTitle}</h3>
+          <p className="text-xs md:text-sm text-slate-400 mt-1">{siteConfig.faqDescription}</p>
         </div>
 
         <div className="space-y-3">
@@ -380,6 +401,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           })}
         </div>
       </section>
+      )}
     </div>
   );
 };
