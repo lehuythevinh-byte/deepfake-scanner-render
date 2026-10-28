@@ -1,4 +1,16 @@
-# DEEPFAKE SCANNER — Bản vá, nâng cấp và ghi chú kiểm thử
+# DEEPFAKE SCANNER — Bản cập nhật AI mở và gỡ phân hệ Báo cáo
+
+## Bản hiện tại
+- Gỡ phân hệ Báo cáo riêng, các nút xuất/sao chép/in báo cáo trong kết quả Scanner và bộ dữ liệu kịch bản tĩnh đã cũ. Các đường dẫn cũ `/app/reports`, `/reports`, `/report` tự chuyển về trang tổng quan để tránh liên kết chết.
+- Thêm bộ phân tích tin nhắn AI theo ngữ cảnh mở, không bị giới hạn ở danh sách từ khóa/kịch bản cố định. Nội dung chỉ được gửi đến máy chủ/Google Gemini khi người dùng xác nhận trong giao diện.
+- Tạo 12–15 tình huống mới từ Google Search grounding; phân biệt tình huống có nguồn ghi nhận, xu hướng mới nổi và giả định chủ động phòng ngừa. Có liên kết nguồn, mốc cập nhật, nút cập nhật thủ công và tự làm mới mỗi 24 giờ ở máy chủ.
+- Tăng thời gian chờ cho tác vụ tìm nguồn/tổng hợp (`THREAT_INTELLIGENCE_TIMEOUT_MS`, mặc định 45 giây); giới hạn số lần cập nhật thủ công để kiểm soát hạn mức.
+- Mục đích: hỗ trợ nhận biết rủi ro, không khẳng định danh tính hay kết luận sự việc. Nhãn dự báo không phải bằng chứng sự việc đã xảy ra.
+- Cần cấu hình `GEMINI_API_KEY` ở môi trường máy chủ và deploy cả frontend lẫn `server.ts`. Chưa thể xác nhận chạy production nếu chưa cài dependency và chạy build trong môi trường đích.
+
+---
+
+---
 
 ## Tổng quan phiên bản nâng cấp
 
@@ -66,3 +78,9 @@ Phiên bản này nâng cấp toàn diện **DEEPFAKE SCANNER — TRUNG TÂM AN 
 - **Kiểm tra TypeScript (`npm run lint` / `tsc --noEmit`):** 0 lỗi, toàn bộ mã nguồn tuân thủ nghiêm ngặt type safety.
 - **Biên dịch Frontend (`compile_applet` / Vite build):** Thành công 100%, tạo gói bundle tĩnh tối ưu.
 - **API Health Check (`/api/health`):** Phản hồi mã `200 OK` với trạng thái cấu hình AI và thông tin dự án.
+
+
+## Cập nhật điều hướng
+- Phân hệ Báo cáo đã được gỡ khỏi menu và giao diện; các URL cũ được chuyển về trang tổng quan.
+- Khôi phục phân hệ Kiểm chứng (Evidence Lab), không liên quan đến Báo cáo.
+- Scanner dùng API tình huống AI động, làm mới cache theo chu kỳ 24 giờ khi có yêu cầu và hiển thị nguồn/thời điểm cập nhật nếu API trả về.

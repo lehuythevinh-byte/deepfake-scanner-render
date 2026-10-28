@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActiveTab, LinkScanResult } from '../types';
+import { ResultFeedback } from './ResultFeedback';
 
 interface LinkScannerModuleProps {
   onTabChange: (tab: ActiveTab) => void;
@@ -59,12 +60,12 @@ export const LinkScannerModule: React.FC<LinkScannerModuleProps> = ({ onTabChang
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || data.error || 'Không thể kiểm tra liên kết');
+        throw new Error(data.message || data.error || 'Chưa kiểm tra được liên kết. Bạn thử lại nhé.');
       }
 
       setResult(data.data);
     } catch (err: any) {
-      setError(err.message || 'Lỗi kết nối khi quét liên kết.');
+      setError(err.message || 'Chưa kết nối được máy chủ. Bạn thử lại nhé.');
     } finally {
       setLoading(false);
     }
@@ -148,7 +149,7 @@ export const LinkScannerModule: React.FC<LinkScannerModuleProps> = ({ onTabChang
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Đang phân tích...
+                  Mình đang phân tích, chờ một chút nhé…
                 </>
               ) : (
                 <>
@@ -219,16 +220,16 @@ export const LinkScannerModule: React.FC<LinkScannerModuleProps> = ({ onTabChang
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `[Báo cáo quét liên kết Trung tâm An toàn Số]\nURL: ${result.normalizedUrl}\nTrạng thái: ${result.riskLevel}\nĐiểm rủi ro: ${result.score}/100\n${result.summary}`
+                    `[Kết quả kiểm tra liên kết - Trung tâm An toàn Số]\nURL: ${result.normalizedUrl}\nTrạng thái: ${result.riskLevel}\nĐiểm rủi ro: ${result.score}/100\n${result.summary}`
                   );
-                  alert('Đã sao chép kết quả quét vào bộ nhớ tạm.');
+                  alert('Đã sao chép kết quả.');
                 }}
                 className="px-3.5 py-2 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition flex items-center gap-1.5 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                Sao chép báo cáo
+                Sao chép kết quả
               </button>
             </div>
           </div>
@@ -344,6 +345,8 @@ export const LinkScannerModule: React.FC<LinkScannerModuleProps> = ({ onTabChang
           <div className="text-[11px] text-slate-500 leading-relaxed border-t border-slate-800 pt-4">
             * {result.disclaimer}
           </div>
+
+          {(result.reportId) && <ResultFeedback key={result.reportId} module="link_scanner" resultId={result.reportId} />}
         </div>
       )}
 

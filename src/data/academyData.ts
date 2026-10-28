@@ -138,14 +138,14 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     id: 'quy-trinh-4-buoc-an-toan',
     category: 'detection_prevention',
     categoryLabel: 'Nhận biết và phòng tránh',
-    title: 'Quy trình an toàn 4 bước: Dừng lại - Kiểm chứng - Bảo vệ - Báo cáo',
+    title: 'Quy trình an toàn 4 bước: Dừng lại - Kiểm chứng - Bảo vệ - Nhờ hỗ trợ',
     readTime: '3 phút',
     summary: 'Bộ kỹ năng phản xạ số cốt lõi mà mỗi học sinh THCS cần thuộc nằm lòng để bảo vệ bản thân và bạn bè trước mọi rủi ro thông tin trên mạng xã hội.',
     keyTakeaways: [
       'Dừng lại: Ngừng mọi tương tác vội vàng, không nhấn link, không vội chia sẻ.',
       'Kiểm chứng: Đối chiếu nguồn độc lập, gọi điện thoại trực tiếp xác minh.',
       'Bảo vệ: Giữ kín thông tin cá nhân, mật khẩu, mã OTP, tài khoản cá nhân.',
-      'Báo cáo: Thông báo người lớn tin cậy, báo cáo sai phạm cho nền tảng.',
+      'Nhờ hỗ trợ: Thông báo người lớn tin cậy và phản ánh nội dung vi phạm cho nền tảng.',
     ],
     actionItems: [
       'Áp dụng quy tắc "30 giây dừng lại" trước bất kỳ tin sốc hay yêu cầu gấp nào.',
@@ -165,8 +165,8 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         content: 'Không chia sẻ thông tin trường lớp, địa chỉ nhà riêng, không bật định vị công khai trên story. Luôn khóa danh sách bạn bè và thiết lập quyền riêng tư trên trang cá nhân.',
       },
       {
-        heading: 'Bước 4: BÁO CÁO (Report & Seek Help)',
-        content: 'Sử dụng nút Report trên Facebook/TikTok/Zalo và chia sẻ với người lớn ngay khi có dấu hiệu bất thường.',
+        heading: 'Bước 4: NHỜ HỖ TRỢ (Seek Help)',
+        content: 'Dùng tính năng phản ánh nội dung vi phạm trên Facebook/TikTok/Zalo và chia sẻ với người lớn ngay khi có dấu hiệu bất thường.',
       },
     ],
     references: [
@@ -213,7 +213,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     categoryLabel: 'Hướng dẫn xử lý sự cố',
     title: 'Phải làm gì khi phát hiện tài khoản hoặc hình ảnh của mình bị mạo danh?',
     readTime: '4 phút',
-    summary: 'Các bước xử lý khẩn cấp và hiệu quả: thu thập chứng cứ hợp pháp, cảnh báo bạn bè trong lớp, báo cáo nền tảng và nhờ nhà trường can thiệp.',
+    summary: 'Các bước xử lý khẩn cấp và hiệu quả: thu thập chứng cứ hợp pháp, cảnh báo bạn bè trong lớp, yêu cầu nền tảng xem xét nội dung và nhờ nhà trường can thiệp.',
     keyTakeaways: [
       'Thông báo ngay cho bạn bè và thầy cô để mọi người cảnh giác không bị lừa.',
       'Lưu trữ link trang cá nhân mạo danh và chụp ảnh màn hình đầy đủ ngày giờ.',
@@ -221,7 +221,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     ],
     actionItems: [
       'Đăng một thông báo ngắn trên trang cá nhân chính thức đính chính tài khoản giả mạo.',
-      'Dùng tính năng "Báo cáo mạo danh tôi" trên mạng xã hội.',
+      'Dùng tính năng "Phản ánh tài khoản mạo danh" trên mạng xã hội.',
     ],
     sections: [
       {
@@ -233,8 +233,8 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         content: 'Nhờ lớp trưởng hoặc giáo viên chủ nhiệm thông báo vào nhóm phụ huynh và học sinh: "Hiện có tài khoản giả mạo em/bạn X, xin mọi người không chuyển tiền hay cung cấp thông tin".',
       },
       {
-        heading: 'Bước 3: Gửi báo cáo vi phạm bản quyền và nhân phẩm',
-        content: 'Các mạng xã hội đều có chính sách bảo vệ người dùng chưa thành niên rất nghiêm ngặt. Việc báo cáo kèm giấy tờ giám hộ của bố mẹ sẽ được xử lý ưu tiên gỡ bỏ.',
+        heading: 'Bước 3: Yêu cầu xử lý nội dung xâm phạm danh dự',
+        content: 'Các nền tảng có cơ chế tiếp nhận phản ánh về nội dung xâm phạm. Hãy nhờ cha mẹ hoặc người giám hộ hỗ trợ gửi yêu cầu, chỉ cung cấp giấy tờ khi nền tảng chính thức yêu cầu và đã xác minh đúng nơi tiếp nhận.',
       },
     ],
     references: [

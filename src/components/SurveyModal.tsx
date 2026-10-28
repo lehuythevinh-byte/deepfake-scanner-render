@@ -4,7 +4,7 @@ import { Star, X, RefreshCw, AlertCircle, Check } from 'lucide-react';
 const RATING_LABELS = ['Rất không hài lòng', 'Chưa hài lòng', 'Bình thường', 'Hài lòng', 'Rất hài lòng'];
 const POSITIVE = [
   ['ui', 'Giao diện dễ sử dụng'], ['speed', 'Tốc độ xử lý'], ['analysis_quality', 'Chất lượng phân tích'],
-  ['clear_reports', 'Báo cáo dễ hiểu'], ['safety_guides', 'Hướng dẫn an toàn hữu ích'], ['other', 'Khác'],
+  ['clear_reports', 'Kết quả phân tích dễ hiểu'], ['safety_guides', 'Hướng dẫn an toàn hữu ích'], ['other', 'Khác'],
 ];
 const IMPROVE = [
   ['ai_no_response', 'AI đôi lúc không phản hồi'], ['unclear_results', 'Kết quả chưa đủ rõ ràng'], ['slow', 'Thời gian xử lý lâu'],

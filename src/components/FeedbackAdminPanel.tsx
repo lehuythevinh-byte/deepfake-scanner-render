@@ -7,7 +7,7 @@ const STATUS_LABELS: Record<FeedbackStatus, string> = {
   new: 'Mới', reviewing: 'Đang xem xét', acknowledged: 'Đã ghi nhận', resolved: 'Đã xử lý', no_action: 'Không cần hành động',
 };
 const POSITIVE_LABELS: Record<string, string> = {
-  ui: 'Giao diện', speed: 'Tốc độ', analysis_quality: 'Chất lượng phân tích', clear_reports: 'Báo cáo dễ hiểu', safety_guides: 'Hướng dẫn an toàn', other: 'Khác',
+  ui: 'Giao diện', speed: 'Tốc độ', analysis_quality: 'Chất lượng phân tích', clear_reports: 'Kết quả phân tích dễ hiểu', safety_guides: 'Hướng dẫn an toàn', other: 'Khác',
 };
 
 interface FeedbackItem {

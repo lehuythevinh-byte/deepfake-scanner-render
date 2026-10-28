@@ -28,7 +28,7 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
       'Kiểm tra tài khoản gốc đăng bài: Tài khoản tạo bao lâu? Có tích xanh hoặc thông tin xác minh không? Đã từng đăng nội dung gì?',
       'Tìm kiếm độc lập (Lateral Reading): Mở báo chí chính thống (VTV, Báo Tuổi Trẻ, Thanh Niên) xem có bài viết xác nhận không.',
       'Sử dụng công cụ AI Scanner & Evidence Lab trên website này như một nguồn tham khảo kỹ thuật số.',
-      'Bấm nút "Báo cáo" (Report) trên mạng xã hội với lý do Thông tin sai lệch / Giả mạo.',
+      'Dùng tính năng phản ánh nội dung giả mạo/vi phạm trên mạng xã hội và nhờ người lớn hỗ trợ.',
     ],
     supportChannels: [
       {
@@ -87,7 +87,7 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
     immediateSteps: [
       'Chụp ảnh màn hình đầy đủ: Giữ nguyên ngày giờ, tên tài khoản, nội dung đe dọa, đường link URL bài viết.',
       'Lên tiếng chia sẻ NGAY LẬP TỨC với cha mẹ, thầy cô giáo chủ nhiệm hoặc chuyên viên tư vấn tâm lý trường học.',
-      'Sử dụng tính năng báo cáo vi phạm quyền riêng tư và quấy rối trên nền tảng (Meta, TikTok, Zalo).',
+      'Dùng tính năng phản ánh vi phạm quyền riêng tư và quấy rối trên nền tảng (Meta, TikTok, Zalo).',
       'Nhờ người lớn đại diện làm việc với ban giám hiệu nhà trường để có biện pháp bảo vệ học sinh.',
     ],
     supportChannels: [

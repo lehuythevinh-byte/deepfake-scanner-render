@@ -19,7 +19,6 @@ export const TAB_PATHS: Record<ActiveTab, string> = {
   'evidence-lab': '/app/evidence-lab',
   simulator: '/app/simulator',
   research: '/app/research',
-  report: '/app/reports',
   account: '/account',
   admin: '/admin',
 };
@@ -30,6 +29,10 @@ const PATH_ALIASES: Record<string, ActiveTab> = {
   '/link-scanner': 'link-scanner',
   '/history': 'history',
   '/safebot': 'safebot',
+  '/app/reports': 'app',
+  '/reports': 'app',
+  '/report': 'app',
+  '/evidence-lab': 'evidence-lab',
 };
 
 const PATH_TO_TAB: Record<string, ActiveTab> = (() => {

@@ -195,10 +195,10 @@ export const SIMULATOR_SCENARIOS: SimulatorScenario[] = [
       },
       {
         id: 'e3',
-        text: 'Bấm nút Báo cáo (Report) trên TikTok với lý do "Thông tin sai lệch / Giả mạo nguy hại" để thuật toán gỡ bỏ video.',
+        text: 'Dùng tính năng phản ánh nội dung trên TikTok với lý do "Thông tin sai lệch / Giả mạo nguy hại" để đề nghị nền tảng xem xét video.',
         isSafe: true,
-        feedback: 'Rất có ý thức cộng đồng! Báo cáo nội dung độc hại giúp bảo vệ hàng ngàn học sinh khác không bị dẫn dắt bởi thông tin thất thiệt.',
-        actionGuidance: 'Đóng góp làm sạch không gian mạng bắt đầu từ những hành động báo cáo đúng lúc của mỗi học sinh.',
+        feedback: 'Rất có ý thức cộng đồng! Phản ánh nội dung độc hại với nền tảng và nhờ người lớn tin cậy hỗ trợ giúp bảo vệ các học sinh khác.',
+        actionGuidance: 'Đóng góp làm sạch không gian mạng bắt đầu từ việc nhờ nền tảng và người lớn xử lý nội dung nguy hại đúng lúc.',
       },
     ],
   },

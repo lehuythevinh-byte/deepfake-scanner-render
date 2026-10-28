@@ -78,7 +78,7 @@ export const HistoryModule: React.FC<HistoryModuleProps> = ({ user, onTabChange 
 
   const handleExportCsv = () => {
     if (scans.length === 0) return;
-    const headers = ['Mã báo cáo', 'Chế độ quét', 'Tệp / Liên kết', 'Động cơ', 'Mô hình', 'Mức độ rủi ro', 'Thời gian xử lý (ms)', 'Thời điểm'];
+    const headers = ['Mã lượt quét', 'Chế độ quét', 'Tệp / Liên kết', 'Động cơ', 'Mô hình', 'Mức độ rủi ro', 'Thời gian xử lý (ms)', 'Thời điểm'];
     const rows = scans.map((s) => [
       s.reportId,
       s.scanMode,
@@ -185,9 +185,9 @@ export const HistoryModule: React.FC<HistoryModuleProps> = ({ user, onTabChange 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-300 border border-blue-500/20 mb-2">
             NHẬT KÝ KIỂM TRA AN TOÀN SỐ
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Lịch Sử Quét & Báo Cáo Của Bạn</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Lịch Sử Quét Của Bạn</h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Chỉ lưu trữ siêu dữ liệu kỹ thuật và mã báo cáo. Không lưu trữ ảnh hoặc video riêng tư của bạn.
+            Chỉ lưu trữ siêu dữ liệu kỹ thuật và mã lượt quét. Không lưu trữ ảnh hoặc video riêng tư của bạn.
           </p>
         </div>
 
@@ -344,7 +344,7 @@ export const HistoryModule: React.FC<HistoryModuleProps> = ({ user, onTabChange 
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#142036] border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white">Chi Tiết Báo Cáo Giám Định</h3>
+              <h3 className="text-base font-bold text-white">Chi Tiết Lượt Quét</h3>
               <button
                 onClick={() => setSelectedScan(null)}
                 className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
@@ -355,7 +355,7 @@ export const HistoryModule: React.FC<HistoryModuleProps> = ({ user, onTabChange 
 
             <div className="space-y-3 text-xs text-slate-300">
               <div className="p-3 bg-[#0d1626] rounded-xl border border-slate-800 space-y-1">
-                <div className="text-slate-400 text-[10px] uppercase">Mã báo cáo duy nhất</div>
+                <div className="text-slate-400 text-[10px] uppercase">Mã lượt quét</div>
                 <div className="font-mono text-sm font-bold text-blue-400">{selectedScan.reportId}</div>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -387,8 +387,8 @@ export const HistoryModule: React.FC<HistoryModuleProps> = ({ user, onTabChange 
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(`Báo cáo an toàn số: ${selectedScan.reportId} - ${selectedScan.fileName}`);
-                  alert('Đã sao chép mã báo cáo!');
+                  navigator.clipboard.writeText(`Lượt quét an toàn số: ${selectedScan.reportId} - ${selectedScan.fileName}`);
+                  alert('Đã sao chép mã lượt quét!');
                 }}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer"
               >
