@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ActiveTab, ScanMode, ThreatScanResult } from '../types';
-import { ResultFeedback } from './ResultFeedback';
 import { THREAT_SCENARIOS } from '../data/threatScenariosData';
 import { compressImage, formatBytes, CompressionResult } from '../utils/imageCompressor';
 import { 
@@ -16,6 +15,7 @@ import {
   Eye, 
   Info, 
   RefreshCw, 
+  FileCheck2,
   Lock,
   Layers,
   Sparkles,
@@ -73,9 +73,10 @@ export const SCAN_STAGES = [
 
 interface ScannerModuleProps {
   onTabChange: (tab: ActiveTab) => void;
+  aiConfigured: boolean | null;
 }
 
-export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => {
+export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiConfigured }) => {
   // Mode selection
   const [scanMode, setScanMode] = useState<ScanMode>('image');
 
@@ -562,7 +563,7 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
       setThreatResult({ ...result.data, isHeuristicNotice: Boolean(result.isHeuristicNotice) } as ThreatScanResult);
     } catch (err: any) {
       console.error('Scan request error:', err);
-      setScanError('Chưa kết nối được máy chủ. Bạn kiểm tra mạng rồi thử lại nhé.');
+      setScanError('Không thể kết nối đến máy chủ giám định. Vui lòng kiểm tra mạng hoặc thử lại sau.');
     } finally {
       clearInterval(timerInterval);
       if (progressInterval) clearInterval(progressInterval);
@@ -1505,6 +1506,14 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
               {/* Action Buttons */}
               <div className="pt-2 flex flex-wrap gap-2.5">
                 <button
+                  onClick={() => onTabChange('evidence-lab')}
+                  className="px-4 py-2.5 rounded-xl bg-[#55DDF2] text-[#101C32] font-bold text-xs hover:brightness-110 flex items-center gap-1.5 transition-all shadow-md"
+                >
+                  <FileCheck2 className="w-3.5 h-3.5" />
+                  <span>Kiểm chứng nguồn tại Evidence Lab</span>
+                </button>
+
+                <button
                   onClick={() => onTabChange('safebot')}
                   className="px-4 py-2.5 rounded-xl bg-[#172941] border border-[#55DDF2]/40 text-white hover:bg-[#1f3554] text-xs font-semibold flex items-center gap-1.5 transition-all"
                 >
@@ -1532,8 +1541,6 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
               <p className="text-[10px] text-slate-400 italic pt-2 border-t border-slate-800">
                 * {threatResult.scientificDisclaimer}
               </p>
-
-              {threatResult.reportId && <ResultFeedback key={threatResult.reportId} module="scanner" resultId={threatResult.reportId} />}
             </div>
           ) : (
             /* Standby Guide */
