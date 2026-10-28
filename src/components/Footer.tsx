@@ -1,13 +1,15 @@
 import React from 'react';
 import { Shield, PhoneCall, ExternalLink, HeartHandshake, Lock } from 'lucide-react';
 import { ActiveTab } from '../types';
+import { DEFAULT_SITE_CONFIG, SiteConfig } from '../lib/siteConfig';
 
 interface FooterProps {
   onTabChange: (tab: ActiveTab) => void;
   signedIn?: boolean;
+  siteConfig?: SiteConfig;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false }) => {
+export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, siteConfig = DEFAULT_SITE_CONFIG }) => {
   return (
     <footer className="bg-[#0b1322] border-t border-[#172941] text-slate-400 text-xs mt-16">
       {/* 4-Step Quick Action Banner */}
@@ -29,7 +31,7 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false })
             <span className="text-[#55DDF2]">→</span>
             <span className="px-3 py-1.5 rounded bg-[#101C32] border border-slate-700 text-slate-200 font-semibold">3. BẢO VỆ</span>
             <span className="text-[#55DDF2]">→</span>
-            <span className="px-3 py-1.5 rounded bg-[#CF5B65]/20 border border-[#CF5B65]/40 text-[#CF5B65] font-semibold">4. BÁO CÁO</span>
+            <span className="px-3 py-1.5 rounded bg-[#CF5B65]/20 border border-[#CF5B65]/40 text-[#CF5B65] font-semibold">4. NHỜ HỖ TRỢ</span>
           </div>
         </div>
       </div>
@@ -42,7 +44,7 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false })
               <div className="w-7 h-7 rounded-lg bg-[#55DDF2]/20 flex items-center justify-center text-[#55DDF2]">
                 <Shield className="w-4 h-4" />
               </div>
-              <span className="font-bold text-white text-sm tracking-wide">DEEPFAKE SCANNER</span>
+              <span className="font-bold text-white text-sm tracking-wide">{siteConfig.siteName}</span>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-300">
               Sản phẩm đề tài nghiên cứu khoa học: <strong>"Giải pháp giúp học sinh trung học cơ sở tránh một số tác động rủi ro từ Deepfake khi sử dụng mạng xã hội"</strong>.
@@ -60,11 +62,6 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false })
               <li>
                 <button onClick={() => onTabChange('scanner')} className="hover:text-white transition-colors">
                   AI Scanner (Phân tích tệp hình ảnh/video)
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onTabChange('evidence-lab')} className="hover:text-white transition-colors">
-                  Phòng kiểm chứng thông tin (Evidence Lab)
                 </button>
               </li>
               <li>
@@ -134,7 +131,7 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false })
 
         {/* Bottom copyright & attribution */}
         <div className="mt-8 pt-6 border-t border-[#172941] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
-          <p>© 2026 DEEPFAKE SCANNER — Nền tảng Nghiên cứu Khoa học Ứng dụng & Giáo dục An toàn Số.</p>
+          <p>© 2026 {siteConfig.siteName} — Nền tảng Nghiên cứu Khoa học Ứng dụng & Giáo dục An toàn Số.</p>
           <div className="flex items-center gap-4 text-[10px]">
             <span>Phiên bản v2.6.4-Production</span>
             <span>·</span>

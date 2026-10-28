@@ -5,15 +5,11 @@ import { ActiveTab, AuthUser } from '../types';
 interface UserDashboardProps {
   user: AuthUser | null;
   onTabChange: (tab: ActiveTab) => void;
-  aiConfigured: boolean | null;
-  databaseConfigured: boolean | null;
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({
   user,
   onTabChange,
-  aiConfigured,
-  databaseConfigured,
 }) => {
   // Recent activity comes from the user's own server-side history; nothing is invented.
   const [recent, setRecent] = useState<{ id: string; scanMode: string; riskLevel: string; createdAt: string; status: string }[] | null>(null);
@@ -63,39 +59,6 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             >
               Hồ sơ & Đổi mật khẩu
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* System Status Indicators */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-[#142036] border border-slate-800 flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${aiConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Trí tuệ nhân tạo (AI Engine)</div>
-            <div className="text-sm font-semibold text-white">
-              {aiConfigured ? 'Gemini AI Sẵn Sàng' : 'Chế độ Quy tắc Dự phòng'}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl bg-[#142036] border border-slate-800 flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${databaseConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Cơ sở dữ liệu người dùng</div>
-            <div className="text-sm font-semibold text-white">
-              {databaseConfigured ? 'PostgreSQL Hoạt Động' : 'Chưa kết nối DB'}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl bg-[#142036] border border-slate-800 flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-blue-400" />
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Vai trò người dùng</div>
-            <div className="text-sm font-semibold text-white uppercase">
-              {user?.role === 'admin' ? 'Quản Trị Viên (Admin)' : 'Thành Viên'}
-            </div>
           </div>
         </div>
       </div>
@@ -164,27 +127,6 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </p>
             <div className="text-xs font-semibold text-purple-400 flex items-center gap-1">
               Mở cuộc trò chuyện →
-            </div>
-          </div>
-
-          {/* Tile 4: Forensic Lab */}
-          <div
-            onClick={() => onTabChange('evidence-lab')}
-            className="p-6 rounded-2xl bg-[#162238] border border-slate-700/60 hover:border-cyan-500/60 hover:bg-[#1a2942] transition-all cursor-pointer group shadow-lg"
-          >
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4 group-hover:scale-105 transition-transform">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-bold text-white mb-1.5 group-hover:text-cyan-300 transition-colors">
-              Phòng Thí Nghiệm Bằng Chứng Số
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Công cụ giám định chi tiết: phân tích mức lỗi nén (ELA), bóc tách siêu dữ liệu EXIF và soi kính lúp.
-            </p>
-            <div className="text-xs font-semibold text-cyan-400 flex items-center gap-1">
-              Vào Evidence Lab →
             </div>
           </div>
 

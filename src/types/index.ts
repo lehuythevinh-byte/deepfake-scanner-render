@@ -30,6 +30,7 @@ export interface LinkFinding {
 }
 
 export interface LinkScanResult {
+  reportId?: string;
   url: string;
   normalizedUrl: string;
   protocol: string;
@@ -113,7 +114,7 @@ export interface ActionGuidanceSection {
   step1Stop: string;
   step2Verify: string[];
   step3Protect: string[];
-  step4Report: string[];
+  step4GetHelp: string[];
 }
 
 export interface ThreatScanResult {

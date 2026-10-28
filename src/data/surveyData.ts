@@ -94,7 +94,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
     question: 'Em có nắm được các bước kiểm chứng một hình ảnh hoặc video nghi vấn giả mạo không?',
     type: 'radio',
     options: [
-      { value: 'Biết rõ quy trình', label: 'Biết rõ quy trình (4 bước: Dừng lại - Kiểm chứng - Bảo vệ - Báo cáo)' },
+      { value: 'Biết rõ quy trình', label: 'Biết rõ quy trình (4 bước: Dừng lại - Kiểm chứng - Bảo vệ - Nhờ hỗ trợ)' },
       { value: 'Biết một vài cách', label: 'Biết một vài mẹo vặt (nhìn mắt, nhìn răng)' },
       { value: 'Chưa biết cách nào', label: 'Hoàn toàn chưa biết cách kiểm chứng' },
     ],
@@ -159,7 +159,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   },
 ];
 
-// DỮ LIỆU MINH HỌA: N=320 và các tỷ lệ bên dưới là dữ liệu dựng sẵn để trình diễn giao diện. Không được trích dẫn như khảo sát thật; cần thay bằng dữ liệu đã thu thập và có căn cứ trước khi báo cáo.
+// DỮ LIỆU MINH HỌA: N=320 và các tỷ lệ bên dưới là dữ liệu dựng sẵn để trình diễn giao diện. Không được trích dẫn như khảo sát thật; cần thay bằng dữ liệu đã thu thập và có căn cứ trước khi viết kết luận nghiên cứu.
 export const RESEARCH_BENCHMARK_DATA = {
   sampleSize: 320,
   schoolType: 'Học sinh Trung học Cơ sở (Khối 6-9)',

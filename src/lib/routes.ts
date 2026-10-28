@@ -23,7 +23,7 @@ export const TAB_PATHS: Record<ActiveTab, string> = {
   admin: '/admin',
 };
 
-// Legacy aliases: old report URLs return to the dashboard.
+// Legacy aliases kept so old bookmarks keep working.
 const PATH_ALIASES: Record<string, ActiveTab> = {
   '/scanner': 'scanner',
   '/link-scanner': 'link-scanner',
@@ -39,32 +39,19 @@ const PATH_TO_TAB: Record<string, ActiveTab> = (() => {
   const map: Record<string, ActiveTab> = {};
   (Object.keys(TAB_PATHS) as ActiveTab[]).forEach((tab) => {
     const p = TAB_PATHS[tab];
-    if (!(p in map)) map[p] = tab;
+    if (!(p in map)) map[p] = tab; // first wins ('/' -> home)
   });
   return { ...map, ...PATH_ALIASES };
 })();
 
 export const PUBLIC_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
-  'home',
-  'landing',
-  'features',
-  'how-it-works',
-  'safety-guide',
-  'login',
-  'register',
-  'emergency',
-  'academy',
+  'home', 'landing', 'features', 'how-it-works', 'safety-guide', 'login', 'register', 'emergency', 'academy',
 ]);
 
-export const isPublicTab = (tab: ActiveTab): boolean =>
-  PUBLIC_TABS.has(tab);
-
+// Tabs that belong to the signed-in application shell (internal navigation).
+export const isPublicTab = (tab: ActiveTab): boolean => PUBLIC_TABS.has(tab);
 export const isMarketingTab = (tab: ActiveTab): boolean =>
-  tab === 'home' ||
-  tab === 'landing' ||
-  tab === 'features' ||
-  tab === 'how-it-works' ||
-  tab === 'safety-guide';
+  tab === 'home' || tab === 'landing' || tab === 'features' || tab === 'how-it-works' || tab === 'safety-guide';
 
 export function pathToTab(pathname: string): ActiveTab | null {
   const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
@@ -72,45 +59,27 @@ export function pathToTab(pathname: string): ActiveTab | null {
 }
 
 /**
- * Only internal paths that match a known protected route are accepted.
- * External URLs and unsafe paths are rejected.
+ * Open-redirect safe: only internal absolute paths that exactly match a known
+ * protected route are accepted. Anything else (http://…, //host, javascript:, \\…) is rejected.
  */
-export function sanitizeNextPath(
-  raw: string | null | undefined,
-): string | null {
+export function sanitizeNextPath(raw: string | null | undefined): string | null {
   if (!raw || typeof raw !== 'string' || raw.length > 200) return null;
-  if (
-    !raw.startsWith('/') ||
-    raw.startsWith('//') ||
-    raw.includes('\\') ||
-    /[\u0000-\u001f]/.test(raw)
-  ) {
-    return null;
-  }
-
-  const pathOnly = raw.split(/[?#]/)[0] || '/';
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\u0000-\u001f]/.test(raw)) return null;
+  const pathOnly = raw.split(/[?#]/)[0];
   const tab = pathToTab(pathOnly);
-
   if (!tab || isPublicTab(tab)) return null;
-
   return TAB_PATHS[tab];
 }
 
 export function loginUrlFor(tab: ActiveTab): string {
   const target = TAB_PATHS[tab];
-  return isPublicTab(tab)
-    ? '/login'
-    : `/login?next=${encodeURIComponent(target)}`;
+  return isPublicTab(tab) ? '/login' : `/login?next=${encodeURIComponent(target)}`;
 }
 
-/** Tab to open after a successful login; defaults to the dashboard. */
+/** Tab to open after a successful login (defaults to the dashboard). */
 export function getSafeNextTab(): ActiveTab {
   if (typeof window === 'undefined') return 'app';
-
-  const next = sanitizeNextPath(
-    new URLSearchParams(window.location.search).get('next'),
-  );
+  const next = sanitizeNextPath(new URLSearchParams(window.location.search).get('next'));
   const tab = next ? pathToTab(next) : null;
-
   return tab ?? 'app';
 }

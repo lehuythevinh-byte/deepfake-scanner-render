@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ActiveTab, ScanMode, ThreatScanResult } from '../types';
-import { THREAT_SCENARIOS } from '../data/threatScenariosData';
+import { ResultFeedback } from './ResultFeedback';
 import { compressImage, formatBytes, CompressionResult } from '../utils/imageCompressor';
 import { 
   Upload, 
@@ -15,7 +15,6 @@ import {
   Eye, 
   Info, 
   RefreshCw, 
-  FileCheck2,
   Lock,
   Layers,
   Sparkles,
@@ -35,10 +34,6 @@ import {
   Zap,
   Clock,
   Gauge,
-  Copy,
-  Check,
-  FileDown,
-  Printer,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -56,7 +51,7 @@ export const SCAN_STAGES = [
   },
   {
     id: 3,
-    title: 'Bước 3: Đối chiếu 10 kịch bản chiêu trò MXH (AI Flash-Lite)',
+    title: 'Bước 3: AI suy luận kịch bản mở từ ngữ cảnh và tín hiệu mới',
     description: 'Truy vấn tức thì nhận diện mạo danh người nổi tiếng, trộm OTP, tin nhắn đe dọa, lừa tiền.',
   },
   {
@@ -66,17 +61,16 @@ export const SCAN_STAGES = [
   },
   {
     id: 5,
-    title: 'Bước 5: Hoàn tất báo cáo giám định an toàn số',
+    title: 'Bước 5: Hoàn tất kết quả phân tích an toàn số',
     description: 'Tổng hợp dữ liệu, phân loại nhãn khoa học chuẩn mực và khuyến nghị quy trình 4 bước phòng vệ.',
   },
 ];
 
 interface ScannerModuleProps {
   onTabChange: (tab: ActiveTab) => void;
-  aiConfigured: boolean | null;
 }
 
-export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiConfigured }) => {
+export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => {
   // Mode selection
   const [scanMode, setScanMode] = useState<ScanMode>('image');
 
@@ -107,6 +101,38 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
   const [scanError, setScanError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState<string>('');
   const [showScenariosModal, setShowScenariosModal] = useState<boolean>(false);
+  const [dynamicScenarios, setDynamicScenarios] = useState<any[]>([]);
+  const [dynamicSources, setDynamicSources] = useState<{ title: string; url: string }[]>([]);
+  const [dynamicScenariosUpdatedAt, setDynamicScenariosUpdatedAt] = useState<string | null>(null);
+  const [dynamicScenariosNextRefreshAt, setDynamicScenariosNextRefreshAt] = useState<string | null>(null);
+  const [dynamicScenarioLoading, setDynamicScenarioLoading] = useState(false);
+  const [dynamicScenarioError, setDynamicScenarioError] = useState('');
+
+  const loadDynamicScenarios = async (force = false) => {
+    setDynamicScenarioLoading(true);
+    setDynamicScenarioError('');
+    try {
+      const response = force
+        ? await fetch('/api/threat-intelligence/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}), cache: 'no-store' })
+        : await fetch('/api/threat-intelligence/scenarios', { credentials: 'same-origin', cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Không tải được tình huống AI.');
+      setDynamicScenarios(Array.isArray(data.scenarios) ? data.scenarios : []);
+      setDynamicSources(Array.isArray(data.sources) ? data.sources : []);
+      setDynamicScenariosUpdatedAt(data.updatedAt || null);
+      setDynamicScenariosNextRefreshAt(data.nextRefreshAt || null);
+    } catch (error: any) {
+      setDynamicScenarioError(error?.message || 'Không tải được tình huống AI.');
+    } finally {
+      setDynamicScenarioLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadDynamicScenarios();
+    const timer = window.setInterval(() => void loadDynamicScenarios(), 60 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // AI Speed optimization & 5-step progression states
   const [currentProgressStep, setCurrentProgressStep] = useState<number>(1);
@@ -116,107 +142,9 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange, aiCon
   const [compressionStats, setCompressionStats] = useState<CompressionResult | null>(null);
   const [autoCompress, setAutoCompress] = useState<boolean>(true);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  const [copiedToast, setCopiedToast] = useState<boolean>(false);
 
   const toggleSection = (key: string) => {
     setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleCopyReport = () => {
-    if (!threatResult) return;
-    const reportText = `[BÁO CÁO PHÂN TÍCH RỦI RO ĐA TẦNG — DEEPFAKE SCANNER]
-Chế độ giám định: ${threatResult.scanMode.toUpperCase()}
-Trạng thái: ${threatResult.overallStatusLabel}
-Nhận định: ${threatResult.summary}
-
-1. TÍNH XÁC THỰC HÌNH ẢNH:
-- Trạng thái: ${threatResult.imageAuthenticity.statusLabel}
-- Ghi chú: ${threatResult.imageAuthenticity.technicalNote}
-${threatResult.imageAuthenticity.observations.map(o => `+ [${o.category}] ${o.observation} (${o.severity})`).join('\n')}
-
-2. RỦI RO LỪA ĐẢO & THÚC ÉP:
-- Phát hiện: ${threatResult.scamRisks.detected ? 'Có' : 'Chưa phát hiện'} (Mức độ: ${threatResult.scamRisks.riskLevel})
-- Tiêu đề: ${threatResult.scamRisks.title}
-${threatResult.scamRisks.exactQuotes?.length ? `- Câu chữ căn cứ: "${threatResult.scamRisks.exactQuotes.join('", "')}"` : ''}
-- Diễn giải: ${threatResult.scamRisks.explanation}
-
-3. RỦI RO MẠO DANH:
-- Mức độ: ${threatResult.impersonationRisks.riskLevel}
-${threatResult.impersonationRisks.suspiciousIndicators.map(s => `+ ${s}`).join('\n')}
-
-4. AN TOÀN HỌC SINH:
-- Chỉ dẫn: ${threatResult.youthRisks.studentGuidance}
-${threatResult.youthRisks.emergencyNotice ? `- Khẩn cấp: ${threatResult.youthRisks.emergencyNotice}` : ''}
-
-5. NGUỒN & ĐIỂM CHƯA THỂ XÁC MINH:
-${threatResult.sourcesAndEvidence.unverifiedGaps.map(g => `+ ${g}`).join('\n')}
-
-6. CHỈ DẪN 4 BƯỚC:
-- Dừng lại: ${threatResult.actionGuidance.step1Stop}
-- Kiểm chứng: ${threatResult.actionGuidance.step2Verify.join('; ')}
-- Bảo vệ: ${threatResult.actionGuidance.step3Protect.join('; ')}
-- Báo cáo: ${threatResult.actionGuidance.step4Report.join('; ')}
-
-Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
-
-    navigator.clipboard.writeText(reportText).then(() => {
-      setCopiedToast(true);
-      setTimeout(() => setCopiedToast(false), 2000);
-    }).catch(() => {
-      alert('Không thể tự động sao chép. Bạn có thể bôi đen nội dung để sao chép thủ công.');
-    });
-  };
-
-  const handleDownloadJSON = () => {
-    if (!threatResult) return;
-    const exportData = {
-      _data_provenance: {
-        source: 'Deepfake Scanner — Trung tâm An toàn Số (Hệ thống giáo dục)',
-        disclaimer: 'Kết quả phân tích giáo dục an toàn số, không có giá trị kết luận pháp lý.',
-        exportedAt: new Date().toISOString(),
-        scanMode,
-        fileAnalyzed: selectedFile?.name || 'content_sample',
-      },
-      analysisResult: threatResult,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `threat_report_${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-
-  const handleDownloadCSV = () => {
-    if (!threatResult) return;
-    const rows = [
-      ['Nguon_du_lieu', 'Social Threat Scanner - Trung tam An toan So (Ket qua giao duc)'],
-      ['Thoi_gian_xuat', new Date().toISOString()],
-      ['Che_do_quet', threatResult.scanMode],
-      ['Trang_thai_tong_the', threatResult.overallStatusLabel],
-      ['Tom_tat', threatResult.summary],
-      ['Kich_ban_nhan_dien', (threatResult.matchedScenarioCodes || []).join('; ')],
-      ['Xac_thuc_hinh_anh', threatResult.imageAuthenticity.statusLabel],
-      ['Rui_ro_lua_dao', threatResult.scamRisks.detected ? 'Co' : 'Khong'],
-      ['Cau_chu_can_cu', (threatResult.scamRisks.exactQuotes || []).join('; ')],
-      ['Rui_ro_mao_danh', threatResult.impersonationRisks.riskLevel],
-      ['Chi_dan_hoc_sinh', threatResult.youthRisks.studentGuidance],
-      ['Cac_diem_chua_xac_minh', (threatResult.sourcesAndEvidence.unverifiedGaps || []).join('; ')],
-      ['Loi_khuyen_khoa_hoc', threatResult.scientificDisclaimer],
-    ];
-    const csvContent = '\uFEFF' + rows.map(([k, v]) => `"${k}","${String(v).replace(/"/g, '""')}"`).join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `threat_report_${Date.now()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -505,7 +433,7 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
 
       setCurrentProgressStep(3);
       setProgressPercent(48);
-      setProcessingStep('Bước 3/5: Đang đối chiếu 10 kịch bản chiêu trò với Gemini 3.1 Flash-Lite...');
+      setProcessingStep('Bước 3/5: AI đang phân tích kịch bản mở, gồm cả biến thể mới...');
 
       // Incremental progress ticker while awaiting AI server response
       progressInterval = setInterval(() => {
@@ -555,7 +483,7 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
 
       setCurrentProgressStep(5);
       setProgressPercent(100);
-      setProcessingStep('Bước 5/5: Hoàn tất báo cáo giám định an toàn số!');
+      setProcessingStep('Bước 5/5: Hoàn tất kết quả phân tích an toàn số!');
 
       const totalSec = (performance.now() - startTime) / 1000;
       setLastScanDuration(totalSec);
@@ -563,7 +491,7 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
       setThreatResult({ ...result.data, isHeuristicNotice: Boolean(result.isHeuristicNotice) } as ThreatScanResult);
     } catch (err: any) {
       console.error('Scan request error:', err);
-      setScanError('Không thể kết nối đến máy chủ giám định. Vui lòng kiểm tra mạng hoặc thử lại sau.');
+      setScanError('Chưa kết nối được máy chủ. Bạn kiểm tra mạng rồi thử lại nhé.');
     } finally {
       clearInterval(timerInterval);
       if (progressInterval) clearInterval(progressInterval);
@@ -573,7 +501,7 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-      {/* Module Title & 10-Scenario Badge */}
+      {/* Module Title & Dynamic AI Scenarios */}
       <div className="border-b border-[#172941] pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-[#55DDF2] font-bold tracking-wider uppercase mb-1">
@@ -589,11 +517,11 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
         </div>
 
         <button
-          onClick={() => setShowScenariosModal(true)}
+          onClick={() => { setShowScenariosModal(true); if (!dynamicScenarios.length) void loadDynamicScenarios(); }}
           className="px-4 py-2.5 rounded-xl bg-[#172941] border border-[#55DDF2]/40 hover:bg-[#1f3554] text-xs font-semibold text-[#55DDF2] flex items-center gap-2 shrink-0 transition-all shadow-sm"
         >
           <BookOpen className="w-4 h-4" />
-          <span>Xem 10 kịch bản chiêu trò</span>
+          <span>Xem tình huống AI cập nhật</span>
         </button>
       </div>
 
@@ -993,7 +921,7 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
           </div>
         </div>
 
-        {/* Right Column: Detailed 6-Part Multi-Layered Threat Report */}
+        {/* Right Column: AI Analysis Result */}
         <div className="lg:col-span-7">
           {isScanning ? (
             /* 5-Stage Visual Progress Stepper for Super-Fast AI Processing */
@@ -1099,19 +1027,19 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
               </div>
             </div>
           ) : threatResult ? (
-            /* Full Multi-Layered Threat Report */
+            /* AI risk analysis result */
             <div className="rounded-2xl bg-[#172941]/90 border border-[#55DDF2]/30 p-6 space-y-6 animate-in fade-in duration-300">
               {/* Header Status Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1f3554] pb-4">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-mono font-bold uppercase text-[#55DDF2] tracking-wider">
-                      BÁO CÁO PHÂN TÍCH RỦI RO ĐA TẦNG
+                      KẾT QUẢ PHÂN TÍCH RỦI RO
                     </span>
                     {threatResult.reportId && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#101C32] text-cyan-300 border border-cyan-800 text-[10px] font-mono font-bold">
                         <ShieldCheck className="w-3 h-3 text-[#55DDF2]" />
-                        <span>MÃ: {threatResult.reportId}</span>
+                        <span>LƯỢT QUÉT: {threatResult.reportId}</span>
                       </span>
                     )}
                     <span className="text-[10px] text-slate-400 font-mono">· {threatResult.scanMode.toUpperCase()}</span>
@@ -1150,48 +1078,6 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
                 </span>
               </div>
 
-              {/* Report Export & Copy Toolbar */}
-              <div className="flex items-center justify-between gap-2 flex-wrap bg-[#101C32] p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-[#55DDF2]" />
-                  <span>Thao tác & Chia sẻ báo cáo:</span>
-                </span>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={handleCopyReport}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#172941] hover:bg-[#1f3554] text-xs font-semibold text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors shadow-sm"
-                    title="Sao chép toàn văn báo cáo vào bộ nhớ đệm"
-                  >
-                    {copiedToast ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-[#55DDF2]" />}
-                    <span>{copiedToast ? 'Đã sao chép!' : 'Sao chép văn bản'}</span>
-                  </button>
-                  <button
-                    onClick={handleDownloadJSON}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#172941] hover:bg-[#1f3554] text-xs font-semibold text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors shadow-sm"
-                    title="Tải tệp JSON cấu trúc gốc"
-                  >
-                    <FileDown className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Xuất JSON</span>
-                  </button>
-                  <button
-                    onClick={handleDownloadCSV}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#172941] hover:bg-[#1f3554] text-xs font-semibold text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors shadow-sm"
-                    title="Tải tệp bảng tính CSV có nguồn dữ liệu rõ ràng"
-                  >
-                    <FileDown className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Xuất CSV</span>
-                  </button>
-                  <button
-                    onClick={() => window.print()}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#172941] hover:bg-[#1f3554] text-xs font-semibold text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors shadow-sm"
-                    title="In báo cáo thân thiện"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-amber-400" />
-                    <span>In</span>
-                  </button>
-                </div>
-              </div>
-
               {/* Matched Scenarios Badges */}
               {threatResult.isHeuristicNotice && (
                 <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-xs leading-relaxed text-amber-100" role="status">
@@ -1203,17 +1089,14 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
                 <div className="p-3.5 rounded-xl bg-[#101C32] border border-amber-500/40 space-y-1.5">
                   <span className="text-[10px] uppercase font-bold text-amber-300 tracking-wider flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Khớp với kịch bản chiêu trò nhận diện:</span>
+                    <span>Mô hình rủi ro AI nhận thấy:</span>
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {threatResult.matchedScenarioCodes.map((code) => {
-                      const matchedInfo = THREAT_SCENARIOS.find((s) => s.code === code);
-                      return (
-                        <span key={code} className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-200 text-xs font-semibold border border-amber-500/30">
-                          {matchedInfo ? matchedInfo.title : code}
-                        </span>
-                      );
-                    })}
+                    {threatResult.matchedScenarioCodes.map((scenarioLabel, index) => (
+                      <span key={`${scenarioLabel}-${index}`} className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-200 text-xs font-semibold border border-amber-500/30">
+                        {scenarioLabel.replace(/^SCENARIO_[A-Z0-9_]+\s*[:—-]?\s*/i, '')}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1495,8 +1378,8 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
                         <span>{threatResult.actionGuidance.step3Protect.join(' · ')}</span>
                       </div>
                       <div className="p-2.5 rounded-lg bg-[#101C32]">
-                        <strong className="text-[#CF5B65]">BƯỚC 4 - BÁO CÁO: </strong>
-                        <span>{threatResult.actionGuidance.step4Report.join(' · ')}</span>
+                        <strong className="text-[#CF5B65]">BƯỚC 4 - NHỜ HỖ TRỢ: </strong>
+                        <span>{threatResult.actionGuidance.step4GetHelp.join(' · ')}</span>
                       </div>
                     </div>
                   </div>
@@ -1505,14 +1388,6 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
 
               {/* Action Buttons */}
               <div className="pt-2 flex flex-wrap gap-2.5">
-                <button
-                  onClick={() => onTabChange('evidence-lab')}
-                  className="px-4 py-2.5 rounded-xl bg-[#55DDF2] text-[#101C32] font-bold text-xs hover:brightness-110 flex items-center gap-1.5 transition-all shadow-md"
-                >
-                  <FileCheck2 className="w-3.5 h-3.5" />
-                  <span>Kiểm chứng nguồn tại Evidence Lab</span>
-                </button>
-
                 <button
                   onClick={() => onTabChange('safebot')}
                   className="px-4 py-2.5 rounded-xl bg-[#172941] border border-[#55DDF2]/40 text-white hover:bg-[#1f3554] text-xs font-semibold flex items-center gap-1.5 transition-all"
@@ -1541,6 +1416,8 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
               <p className="text-[10px] text-slate-400 italic pt-2 border-t border-slate-800">
                 * {threatResult.scientificDisclaimer}
               </p>
+
+              {threatResult.reportId && <ResultFeedback key={threatResult.reportId} module="scanner" resultId={threatResult.reportId} />}
             </div>
           ) : (
             /* Standby Guide */
@@ -1596,62 +1473,39 @@ Lưu ý khoa học: ${threatResult.scientificDisclaimer}`;
         </div>
       </div>
 
-      {/* 10 Threat Scenarios Reference Modal */}
+      {/* Dynamic AI threat intelligence modal */}
       {showScenariosModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-3xl bg-[#101C32] border border-[#55DDF2]/40 rounded-3xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="relative w-full max-w-4xl bg-[#101C32] border border-[#55DDF2]/40 rounded-3xl p-6 sm:p-8 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-[#172941] pb-4">
               <div>
-                <span className="text-[10px] font-mono uppercase font-bold text-[#55DDF2]">
-                  CẨM NANG NHẬN DIỆN CHIÊU TRÒ MẠNG XÃ HỘI
-                </span>
-                <h3 className="text-xl font-bold text-white mt-0.5">10 Kịch Bản Nguy Hiểm Đối Với Học Sinh THCS</h3>
+                <span className="text-[10px] font-mono uppercase font-bold text-[#55DDF2]">TRÍ TUỆ ĐE DỌA ĐƯỢC CẬP NHẬT</span>
+                <h3 className="text-xl font-bold text-white mt-1">Tình huống mới do AI tổng hợp</h3>
+                <p className="text-xs text-slate-400 mt-1">Không khóa vào bộ mẫu cố định. AI tìm thông tin web gần đây và tạo mới 12–15 tình huống theo chu kỳ 24 giờ.</p>
+                {dynamicScenariosUpdatedAt && <p className="text-[10px] text-slate-500 mt-2">Lần cập nhật: {new Date(dynamicScenariosUpdatedAt).toLocaleString('vi-VN')}</p>}
+                {dynamicScenariosNextRefreshAt && <p className="text-[10px] text-slate-500 mt-1">Làm mới dự kiến: {new Date(dynamicScenariosNextRefreshAt).toLocaleString('vi-VN')}</p>}
               </div>
-              <button
-                onClick={() => setShowScenariosModal(false)}
-                className="p-2 rounded-full bg-[#172941] text-slate-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setShowScenariosModal(false)} className="p-2 rounded-full bg-[#172941] text-slate-400 hover:text-white transition-colors" aria-label="Đóng tình huống AI"><X className="w-5 h-5" /></button>
             </div>
-
-            <div className="space-y-4">
-              {THREAT_SCENARIOS.map((scen) => (
-                <div key={scen.id} className="p-4 rounded-2xl bg-[#172941]/70 border border-[#1f3554] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-white">{scen.title}</h4>
-                    <span className="text-[10px] font-mono text-[#55DDF2] uppercase bg-[#101C32] px-2 py-0.5 rounded border border-slate-700">
-                      {scen.category}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">{scen.description}</p>
-                  <div className="space-y-1 pt-1">
-                    <span className="text-[10px] uppercase font-bold text-amber-300 block">Dấu hiệu nhận biết:</span>
-                    <ul className="space-y-0.5 text-xs text-slate-400">
-                      {scen.typicalSignals.map((sig, sIdx) => (
-                        <li key={sIdx} className="flex items-start gap-1.5">
-                          <span className="text-amber-400">·</span>
-                          <span>{sig}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="pt-1.5 border-t border-slate-700/60 text-xs text-emerald-300">
-                    <strong>Hành động đúng: </strong>
-                    <span>{scen.recommendedAction}</span>
-                  </div>
-                </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => void loadDynamicScenarios(true)} disabled={dynamicScenarioLoading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#55DDF2]/10 border border-[#55DDF2]/30 text-[#a9eaf5] text-xs font-semibold disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${dynamicScenarioLoading ? 'animate-spin' : ''}`} /> {dynamicScenarioLoading ? 'Đang cập nhật…' : 'Cập nhật từ web ngay'}</button>
+            </div>
+            {dynamicScenarioError && <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-100">{dynamicScenarioError}</div>}
+            {dynamicScenarioLoading && !dynamicScenarios.length ? <div className="py-10 text-center text-sm text-slate-400">AI đang tìm và tổng hợp các tình huống…</div> : null}
+            {!dynamicScenarioLoading && !dynamicScenarios.length && !dynamicScenarioError && <p className="py-8 text-center text-xs text-slate-400">Chưa có danh sách tình huống. Hãy cập nhật sau khi cấu hình GEMINI_API_KEY trên Render.</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {dynamicScenarios.map((scenario: any) => (
+                <article key={scenario.id} className="p-4 rounded-2xl bg-[#172941]/70 border border-[#1f3554] space-y-2">
+                  <div className="flex items-start justify-between gap-2"><h4 className="text-sm font-bold text-white">{scenario.title}</h4><span className="text-[9px] rounded-full px-2 py-1 border border-cyan-500/25 text-cyan-200 whitespace-nowrap">AI cập nhật</span></div>
+                  <p className="text-xs text-slate-300 leading-relaxed">{scenario.summary}</p>
+                  {Array.isArray(scenario.signs) && <ul className="space-y-1 text-xs text-slate-400">{scenario.signs.slice(0, 4).map((sign: string, i: number) => <li key={`${scenario.id}-${i}`}>• {sign}</li>)}</ul>}
+                  {scenario.exampleMessage && <button onClick={() => { setShowScenariosModal(false); setMessageText(scenario.exampleMessage); setScanMode('message_scam'); }} className="text-[10px] text-[#55DDF2] font-semibold hover:underline">Dùng ví dụ này để phân tích →</button>}
+                </article>
               ))}
             </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setShowScenariosModal(false)}
-                className="px-5 py-2.5 rounded-xl bg-[#55DDF2] text-[#101C32] font-bold text-xs hover:brightness-110 transition-all"
-              >
-                Đã hiểu & Đóng bảng kịch bản
-              </button>
-            </div>
+            {dynamicSources.length > 0 && <div className="border-t border-white/5 pt-4"><h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Nguồn web</h4><div className="flex flex-wrap gap-x-4 gap-y-2">{dynamicSources.slice(0, 8).map((source) => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#a9d8f0] hover:underline">{source.title || source.url} ↗</a>)}</div></div>}
+            <p className="text-[10px] leading-relaxed text-slate-500">Tình huống AI tổng hợp cần được kiểm chứng. Những tình huống “dự báo” là giả định phòng ngừa, không phải bằng chứng một vụ việc đã xảy ra.</p>
+            <div className="pt-2 flex justify-end"><button onClick={() => setShowScenariosModal(false)} className="px-5 py-2.5 rounded-xl bg-[#55DDF2] text-[#101C32] font-bold text-xs hover:brightness-110 transition-all">Đóng</button></div>
           </div>
         </div>
       )}
