@@ -301,7 +301,6 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       include: ['web_search_call.action.sources'],
       tool_choice: 'required',
       input: messages.map((message) => `${message.role.toUpperCase()}:\n${message.content}`).join('\n\n'),
-      ...(options.jsonMode ? { text: { format: { type: 'json_object' } } } : {}),
     };
   } else {
     const baseUrl = provider === 'openai'
