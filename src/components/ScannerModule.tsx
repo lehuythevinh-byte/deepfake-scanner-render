@@ -916,7 +916,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
             {/* Privacy pledge */}
             <p className="text-[10px] text-slate-400 flex items-center justify-center gap-1.5 text-center">
               <Lock className="w-3 h-3 text-[#41866C]" />
-              <span>Bảo mật: Tệp và văn bản chỉ được phân tích tạm thời, không lưu trữ thông tin cá nhân.</span>
+              <span>Bảo mật: Nội dung được gửi đến một nhà cung cấp AI đã cấu hình; nếu gặp lỗi/quá tải, máy chủ có thể chuyển tuần tự sang nhà cung cấp dự phòng. Không gửi mật khẩu, OTP hoặc dữ liệu riêng tư.</span>
             </p>
           </div>
         </div>
@@ -931,7 +931,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                 <div>
                   <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#55DDF2] uppercase tracking-wider">
                     <Zap className="w-4 h-4 text-[#55DDF2] animate-bounce" />
-                    <span>TIẾN TRÌNH GIÁM ĐỊNH SIÊU TỐC — GEMINI 3.1 FLASH-LITE</span>
+                    <span>TIẾN TRÌNH GIÁM ĐỊNH — ĐIỀU PHỐI ĐA AI</span>
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-white mt-1">
                     Hệ thống đang xử lý đa tầng (5 bước tuần tự)
@@ -1021,9 +1021,9 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
               <div className="p-3 rounded-xl bg-[#101C32]/80 border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-300">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#55DDF2]" />
-                  <span>Động cơ AI: <strong className="text-white">Gemini 3.1 Flash-Lite</strong> (Tắt thinking delay, phản hồi tức thì)</span>
+                  <span>Động cơ AI: <strong className="text-white">Tự động chọn Gemini / OpenAI / DeepSeek</strong> theo tình trạng dịch vụ</span>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-mono">Tốc độ tối đa</span>
+                <span className="text-[10px] text-emerald-400 font-mono">Tự chuyển dự phòng khi cần</span>
               </div>
             </div>
           ) : threatResult ? (
@@ -1043,6 +1043,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                       </span>
                     )}
                     <span className="text-[10px] text-slate-400 font-mono">· {threatResult.scanMode.toUpperCase()}</span>
+                    {threatResult.engineUsed && <span className="text-[10px] text-emerald-300 font-mono">· AI: {{ gemini: 'Gemini', openai: 'OpenAI', deepseek: 'DeepSeek', heuristic: 'Quy tắc dự phòng' }[threatResult.engineUsed]}{threatResult.modelUsed ? ` · ${threatResult.modelUsed}` : ''}</span>}
                     {threatResult.taskState && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 text-[10px] font-mono border border-slate-700/60">
                         <span>Trạng thái: {threatResult.taskState}</span>
@@ -1051,7 +1052,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                     {lastScanDuration !== null && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono">
                         <Zap className="w-3 h-3 text-emerald-400" />
-                        <span>{lastScanDuration.toFixed(1)}s (Flash-Lite)</span>
+                        <span>{lastScanDuration.toFixed(1)}s</span>
                       </span>
                     )}
                     {compressionStats && compressionStats.wasCompressed && (
@@ -1492,7 +1493,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
             </div>
             {dynamicScenarioError && <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-100">{dynamicScenarioError}</div>}
             {dynamicScenarioLoading && !dynamicScenarios.length ? <div className="py-10 text-center text-sm text-slate-400">AI đang tìm và tổng hợp các tình huống…</div> : null}
-            {!dynamicScenarioLoading && !dynamicScenarios.length && !dynamicScenarioError && <p className="py-8 text-center text-xs text-slate-400">Chưa có danh sách tình huống. Hãy cập nhật sau khi cấu hình GEMINI_API_KEY trên Render.</p>}
+            {!dynamicScenarioLoading && !dynamicScenarios.length && !dynamicScenarioError && <p className="py-8 text-center text-xs text-slate-400">Chưa có danh sách tình huống. Hãy cấu hình ít nhất một API key AI trên Render.</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {dynamicScenarios.map((scenario: any) => (
                 <article key={scenario.id} className="p-4 rounded-2xl bg-[#172941]/70 border border-[#1f3554] space-y-2">

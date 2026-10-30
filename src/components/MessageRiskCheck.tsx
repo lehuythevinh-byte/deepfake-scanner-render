@@ -28,6 +28,8 @@ type AIAnalysis = {
   immediateActions: string[];
   limitations: string;
   intelligenceUpdatedAt?: string | null;
+  aiProvider?: 'gemini' | 'openai' | 'deepseek';
+  aiModel?: string;
 };
 
 const dateLabel = (value?: string | null) => {
@@ -96,7 +98,7 @@ export const MessageRiskCheck: React.FC = () => {
       return;
     }
     if (!agreedToSend) {
-      setError('Hãy xác nhận đồng ý gửi nội dung đến máy chủ và Google Gemini trước khi phân tích.');
+      setError('Hãy xác nhận đồng ý gửi nội dung đến máy chủ và nhà cung cấp AI được chọn trước khi phân tích.');
       return;
     }
     setError('');
@@ -166,7 +168,7 @@ export const MessageRiskCheck: React.FC = () => {
           <textarea id="message-risk-input" value={message} onChange={(event) => { setMessage(event.target.value); setError(''); }} rows={8} maxLength={10000} placeholder="Dán tin nhắn, lời thoại được chép lại hoặc nội dung bài đăng. Có thể xóa tên, số điện thoại và thông tin cá nhân trước khi gửi…" className="w-full rounded-xl border border-slate-700 bg-[#0b1424] px-4 py-3 text-sm leading-relaxed text-slate-100 placeholder:text-slate-500 outline-none focus:border-[#55DDF2]/60 focus:ring-2 focus:ring-[#55DDF2]/10 resize-y" />
           <label className="flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 text-[11px] leading-relaxed text-amber-100/90 cursor-pointer">
             <input type="checkbox" checked={agreedToSend} onChange={(event) => setAgreedToSend(event.target.checked)} className="mt-0.5 accent-cyan-400" />
-            <span>Tôi hiểu nội dung trên sẽ được gửi đến máy chủ website và Google Gemini để phân tích. Không gửi mật khẩu, mã OTP, số giấy tờ hoặc thông tin riêng tư không cần thiết.</span>
+            <span>Tôi hiểu nội dung sẽ được gửi đến máy chủ và một nhà cung cấp AI đã cấu hình (Gemini, OpenAI hoặc DeepSeek). Nếu nhà cung cấp đang lỗi/quá tải, máy chủ có thể lần lượt chuyển yêu cầu sang nhà cung cấp dự phòng khác. Không gửi mật khẩu, mã OTP, số giấy tờ hoặc thông tin riêng tư không cần thiết.</span>
           </label>
           {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
           <div className="flex flex-wrap gap-2">
@@ -192,6 +194,7 @@ export const MessageRiskCheck: React.FC = () => {
                 </div>
                 <div className="h-2 rounded-full bg-black/20 overflow-hidden mt-3"><div className={`h-full ${analysis.level === 'critical' || analysis.level === 'high' ? 'bg-rose-400' : analysis.level === 'medium' ? 'bg-amber-300' : 'bg-cyan-300'}`} style={{ width: `${Math.max(0, Math.min(100, analysis.score))}%` }} /></div>
                 <p className="text-xs leading-relaxed mt-3">{analysis.summary}</p>
+                {analysis.aiProvider && <p className="mt-2 text-[10px] opacity-70">Nhà cung cấp: {analysis.aiProvider.toUpperCase()} {analysis.aiModel ? `· ${analysis.aiModel}` : ''}</p>}
               </div>
               {analysis.signals?.length > 0 && <div className="space-y-2">
                 <h3 className="text-xs uppercase tracking-wider font-bold text-slate-300">Các dấu hiệu AI giải thích</h3>
@@ -218,7 +221,7 @@ export const MessageRiskCheck: React.FC = () => {
           </div>
           {feed?.updatedAt && <div className="text-[10px] text-slate-400">Cập nhật lần cuối: <strong className="text-slate-200">{dateLabel(feed.updatedAt)}</strong></div>}
         </div>
-        {feedLoading ? <div className="py-8 text-center text-xs text-slate-400"><RefreshCw className="w-4 h-4 animate-spin inline mr-2" />Đang lấy tình huống AI mới…</div> : feedError && !feed ? <div role="alert" className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-xs text-amber-100"><p>{feedError}</p><p className="mt-1 text-amber-100/70">Kiểm tra GEMINI_API_KEY trên Render hoặc thử cập nhật lại sau.</p><button type="button" onClick={() => void loadFeed()} className="mt-3 underline">Thử lại</button></div> : null}
+        {feedLoading ? <div className="py-8 text-center text-xs text-slate-400"><RefreshCw className="w-4 h-4 animate-spin inline mr-2" />Đang lấy tình huống AI mới…</div> : feedError && !feed ? <div role="alert" className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-xs text-amber-100"><p>{feedError}</p><p className="mt-1 text-amber-100/70">Kiểm tra các API key AI trong Render Environment hoặc thử cập nhật lại sau.</p><button type="button" onClick={() => void loadFeed()} className="mt-3 underline">Thử lại</button></div> : null}
         {feedError && feed && <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[10px] text-amber-100">Chưa lấy được bản mới; đang giữ bộ tình huống đã cập nhật lúc {dateLabel(feed.updatedAt)}. {feedError}</p>}
         {feed && <>
           {feed.sourceStatus === 'web_grounded' ? <p className="text-[10px] text-emerald-300">Đã đối chiếu tìm kiếm web · Dự kiến cập nhật tiếp: {dateLabel(feed.nextRefreshAt)}</p> : <p className="text-[10px] text-amber-300">AI đã sinh tình huống nhưng lượt này chưa trả về nguồn web để xác minh độc lập.</p>}
