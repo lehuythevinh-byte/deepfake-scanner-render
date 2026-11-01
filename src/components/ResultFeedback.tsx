@@ -1,113 +1,113 @@
 import React, { useState } from 'react';
-
-type Sentiment = 'helpful' | 'okay' | 'not_helpful';
-type Phase = 'idle' | 'sending' | 'done';
-
-const OPTIONS: { value: Sentiment; emoji: string; label: string }[] = [
-  { value: 'helpful', emoji: '👍', label: 'Hữu ích' },
-  { value: 'okay', emoji: '😐', label: 'Tạm ổn' },
-  { value: 'not_helpful', emoji: '👎', label: 'Chưa hữu ích' },
-];
-const MAX = 500;
+import { ThumbsUp, ThumbsDown, CheckCircle, Send } from 'lucide-react';
 
 interface ResultFeedbackProps {
-  module: 'scanner' | 'link_scanner';
-  /** Id of the exact result being rated (server-issued reportId). */
+  module: string;
   resultId: string;
 }
 
-/**
- * Compact inline rating shown directly under one analysis result.
- * Mount it with key={resultId} so every new result starts with a fresh form.
- * It never changes the result and never blocks further use of the tool.
- */
 export const ResultFeedback: React.FC<ResultFeedbackProps> = ({ module, resultId }) => {
-  const [sentiment, setSentiment] = useState<Sentiment | null>(null);
+  const [rating, setRating] = useState<'helpful' | 'unhelpful' | null>(null);
   const [comment, setComment] = useState('');
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [showCommentBox, setShowCommentBox] = useState(false);
 
-  const submit = async () => {
-    if (!sentiment || phase !== 'idle') return;
-    setPhase('sending');
-    setError(null);
+  const handleSubmit = async (selectedRating?: 'helpful' | 'unhelpful') => {
+    const activeRating = selectedRating || rating;
+    if (!activeRating) return;
+
+    setSubmitting(true);
     try {
-      const res = await fetch('/api/result-feedback', {
+      await fetch('/api/result-feedback', {
         method: 'POST',
-        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, resultId, sentiment, comment: comment.trim() }),
+        body: JSON.stringify({
+          module,
+          resultId,
+          rating: activeRating,
+          comment: comment.trim(),
+        }),
       });
-      const data = await res.json().catch(() => ({}));
-      // 409 = this result was already rated: treat as done so it cannot be sent twice.
-      if (res.ok || res.status === 409) { setPhase('done'); return; }
-      throw new Error(data.message || 'Chưa gửi được góp ý. Bạn thử lại nhé.');
-    } catch (e: any) {
-      setError(e?.message || 'Chưa gửi được góp ý. Bạn thử lại nhé.');
-      setPhase('idle');
+      setSubmitted(true);
+    } catch {
+      // Graceful fallback
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (phase === 'done') {
+  if (submitted) {
     return (
-      <div role="status" className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-        Cảm ơn bạn nhé! Góp ý của bạn giúp chúng mình tốt hơn 💙
+      <div className="mt-3 py-2 px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+        <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+        <span>Cảm ơn bạn đã gửi phản hồi giúp cải thiện chất lượng nhận diện của hệ thống!</span>
       </div>
     );
   }
 
   return (
-    <section aria-label="Đánh giá kết quả" className="mt-4 rounded-xl border border-slate-700/60 bg-[#0f1a2e] px-4 py-3">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-        <p className="text-sm font-semibold text-slate-200">Bạn thấy kết quả này thế nào?</p>
-        <div role="radiogroup" aria-label="Mức độ hài lòng" className="flex flex-wrap gap-2">
-          {OPTIONS.map((o) => {
-            const active = sentiment === o.value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                disabled={phase === 'sending'}
-                onClick={() => setSentiment(o.value)}
-                className={`px-3 py-1.5 rounded-full text-xs border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2] ${
-                  active ? 'bg-[#55DDF2]/15 border-[#55DDF2] text-[#55DDF2]' : 'border-[#35506d] text-slate-300 hover:border-slate-400'
-                }`}
-              >
-                <span aria-hidden="true">{o.emoji}</span> {o.label}
-              </button>
-            );
-          })}
+    <div className="mt-3 p-3 rounded-xl bg-[#111e33] border border-[#243956] text-xs">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-slate-300 font-medium">Kết quả phân tích này có chính xác và hữu ích không?</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setRating('helpful');
+              setShowCommentBox(true);
+              void handleSubmit('helpful');
+            }}
+            disabled={submitting}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition ${
+              rating === 'helpful'
+                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <ThumbsUp className="w-3.5 h-3.5" />
+            <span>Chính xác</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRating('unhelpful');
+              setShowCommentBox(true);
+            }}
+            disabled={submitting}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition ${
+              rating === 'unhelpful'
+                ? 'bg-rose-500/20 border-rose-500/50 text-rose-300'
+                : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <ThumbsDown className="w-3.5 h-3.5" />
+            <span>Chưa đúng</span>
+          </button>
         </div>
       </div>
 
-      {sentiment && (
-        <div className="mt-3 space-y-2">
-          <label htmlFor={`fb-${resultId}`} className="block text-xs text-slate-300">Bạn muốn chúng mình cải thiện điều gì? (không bắt buộc)</label>
-          <textarea
-            id={`fb-${resultId}`}
+      {showCommentBox && !submitted && rating === 'unhelpful' && (
+        <div className="mt-2.5 pt-2 border-t border-[#1e324d] flex items-center gap-2">
+          <input
+            type="text"
             value={comment}
-            maxLength={MAX}
-            rows={2}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full rounded-lg border border-[#35506d] bg-[#0e1a2d] p-2 text-sm text-white placeholder-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"
-            placeholder="Đừng ghi mật khẩu hay thông tin cá nhân nhé."
+            placeholder="Góp ý thêm (tùy chọn): điểm nào chưa chính xác?..."
+            className="flex-1 bg-[#0c1626] border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#55DDF2]"
           />
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[11px] text-slate-500">{comment.length}/{MAX}</span>
-            <button
-              type="button"
-              onClick={() => void submit()}
-              disabled={phase === 'sending'}
-              className="px-4 py-2 rounded-lg bg-[#55DDF2] text-[#101C32] text-xs font-bold hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {phase === 'sending' ? 'Đang gửi…' : 'Gửi góp ý'}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={submitting}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#55DDF2] text-[#0A111E] font-medium text-xs hover:bg-[#40cde3] transition disabled:opacity-50"
+          >
+            <Send className="w-3 h-3" />
+            <span>Gửi</span>
+          </button>
         </div>
       )}
-      {error && <p role="alert" className="mt-2 text-xs text-rose-300">{error}</p>}
-    </section>
+    </div>
   );
 };

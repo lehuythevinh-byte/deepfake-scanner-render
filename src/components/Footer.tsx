@@ -31,7 +31,7 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, s
             <span className="text-[#55DDF2]">→</span>
             <span className="px-3 py-1.5 rounded bg-[#101C32] border border-slate-700 text-slate-200 font-semibold">3. BẢO VỆ</span>
             <span className="text-[#55DDF2]">→</span>
-            <span className="px-3 py-1.5 rounded bg-[#CF5B65]/20 border border-[#CF5B65]/40 text-[#CF5B65] font-semibold">4. NHỜ HỖ TRỢ</span>
+            <span className="px-3 py-1.5 rounded bg-[#CF5B65]/20 border border-[#CF5B65]/40 text-[#CF5B65] font-semibold">4. TÌM SỰ TRỢ GIÚP</span>
           </div>
         </div>
       </div>
@@ -62,6 +62,11 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, s
               <li>
                 <button onClick={() => onTabChange('scanner')} className="hover:text-white transition-colors">
                   AI Scanner (Phân tích tệp hình ảnh/video)
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onTabChange('evidence-lab')} className="hover:text-white transition-colors">
+                  Phòng kiểm chứng thông tin (Evidence Lab)
                 </button>
               </li>
               <li>

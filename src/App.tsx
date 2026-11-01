@@ -6,6 +6,7 @@ import { LandingPage } from './components/LandingPage';
 import { UserDashboard } from './components/UserDashboard';
 import { ScannerModule } from './components/ScannerModule';
 import { LinkScannerModule } from './components/LinkScannerModule';
+import { EvidenceLabModule } from './components/EvidenceLabModule';
 import { AcademyModule } from './components/AcademyModule';
 import { SimulatorModule } from './components/SimulatorModule';
 import { SafeBotModule } from './components/SafeBotModule';
@@ -13,7 +14,6 @@ import { ResearchDashboardModule } from './components/ResearchDashboardModule';
 import { EmergencyModule } from './components/EmergencyModule';
 import { AccountModule } from './components/AccountModule';
 import { HistoryModule } from './components/HistoryModule';
-import { EvidenceLabModule } from './components/EvidenceLabModule';
 import { SurveyModal } from './components/SurveyModal';
 import { TAB_PATHS, pathToTab, isPublicTab, loginUrlFor, getSafeNextTab } from './lib/routes';
 import { DEFAULT_SITE_CONFIG, SiteConfig } from './lib/siteConfig';
@@ -32,6 +32,7 @@ function resolveInitialTab(): ActiveTab {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>(resolveInitialTab);
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [databaseConfigured, setDatabaseConfigured] = useState<boolean | null>(null);
@@ -74,6 +75,29 @@ export default function App() {
     return () => { cancelled = true; window.removeEventListener('df-site-config-updated', onConfigUpdated); };
   }, []);
 
+  // Check backend health and AI configuration status on startup
+  useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          setAiConfigured(Boolean(data.aiConfigured));
+          if (typeof data.databaseConfigured === 'boolean') {
+            setDatabaseConfigured(data.databaseConfigured);
+          }
+        } else {
+          setAiConfigured(false);
+        }
+      } catch (e) {
+        console.warn('Backend health check error, falling back to manual mode:', e);
+        setAiConfigured(false);
+      }
+    };
+
+    checkBackendStatus();
+  }, []);
+
   // Navigation = real URLs (history API). Guarding is applied when rendering AND enforced again by the backend.
   const handleTabChange = useCallback((tab: ActiveTab) => {
     const target = TAB_PATHS[tab] ?? '/';
@@ -82,12 +106,6 @@ export default function App() {
     }
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  useEffect(() => {
-    const legacyReportPaths = new Set(['/app/reports', '/reports', '/report']);
-    const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
-    if (legacyReportPaths.has(currentPath)) window.history.replaceState({}, '', TAB_PATHS.app);
   }, []);
 
   useEffect(() => {
@@ -168,6 +186,7 @@ export default function App() {
       <Header
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        aiConfigured={aiConfigured}
         currentUser={currentUser}
         authLoading={!authLoaded}
         onLogout={() => void handleLogout()}
@@ -185,7 +204,8 @@ export default function App() {
           <LandingPage
             onTabChange={handleTabChange}
             currentUser={currentUser}
-                siteConfig={siteConfig}
+            aiConfigured={aiConfigured}
+            siteConfig={siteConfig}
           />
         )}
 
@@ -194,7 +214,9 @@ export default function App() {
           <UserDashboard
             user={currentUser}
             onTabChange={handleTabChange}
-              />
+            aiConfigured={aiConfigured}
+            databaseConfigured={databaseConfigured}
+          />
         )}
 
         {/* Threat Scanner (Image & Video frame sampling) */}
@@ -212,7 +234,7 @@ export default function App() {
           <HistoryModule user={currentUser} onTabChange={handleTabChange} />
         )}
 
-        {/* Evidence verification checklist */}
+        {/* Forensic Evidence Lab */}
         {activeTab === 'evidence-lab' && (
           <EvidenceLabModule onTabChange={handleTabChange} />
         )}
@@ -229,7 +251,7 @@ export default function App() {
 
         {/* SafeBot AI Chat */}
         {activeTab === 'safebot' && (
-          <SafeBotModule onTabChange={handleTabChange} />
+          <SafeBotModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
         )}
 
         {/* Research Dashboard & Survey Data */}

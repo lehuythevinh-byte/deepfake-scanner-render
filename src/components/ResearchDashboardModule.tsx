@@ -180,7 +180,7 @@ export const ResearchDashboardModule: React.FC<ResearchDashboardModuleProps> = (
             title="Xuất bảng số liệu CSV"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Xuất CSV</span>
+            <span>Xuất dữ liệu CSV</span>
           </button>
         </div>
       </div>
@@ -231,7 +231,7 @@ export const ResearchDashboardModule: React.FC<ResearchDashboardModuleProps> = (
         <div className="space-y-8">
           <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm leading-relaxed text-amber-100" role="note">
             <p className="font-bold mb-1">Lưu ý về tính liêm chính khoa học</p>
-            <p>Các số liệu N=320, tỷ lệ phần trăm và biểu đồ bên dưới là dữ liệu minh họa được khai báo sẵn trong mã nguồn để trình diễn dashboard. Chúng chưa được xác minh là kết quả khảo sát thực tế; không dùng làm bằng chứng trong tài liệu nghiên cứu hoặc khi thuyết trình như số liệu thật. Hãy thay bằng dữ liệu đã thu thập hợp lệ.</p>
+            <p>Các số liệu N=320, tỷ lệ phần trăm và biểu đồ bên dưới là dữ liệu minh họa được khai báo sẵn trong mã nguồn để trình diễn dashboard. Chúng chưa được xác minh là kết quả khảo sát thực tế; không dùng làm bằng chứng trong kết luận nghiên cứu hoặc khi thuyết trình như số liệu thật. Hãy thay bằng dữ liệu đã thu thập hợp lệ.</p>
           </div>
           {/* Top Key Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

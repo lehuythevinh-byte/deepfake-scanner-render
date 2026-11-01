@@ -48,7 +48,7 @@ function getModelCompatibleConfig(model: string, baseConfig: any): any {
     delete config.topP;
     delete config.topK;
     delete config.candidateCount;
-    config.thinkingConfig = { thinkingLevel: 'low' };
+    config.thinkingConfig = { thinkingLevel: 'LOW' };
   }
   return config;
 }
@@ -60,6 +60,11 @@ const parseBoundedTimeout = (rawValue: string | undefined, fallback: number, min
 // Bound one provider attempt; failover then moves to the next configured provider.
 // attempts includes the original request; setting it to 1 disables hidden SDK retries.
 const NO_SDK_RETRIES = { attempts: 1, initialDelay: 0.25, maxDelay: 1, jitter: 0.2 };
+
+function isUsableApiKey(value: string | undefined): boolean {
+  const key = (value || '').trim();
+  return Boolean(key) && !/^(?:MY_|YOUR_|PASTE_)/i.test(key);
+}
 
 const getGeminiClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -77,7 +82,7 @@ const getGeminiClient = () => {
 };
 
 // Multi-provider AI failover: one provider per request, never parallel fan-out.
-type AiProvider = 'gemini' | 'openai' | 'deepseek';
+type AiProvider = 'gemini' | 'openrouter' | 'openai' | 'deepseek';
 type AiMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 type AiGenerateOptions = {
   systemPrompt: string;
@@ -98,35 +103,46 @@ type AiGenerateResult = {
   raw: any;
 };
 type ProviderCooldown = { until: number; reason: string };
-const providerCooldowns = new Map<AiProvider, ProviderCooldown>();
+type ProviderCooldownKey = AiProvider | 'openrouter:text' | 'openrouter:image';
+const providerCooldowns = new Map<ProviderCooldownKey, ProviderCooldown>();
+
+function getProviderCooldownKey(provider: AiProvider, options: AiGenerateOptions): ProviderCooldownKey {
+  if (provider !== 'openrouter') return provider;
+  return options.imageDataUri ? 'openrouter:image' : 'openrouter:text';
+}
 const AI_PROVIDER_COOLDOWN_MS = parseBoundedTimeout(process.env.AI_PROVIDER_COOLDOWN_MS, 90000, 15000, 900000);
 const AI_QUOTA_COOLDOWN_MS = parseBoundedTimeout(process.env.AI_QUOTA_COOLDOWN_MS, 900000, 60000, 900000);
 const AI_REQUEST_TIMEOUT_MS = parseBoundedTimeout(process.env.AI_REQUEST_TIMEOUT_MS, 30000, 8000, 60000);
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-6.1-terra').trim();
 const OPENAI_WEB_SEARCH_MODEL = (process.env.OPENAI_WEB_SEARCH_MODEL || 'gpt-6.1-terra').trim();
 const DEEPSEEK_MODEL = (process.env.DEEPSEEK_MODEL || 'deepseek-flash').trim();
+const OPENROUTER_TEXT_MODEL = (process.env.OPENROUTER_TEXT_MODEL || process.env.OPENROUTER_MODEL || '').trim() || 'cohere/north-mini-code:free';
+const OPENROUTER_IMAGE_MODEL = (process.env.OPENROUTER_IMAGE_MODEL || '').trim() || 'dots-studio/dots-3-note-preview:free';
+const OPENROUTER_DAILY_COOLDOWN_MS = parseBoundedTimeout(process.env.OPENROUTER_DAILY_COOLDOWN_MS, 86400000, 60000, 86400000);
 
 function getConfiguredAiProviders(): AiProvider[] {
   const configured: Record<AiProvider, boolean> = {
     gemini: Boolean(getGeminiClient()),
+    openrouter: isUsableApiKey(process.env.OPENROUTER_API_KEY),
     openai: Boolean(process.env.OPENAI_API_KEY?.trim() && process.env.OPENAI_API_KEY.trim() !== 'MY_OPENAI_API_KEY'),
     deepseek: Boolean(process.env.DEEPSEEK_API_KEY?.trim() && process.env.DEEPSEEK_API_KEY.trim() !== 'MY_DEEPSEEK_API_KEY'),
   };
-  const rawOrder = (process.env.AI_PROVIDER_ORDER || 'gemini,openai,deepseek').toLowerCase();
+  const rawOrder = (process.env.AI_PROVIDER_ORDER || 'gemini,openrouter,openai,deepseek').toLowerCase();
   const requested = rawOrder.split(',').map((value) => value.trim()).filter(Boolean) as AiProvider[];
   const validOrder: AiProvider[] = [];
   for (const provider of requested) {
-    if (['gemini', 'openai', 'deepseek'].includes(provider) && configured[provider] && !validOrder.includes(provider)) validOrder.push(provider);
+    if (['gemini', 'openrouter', 'openai', 'deepseek'].includes(provider) && configured[provider] && !validOrder.includes(provider)) validOrder.push(provider);
   }
-  for (const provider of ['gemini', 'openai', 'deepseek'] as AiProvider[]) {
+  for (const provider of ['gemini', 'openrouter', 'openai', 'deepseek'] as AiProvider[]) {
     if (configured[provider] && !validOrder.includes(provider)) validOrder.push(provider);
   }
   return validOrder;
 }
 
-function getProviderModel(provider: AiProvider, webSearch = false): string {
+function getProviderModel(provider: AiProvider, options?: Pick<AiGenerateOptions, 'webSearch' | 'imageDataUri'>): string {
   if (provider === 'gemini') return GEMINI_MODEL;
-  if (provider === 'openai') return webSearch ? OPENAI_WEB_SEARCH_MODEL : OPENAI_MODEL;
+  if (provider === 'openrouter') return options?.imageDataUri ? OPENROUTER_IMAGE_MODEL : OPENROUTER_TEXT_MODEL;
+  if (provider === 'openai') return options?.webSearch ? OPENAI_WEB_SEARCH_MODEL : OPENAI_MODEL;
   return DEEPSEEK_MODEL;
 }
 
@@ -236,7 +252,7 @@ function extractOpenAiWebSources(payload: any): { title: string; url: string }[]
 }
 
 async function requestAiProvider(provider: AiProvider, options: AiGenerateOptions): Promise<AiGenerateResult> {
-  const model = getProviderModel(provider, Boolean(options.webSearch));
+  const model = getProviderModel(provider, options);
   const timeoutMs = options.timeoutMs || AI_REQUEST_TIMEOUT_MS;
   const providerInstruction = options.webSearch && provider === 'deepseek'
     ? `${options.systemPrompt}\n\nGIỚI HẠN NHÀ CUNG CẤP: Nhà cung cấp hiện tại không có công cụ tìm kiếm web trong luồng này. Không được nói đã tra cứu tin mới, không tự tạo nguồn/URL hoặc khẳng định xu hướng mới đã xảy ra. Mọi tình huống được tạo phải gắn proactive_scenario và được mô tả là giả định phòng ngừa chưa xác minh.`
@@ -264,32 +280,98 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       }
       return { role: message.role === 'assistant' ? 'model' : 'user', parts };
     });
-    const config: any = {
-      systemInstruction: systemPrompt,
-      maxOutputTokens: options.maxOutputTokens || 2500,
-      abortSignal: AbortSignal.timeout(timeoutMs),
-      httpOptions: { timeout: timeoutMs, retryOptions: NO_SDK_RETRIES },
-    };
-    if (options.temperature !== undefined) config.temperature = options.temperature;
-    if (options.jsonMode) config.responseMimeType = 'application/json';
-    if (options.responseSchema) config.responseSchema = options.responseSchema;
-    if (options.webSearch) config.tools = [{ googleSearch: {} }];
-    let response: any;
-    try {
-      response = await client.models.generateContent({
-        model, contents: contents.length === 1 ? contents[0] : contents,
-        config: getModelCompatibleConfig(model, config),
-      });
-    } catch (error: any) {
-      throw new AiProviderError(provider, shortAiError(error), getAiErrorStatus(error), String(error?.code || error?.status || 'gemini_error'));
+    const candidateModels = [
+      model,
+      'gemini-3-flash-preview',
+      'gemini-3.5-flash',
+      'gemini-3.6-flash',
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+    ].filter((m, idx, arr) => Boolean(m) && arr.indexOf(m) === idx);
+
+    let lastError: any = null;
+    for (const activeModel of candidateModels) {
+      const config: any = {
+        systemInstruction: systemPrompt,
+        maxOutputTokens: options.maxOutputTokens || 2500,
+        abortSignal: AbortSignal.timeout(timeoutMs),
+        httpOptions: { timeout: timeoutMs, retryOptions: NO_SDK_RETRIES },
+      };
+      if (options.temperature !== undefined) config.temperature = options.temperature;
+      if (options.jsonMode) config.responseMimeType = 'application/json';
+      if (options.responseSchema) config.responseSchema = options.responseSchema;
+      if (options.webSearch) config.tools = [{ googleSearch: {} }];
+
+      let response: any;
+      try {
+        response = await client.models.generateContent({
+          model: activeModel,
+          contents: contents.length === 1 ? contents[0] : contents,
+          config: getModelCompatibleConfig(activeModel, config),
+        });
+      } catch (err: any) {
+        lastError = err;
+        const errorMessage = String(err?.message || '');
+        const modelUnavailable = getAiErrorStatus(err) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(errorMessage);
+        // A search-tool quota/restriction can be isolated: retry this same model once without grounding.
+        if (options.webSearch && (getAiErrorStatus(err) === 429 || /quota|resource[_ ]exhausted|tool|grounding|unsupported/i.test(errorMessage))) {
+          console.warn(`[AI] Gemini web-search grounding unavailable on ${activeModel}; retrying once without the search tool.`);
+          try {
+            const fallbackConfig = { ...config };
+            delete fallbackConfig.tools;
+            response = await client.models.generateContent({
+              model: activeModel,
+              contents: contents.length === 1 ? contents[0] : contents,
+              config: getModelCompatibleConfig(activeModel, fallbackConfig),
+            });
+          } catch (retryErr: any) {
+            lastError = retryErr;
+            const retryMessage = String(retryErr?.message || '');
+            const retryModelUnavailable = getAiErrorStatus(retryErr) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(retryMessage);
+            // Only rotate Gemini model names for a model-selection problem. For quota,
+            // overload, timeout, or network errors, hand off promptly to the next AI provider.
+            if (retryModelUnavailable) continue;
+            break;
+          }
+        } else if (modelUnavailable) {
+          continue;
+        } else {
+          // Avoid multiplying provider outages/timeouts across every Gemini model candidate.
+          break;
+        }
+      }
+
+      const generatedText = String(
+        response?.text ||
+        response?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || '').join('') ||
+        ''
+      );
+      if (generatedText.trim()) {
+        return {
+          text: generatedText,
+          provider,
+          model: activeModel,
+          sources: getGroundedWebSources(response),
+          raw: response,
+        };
+      }
+      lastError = new Error('AI_EMPTY_RESPONSE');
     }
-    const generatedText = String(response?.text || '');
-    if (!generatedText.trim()) throw new AiProviderError(provider, 'AI_EMPTY_RESPONSE', 502, 'empty_response');
-    return { text: generatedText, provider, model, sources: getGroundedWebSources(response), raw: response };
+
+    throw new AiProviderError(
+      provider,
+      lastError ? shortAiError(lastError) : 'AI_EMPTY_RESPONSE',
+      getAiErrorStatus(lastError) || 502,
+      String(lastError?.code || lastError?.status || 'gemini_error')
+    );
   }
 
-  const apiKey = (provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY)?.trim();
-  if (!apiKey) throw new AiProviderError(provider, `${provider.toUpperCase()}_API_KEY_MISSING`, 401, 'missing_key');
+  const apiKey = (provider === 'openai'
+    ? process.env.OPENAI_API_KEY
+    : provider === 'deepseek'
+      ? process.env.DEEPSEEK_API_KEY
+      : process.env.OPENROUTER_API_KEY)?.trim();
+  if (!isUsableApiKey(apiKey)) throw new AiProviderError(provider, `${provider.toUpperCase()}_API_KEY_MISSING`, 401, 'missing_key');
 
   let url: string;
   let body: any;
@@ -301,11 +383,14 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       include: ['web_search_call.action.sources'],
       tool_choice: 'required',
       input: messages.map((message) => `${message.role.toUpperCase()}:\n${message.content}`).join('\n\n'),
+      ...(options.jsonMode ? { text: { format: { type: 'json_object' } } } : {}),
     };
   } else {
     const baseUrl = provider === 'openai'
       ? (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
-      : (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com');
+      : provider === 'deepseek'
+        ? (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com')
+        : (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1');
     url = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
     const chatMessages: any[] = messages.map((message) => ({ role: message.role, content: message.content }));
     if (options.imageDataUri) {
@@ -320,9 +405,19 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
     body = {
       model,
       messages: chatMessages,
-      ...(provider === 'deepseek' ? { max_tokens: options.maxOutputTokens || 2500 } : { max_completion_tokens: options.maxOutputTokens || 2500 }),
-      ...(options.temperature !== undefined && !/^gpt-[56]/i.test(model) ? { temperature: options.temperature } : {}),
-      ...(options.jsonMode ? { response_format: { type: 'json_object' } } : {}),
+      ...(provider === 'openai' ? { max_completion_tokens: options.maxOutputTokens || 2500 } : { max_tokens: options.maxOutputTokens || 2500 }),
+      ...(provider === 'openrouter' && options.imageDataUri ? {
+        reasoning: { effort: 'low' },
+      } : {}),
+      ...(options.temperature !== undefined && (provider === 'openrouter' || !/^gpt-[56]/i.test(model)) ? { temperature: options.temperature } : {}),
+      ...(options.jsonMode && (provider !== 'openrouter' || Boolean(options.imageDataUri)) ? { response_format: { type: 'json_object' } } : {}),
+      ...(provider === 'openrouter' ? {
+        // Route image analysis through the AtlasCloud FP8 endpoint tested for vision input.
+        // Keep text chat pinned to Cohere. These are separate provider routes and cooldowns.
+        provider: options.imageDataUri
+          ? { only: ['atlas-cloud/fp8'], allow_fallbacks: false }
+          : { only: ['cohere'], allow_fallbacks: false, data_collection: 'deny' },
+      } : {}),
     };
   }
 
@@ -330,7 +425,14 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
   try {
     response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        ...(provider === 'openrouter' ? {
+          'HTTP-Referer': (process.env.APP_URL && !/^MY_/i.test(process.env.APP_URL) ? process.env.APP_URL : 'http://localhost:3000'),
+          'X-OpenRouter-Title': 'Deepfake Scanner - Trung tam An toan So',
+        } : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -344,22 +446,63 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
     throw new AiProviderError(provider, providerMessage, response.status, String(payload?.error?.code || payload?.error?.type || ''), parseProviderRetryAfter(response));
   }
   const text = extractTextFromProviderResponse(payload);
-  if (!text) throw new AiProviderError(provider, 'AI_EMPTY_RESPONSE', 502, 'empty_response');
+  if (!text) {
+    if (provider === 'openrouter' && options.imageDataUri) {
+      const choice = Array.isArray(payload?.choices) ? payload.choices[0] : undefined;
+      const message = choice?.message;
+      const content = message?.content;
+
+      console.error('[OpenRouter] Empty response diagnostic', {
+        requestedModel: model,
+        returnedModel: payload?.model ?? null,
+        responseId: payload?.id ?? null,
+        choicesCount: Array.isArray(payload?.choices) ? payload.choices.length : null,
+        finishReason: choice?.finish_reason ?? null,
+        messageKeys: message && typeof message === 'object' ? Object.keys(message) : [],
+        contentType: Array.isArray(content) ? 'array' : typeof content,
+        contentLength: typeof content === 'string' ? content.length : Array.isArray(content) ? content.length : null,
+        contentIsNull: content === null,
+        contentKeys: content && typeof content === 'object' && !Array.isArray(content) ? Object.keys(content) : [],
+        reasoningTokens: payload?.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+        hasReasoning: Boolean(message?.reasoning || message?.reasoning_details),
+        toolCallCount: Array.isArray(message?.tool_calls) ? message.tool_calls.length : 0,
+        usage: payload?.usage ? {
+          promptTokens: payload.usage.prompt_tokens ?? null,
+          completionTokens: payload.usage.completion_tokens ?? null,
+          totalTokens: payload.usage.total_tokens ?? null,
+        } : null,
+        error: payload?.error ? {
+          code: payload.error.code ?? null,
+          type: payload.error.type ?? null,
+          message: String(payload.error.message ?? '').slice(0, 180),
+        } : null,
+      });
+    }
+
+    throw new AiProviderError(provider, 'AI_EMPTY_RESPONSE', 502, 'empty_response');
+  }
   return { text, provider, model, sources: provider === 'openai' && options.webSearch ? extractOpenAiWebSources(payload) : [], raw: payload };
 }
 
 async function generateAiWithFailover(options: AiGenerateOptions): Promise<AiGenerateResult> {
-  const providers = getConfiguredAiProviders();
-  if (!providers.length) throw new Error('AI_NOT_CONFIGURED');
+  const configuredProviders = getConfiguredAiProviders();
+  const providers = options.webSearch ? configuredProviders.filter((provider) => provider !== 'openrouter') : configuredProviders;
+  if (!providers.length) throw new Error(configuredProviders.length ? 'AI_WEB_SEARCH_PROVIDER_NOT_CONFIGURED' : 'AI_NOT_CONFIGURED');
   const now = Date.now();
-  const ordered = providers.filter((provider) => (providerCooldowns.get(provider)?.until || 0) <= now);
+  const cooldownKeyFor = (provider: AiProvider) => getProviderCooldownKey(provider, options);
+  let ordered = providers.filter((provider) => (providerCooldowns.get(cooldownKeyFor(provider))?.until || 0) <= now);
   if (!ordered.length) {
-    const nextAvailableAt = Math.min(...providers.map((provider) => providerCooldowns.get(provider)?.until || now));
-    const cooldownError = new Error('AI_ALL_PROVIDERS_COOLDOWN');
-    (cooldownError as any).status = 503;
-    (cooldownError as any).retryAfterMs = Math.max(1000, nextAvailableAt - now);
-    noteAiOutcome(false, cooldownError);
-    throw cooldownError;
+    if (providers.length === 1) {
+      providerCooldowns.delete(cooldownKeyFor(providers[0]));
+      ordered = [providers[0]];
+    } else {
+      const nextAvailableAt = Math.min(...providers.map((provider) => providerCooldowns.get(cooldownKeyFor(provider))?.until || now));
+      const cooldownError = new Error('AI_ALL_PROVIDERS_COOLDOWN');
+      (cooldownError as any).status = 503;
+      (cooldownError as any).retryAfterMs = Math.max(1000, nextAvailableAt - now);
+      noteAiOutcome(false, cooldownError);
+      throw cooldownError;
+    }
   }
   const failures: string[] = [];
   for (const provider of ordered) {
@@ -367,10 +510,13 @@ async function generateAiWithFailover(options: AiGenerateOptions): Promise<AiGen
     try {
       const result = await requestAiProvider(provider, options);
       if (options.jsonMode) {
-        try { JSON.parse(result.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')); }
-        catch { throw new AiProviderError(provider, 'AI_INVALID_JSON_RESPONSE', 502, 'invalid_json'); }
+        try {
+          parseAiJson(result.text);
+        } catch {
+          throw new AiProviderError(provider, 'AI_INVALID_JSON_RESPONSE', 502, 'invalid_json');
+        }
       }
-      providerCooldowns.delete(provider);
+      providerCooldowns.delete(cooldownKeyFor(provider));
       console.info('[AI] request succeeded', JSON.stringify({ provider, model: result.model, elapsedMs: Math.round(performance.now() - startedAt) }));
       noteAiOutcome(true, undefined, { provider: result.provider, model: result.model });
       return result;
@@ -384,9 +530,14 @@ async function generateAiWithFailover(options: AiGenerateOptions): Promise<AiGen
       }));
       noteAiOutcome(false, error);
       if (shouldFailoverAi(error)) {
-        const defaultCooldown = status === 429 ? AI_QUOTA_COOLDOWN_MS : status === 503 || status === 502 || status === 500 ? AI_PROVIDER_COOLDOWN_MS : 30000;
-        const cooldown = error?.retryAfterMs || defaultCooldown;
-        providerCooldowns.set(provider, { until: Date.now() + Math.min(900000, cooldown), reason: String(error?.code || status || 'unavailable') });
+        const defaultCooldown = providers.length === 1 ? 5000 : (status === 429 ? AI_QUOTA_COOLDOWN_MS : status === 503 || status === 502 || status === 500 ? AI_PROVIDER_COOLDOWN_MS : 30000);
+        const cooldown = providers.length === 1 ? 5000 : (error?.retryAfterMs || defaultCooldown);
+        const isOpenRouterDailyLimit = provider === 'openrouter' && /(daily|per day|day limit|requests per day|daily limit)/i.test(reason);
+        const routeCooldown = isOpenRouterDailyLimit
+          ? Math.max(error?.retryAfterMs || 0, OPENROUTER_DAILY_COOLDOWN_MS)
+          : cooldown;
+        const routeCooldownMax = isOpenRouterDailyLimit ? OPENROUTER_DAILY_COOLDOWN_MS : 900000;
+        providerCooldowns.set(cooldownKeyFor(provider), { until: Date.now() + Math.min(routeCooldownMax, routeCooldown), reason: String(error?.code || status || 'unavailable') });
         continue;
       }
       throw error;
@@ -549,6 +700,22 @@ async function ensureDatabase(): Promise<void> {
       `);
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_created_at_idx ON scan_audit(created_at DESC)');
       await dbPool.query('CREATE INDEX IF NOT EXISTS scan_audit_user_id_idx ON scan_audit(user_id)');
+
+      // Per-result feedback (safe, idempotent addition; stores no uploaded media).
+      await dbPool.query(`
+        CREATE TABLE IF NOT EXISTS result_feedback (
+          id BIGSERIAL PRIMARY KEY,
+          user_id BIGINT NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+          module TEXT NOT NULL CHECK (module IN ('scanner', 'link_scanner')),
+          result_id TEXT NOT NULL,
+          sentiment TEXT NOT NULL CHECK (sentiment IN ('helpful', 'okay', 'not_helpful')),
+          comment TEXT NOT NULL DEFAULT '',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE (user_id, module, result_id)
+        )
+      `);
+      await dbPool.query('CREATE INDEX IF NOT EXISTS idx_result_feedback_created_at ON result_feedback(created_at DESC)');
+      await dbPool.query('CREATE INDEX IF NOT EXISTS idx_result_feedback_module_sentiment ON result_feedback(module, sentiment)');
 
       await dbPool.query(`
         CREATE TABLE IF NOT EXISTS site_settings (
@@ -1623,7 +1790,127 @@ type ThreatIntelligenceFeed = {
 };
 const THREAT_INTELLIGENCE_TTL_MS = 24 * 60 * 60 * 1000;
 const THREAT_INTELLIGENCE_TIMEOUT_MS = parseBoundedTimeout(process.env.THREAT_INTELLIGENCE_TIMEOUT_MS, 45000, 10000, 60000);
-let threatIntelligenceCache: ThreatIntelligenceFeed | null = null;
+const SEED_THREAT_SCENARIOS: DynamicThreatScenario[] = [
+  {
+    id: 'seed-deepfake-video',
+    title: 'Cuộc gọi video Deepfake khuôn mặt người thân mượn tiền gấp',
+    evidenceType: 'reported_pattern',
+    summary: 'Kẻ lừa đảo sử dụng hình ảnh và video công khai trên mạng xã hội của người thân để tạo video gọi ngắn 5-10 giây với khẩu hình méo mó rồi báo mạng yếu để ngắt máy và yêu cầu chuyển tiền gấp.',
+    exampleMessage: 'Con ơi, mẹ đang ngoài bệnh viện có việc gấp, mạng chập chờn quá, chuyển ngay 2 triệu vào số tài khoản này giúp mẹ nhé!',
+    signs: ['Khuôn mặt giật lag, cử động chớp mắt không tự nhiên', 'Vội cúp máy sau 5-10 giây lấy lý do sóng yếu', 'Tài khoản nhận tiền có tên người thụ hưởng lạ'],
+    safetySteps: ['Cúp máy và gọi lại trực tiếp qua SIM điện thoại thường', 'Tuyệt đối không chuyển tiền theo số tài khoản lạ', 'Báo ngay cho gia đình để xác minh'],
+  },
+  {
+    id: 'seed-voice-clone-accident',
+    title: 'Giả giọng nói AI (Voice Cloning) báo học sinh bị tai nạn',
+    evidenceType: 'reported_pattern',
+    summary: 'Sử dụng đoạn ghi âm giọng nói ngắn trích xuất từ video để tạo giọng giả giáo viên hoặc nhân viên y tế gọi báo học sinh cấp cứu và yêu cầu chuyển tiền viện phí khẩn cấp.',
+    exampleMessage: 'Chào phụ huynh, tôi là thầy giáo chủ nhiệm em Minh. Em vừa bị ngã xe ngoài cổng trường đang cấp cứu tại bệnh viện, cần tạm ứng 5 triệu viện phí gấp.',
+    signs: ['Giọng nói có âm sắc hơi khô cứng, nhịp thở thiếu tự nhiên', 'Thúc ép tâm lý sợ hãi, yêu cầu chuyển tiền ngay lập tức', 'Không cho thời gian liên hệ nhà trường'],
+    safetySteps: ['Giữ bình tĩnh, không chuyển tiền ngay', 'Gọi trực tiếp cho hotline nhà trường hoặc giáo viên chủ nhiệm qua số điện thoại lưu sẵn', 'Nhờ người thân gần trường qua kiểm tra trực tiếp'],
+  },
+  {
+    id: 'seed-fake-scholarship',
+    title: 'Học bổng STEM / Trúng thưởng giả mạo yêu cầu tải file APK',
+    evidenceType: 'reported_pattern',
+    summary: 'Mạo danh ban tổ chức cuộc thi khoa học kỹ thuật hoặc trường quốc tế gửi đường link thông báo trúng thưởng học bổng, yêu cầu cài đặt ứng dụng độc hại chứa mã độc đánh cắp dữ liệu.',
+    exampleMessage: 'Chúc mừng em đã lọt vào vòng chung kết cuộc thi STEM trẻ! Bấm vào link để tải ứng dụng bình chọn và nhận học bổng 10.000.000 VNĐ.',
+    signs: ['Đường link lạ, tên miền không phải .edu.vn hay .gov.vn', 'Yêu cầu tải file cài đặt .apk hoặc cấp quyền trợ năng trên điện thoại', 'Hứa hẹn phần thưởng giá trị cao bất thường'],
+    safetySteps: ['Không bấm vào link lạ từ tin nhắn hoặc bình luận', 'Chỉ tải ứng dụng từ Google Play hoặc App Store chính thức', 'Hỏi ý kiến giáo viên hướng dẫn STEM để xác nhận'],
+  },
+  {
+    id: 'seed-photo-blackmail',
+    title: 'Ghép ảnh khuôn mặt vào bối cảnh nhạy cảm để tống tiền (Nudify AI)',
+    evidenceType: 'reported_pattern',
+    summary: 'Sử dụng công cụ hoán đổi khuôn mặt (Face Swap) ghép mặt học sinh vào các hình ảnh nhạy cảm hoặc phản cảm, sau đó đe dọa phát tán lên nhóm lớp nếu không nạp thẻ game hoặc chuyển tiền.',
+    exampleMessage: 'Tao có ảnh nhạy cảm của mày đây. Nạp ngay 500k thẻ game vào đây không tao gửi cho cả trường và phụ huynh mày xem.',
+    signs: ['Tài khoản nặc danh hoặc clone mới tạo gửi ảnh ghép', 'Ánh sáng và màu da giữa khuôn mặt và thân thể không đồng nhất', 'Đe dọa dồn dập, cấm nói với người lớn'],
+    safetySteps: ['Tuyệt đối KHÔNG chuyển tiền hay nạp thẻ theo yêu cầu', 'Chụp màn hình toàn bộ tin nhắn để làm bằng chứng', 'Báo ngay cho cha mẹ, thầy cô hoặc gọi Tổng đài 111 để được bảo vệ'],
+  },
+  {
+    id: 'seed-social-impersonate-friend',
+    title: 'Mạo danh tài khoản bạn bè xin mã OTP / tài khoản mạng xã hội',
+    evidenceType: 'reported_pattern',
+    summary: 'Tạo tài khoản clone có cùng ảnh đại diện và tên với bạn cùng lớp, nhắn tin nhờ nhận hộ mã xác nhận cuộc thi hoặc mã bình chọn, thực chất là mã OTP khôi phục mật khẩu Zalo/Facebook.',
+    exampleMessage: 'Ê bạn, Facebook mình bị khóa đang cần 3 người bạn xác nhận mã, mình vừa gửi mã về máy bạn đó, đọc giúp mình 6 số với!',
+    signs: ['Tài khoản clone mới kết bạn hoặc nhắn tin từ tài khoản bị hack', 'Hỏi dồn dập xin mã 6 chữ số', 'Nội dung tin nhắn SMS có ghi rõ "Mã xác thực đổi mật khẩu"'],
+    safetySteps: ['Đọc kỹ nội dung tin nhắn SMS gửi mã', 'Không bao giờ chia sẻ mã OTP với bất kỳ ai, kể cả người quen', 'Gọi điện thoại thoại thường cho bạn để kiểm tra'],
+  },
+  {
+    id: 'seed-game-robux-scam',
+    title: 'Tặng Robux / Kim cương Free Fire miễn phí qua trang web giả',
+    evidenceType: 'reported_pattern',
+    summary: 'Tạo website giả giao diện game nổi tiếng (Roblox, Free Fire, Liên Quân), lừa học sinh đăng nhập tài khoản Google/Facebook hoặc quét mã QR đăng nhập để chiếm đoạt tài khoản.',
+    exampleMessage: 'Sự kiện tri ân tặng 5000 Robux miễn phí! Đăng nhập nhận ngay tại trang robux-nhanqua-free.xyz',
+    signs: ['Tên miền lạ có đuôi .xyz, .top, .online hoặc sai chính tả', 'Yêu cầu nhập tên đăng nhập và mật khẩu tài khoản', 'Cam kết tặng vật phẩm game miễn phí số lượng lớn'],
+    safetySteps: ['Không đăng nhập tài khoản vào các trang web ngoài ứng dụng chính thức', 'Bật xác thực 2 lớp (2FA) cho tất cả tài khoản game và mạng xã hội', 'Báo cáo đường link lừa đảo cho nền tảng'],
+  },
+  {
+    id: 'seed-online-job-survey',
+    title: 'Việc làm online học sinh: Bình chọn khảo sát nhận hoa hồng',
+    evidenceType: 'emerging_pattern',
+    summary: 'Tuyển học sinh làm cộng tác viên online làm nhiệm vụ like video, đánh giá khảo sát kiếm 200k-500k/ngày, ban đầu trả thưởng nhỏ để tạo lòng tin rồi dụ nạp tiền cọc nhiệm vụ lớn.',
+    exampleMessage: 'Tuyển học sinh THCS làm thêm tại nhà: Mỗi lượt bình chọn nhận 20k, ngày kiếm 300k. Đăng ký tham gia nhóm Telegram.',
+    signs: ['Lương thưởng cao bất thường so với công việc đơn giản', 'Yêu cầu chuyển sang Telegram hoặc Zalo nhóm kín', 'Yêu cầu nạp tiền "tạo đơn" hoặc nạp tiền cọc'],
+    safetySteps: ['Cảnh giác với các lời mời kiếm tiền dễ dàng trên mạng', 'Không bao giờ nạp tiền cọc để làm việc', 'Tập trung vào học tập và hỏi ý kiến gia đình'],
+  },
+  {
+    id: 'seed-fake-ai-filter',
+    title: 'Ứng dụng AI biến hình / Dự đoán tương lai thu thập trái phép sinh trắc học',
+    evidenceType: 'emerging_pattern',
+    summary: 'Các trào lưu filter AI (xem mặt lúc già, biến thành hoạt hình) yêu cầu cấp quyền truy cập toàn bộ thư viện ảnh, từ đó quét khuôn mặt và thu thập dữ liệu sinh trắc học để huấn luyện Deepfake.',
+    exampleMessage: 'Thử ngay trend AI biến thành nhân vật anime cực hot! Tải app và cho phép quét toàn bộ khuôn mặt để nhận ảnh độc quyền.',
+    signs: ['Ứng dụng đòi hỏi quyền truy cập quá mức (danh bạ, vị trí, toàn bộ ảnh)', 'Không có chính sách bảo mật dữ liệu sinh trắc học rõ ràng', 'Yêu cầu đăng ký gói dùng thử tự động trừ tiền hàng tuần'],
+    safetySteps: ['Chỉ cho phép ứng dụng truy cập từng ảnh được chọn', 'Kiểm tra kỹ đánh giá và nhà phát triển ứng dụng', 'Hạn chế đăng tải ảnh góc thẳng độ phân giải cao của bản thân'],
+  },
+  {
+    id: 'seed-fake-police-investigation',
+    title: 'Giả danh cán bộ cơ quan chức năng dọa khóa SIM / liên quan án ma túy',
+    evidenceType: 'reported_pattern',
+    summary: 'Kẻ lừa đảo gọi điện xưng là công an, viện kiểm sát hoặc bộ thông tin, đe dọa số điện thoại học sinh đang liên quan đường dây rửa tiền, cấm cúp máy và yêu cầu chuyển tiền "chứng minh vô tội".',
+    exampleMessage: 'Số điện thoại của em đang liên quan đến vụ án rửa tiền xuyên quốc gia, nếu không hợp tác công an sẽ đến trường bắt giữ. Yêu cầu vào phòng riêng và giữ máy.',
+    signs: ['Giọng đe dọa, uy hiếp, bắt giữ bí mật không được nói với ai', 'Yêu cầu chuyển tiền vào "tài khoản tạm giữ của cơ quan điều tra"', 'Dọa bắt giam qua điện thoại'],
+    safetySteps: ['Công an KHÔNG BAO GIỜ làm việc qua điện thoại hay yêu cầu chuyển tiền', 'Cúp máy ngay lập tức', 'Báo cho cha mẹ hoặc đến công an địa phương'],
+  },
+  {
+    id: 'seed-qr-code-malware',
+    title: 'Quét mã QR nhận lì xì / tài liệu học tập bị dẫn sang trang giả mạo',
+    evidenceType: 'emerging_pattern',
+    summary: 'Dán đè mã QR độc hại lên tài liệu học tập hoặc gửi mã QR qua tin nhắn mời nhận quà lì xì, khi quét mã dẫn thẳng tới trang web giả mạo ngân hàng hoặc tải mã độc.',
+    exampleMessage: 'Quét mã QR này để tải trọn bộ đề thi học kỳ 2 và nhận học bổng 200k từ ban tổ chức!',
+    signs: ['Mã QR không rõ nguồn gốc, dán đè hoặc gửi qua tin nhắn lạ', 'Sau khi quét mã, trình duyệt yêu cầu nhập thông tin tài khoản ngân hàng', 'Địa chỉ web hiện ra có chuỗi ký tự lạ'],
+    safetySteps: ['Luôn kiểm tra kỹ URL xem trước của mã QR trước khi bấm mở', 'Không nhập mật khẩu hay OTP sau khi quét mã', 'Sử dụng ứng dụng quét mã có tính năng kiểm tra an toàn'],
+  },
+  {
+    id: 'seed-fake-dating-grooming',
+    title: 'Kết bạn ảo trên mạng xã hội dụ gửi hình ảnh riêng tư (Sextortion)',
+    evidenceType: 'reported_pattern',
+    summary: 'Tạo hồ sơ bạn gái/bạn trai đẹp bằng AI, chủ động làm quen, nhắn tin tâm sự vài tuần để tạo lòng tin rồi rủ chơi trò thách đố gửi ảnh nhạy cảm, sau đó quay sang tống tiền.',
+    exampleMessage: 'Mình thích bạn lắm, mình gửi ảnh của mình rồi này, bạn chụp một tấm ảnh riêng tư gửi lại cho mình xem với nha, mình hứa giữ bí mật.',
+    signs: ['Tài khoản bạn mới quen trên mạng quá hoàn hảo, chỉ dùng ảnh AI', 'Nhanh chóng chuyển sang chủ đề nhạy cảm, gợi ý gửi ảnh riêng tư', 'Bắt đầu đe dọa ngay sau khi nhận được ảnh'],
+    safetySteps: ['Tuyệt đối không bao giờ chụp hoặc gửi ảnh nhạy cảm cho bất kỳ ai trên mạng', 'Nếu lỡ bị tống tiền, KHÔNG chuyển tiền, giữ bình tĩnh và nói ngay với cha mẹ hoặc gọi 111', 'Chặn tài khoản và báo cáo với nền tảng'],
+  },
+  {
+    id: 'seed-malicious-shortened-link',
+    title: 'Rút gọn link che giấu mã độc (Bitly, Tinyurl giả mạo thông báo trường học)',
+    evidenceType: 'proactive_scenario',
+    summary: 'Sử dụng dịch vụ rút gọn link để che giấu tên miền lừa đảo, kèm theo tiêu đề giật gân như "Danh sách điểm thi bị lộ" hoặc "Clip bóc phốt lớp mình" để kích thích sự tò mò của học sinh.',
+    exampleMessage: 'Ê xem clip bóc phốt vụ ở trường mình sáng nay này: bit.ly/clip-hot-thcs-2026',
+    signs: ['Đường link rút gọn không hiển thị tên miền đích', 'Tiêu đề giật gân, khơi gợi tò mò hoặc hoảng sợ', 'Trang đích yêu cầu đăng nhập lại mật khẩu để "xem tiếp"'],
+    safetySteps: ['Dùng công cụ Link Scanner trong ứng dụng để kiểm tra tên miền gốc trước khi bấm', 'Không đăng nhập tài khoản sau khi bấm vào link rút gọn', 'Cảnh báo cho bạn bè nếu thấy tin nhắn dạng này'],
+  },
+];
+
+let threatIntelligenceCache: ThreatIntelligenceFeed | null = {
+  scenarios: SEED_THREAT_SCENARIOS,
+  sources: [],
+  updatedAt: new Date().toISOString(),
+  // Mark the seed cache as due so the first request attempts a real AI refresh.
+  // If refresh fails, the existing endpoint returns these safe seed scenarios as stale data.
+  nextRefreshAt: new Date(0).toISOString(),
+  sourceStatus: 'ai_only',
+  model: 'system:seed',
+};
 let threatIntelligenceRefreshInFlight: Promise<ThreatIntelligenceFeed> | null = null;
 const threatScenarioReadLimiter = createRateLimiter(40, 60 * 60 * 1000, 'threat-scenario-read');
 const threatScenarioRefreshLimiter = createRateLimiter(4, 60 * 60 * 1000, 'threat-scenario-refresh');
@@ -1634,8 +1921,6 @@ const threatScenarioResponseSchema: any = {
   properties: {
     scenarios: {
       type: Type.ARRAY,
-      minItems: 12,
-      maxItems: 15,
       items: {
         type: Type.OBJECT,
         properties: {
@@ -1671,8 +1956,24 @@ function getGroundedWebSources(response: any): { title: string; url: string }[] 
 }
 
 function parseAiJson(rawText: unknown): any {
-  const raw = String(rawText || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  return JSON.parse(raw);
+  const text = String(rawText || '').trim();
+  const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  try { return JSON.parse(clean); } catch {}
+  const blockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (blockMatch) {
+    try { return JSON.parse(blockMatch[1].trim()); } catch {}
+  }
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try { return JSON.parse(text.slice(firstBrace, lastBrace + 1)); } catch {}
+  }
+  const firstBracket = text.indexOf('[');
+  const lastBracket = text.lastIndexOf(']');
+  if (firstBracket >= 0 && lastBracket > firstBracket) {
+    try { return JSON.parse(text.slice(firstBracket, lastBracket + 1)); } catch {}
+  }
+  return JSON.parse(clean);
 }
 
 async function refreshThreatIntelligence(force = false): Promise<ThreatIntelligenceFeed> {
@@ -1726,7 +2027,16 @@ Trả về JSON theo schema. Không trả lời bằng markdown, không tạo li
       });
       if (normalizedScenarios.length >= 15) break;
     }
-    if (normalizedScenarios.length < 12) throw new Error('THREAT_SCENARIO_OUTPUT_INCOMPLETE');
+    // Supplement with safe seed scenarios when the model returns fewer than 12 unique items.
+    if (normalizedScenarios.length < 12) {
+      for (const seed of SEED_THREAT_SCENARIOS) {
+        if (!titles.has(seed.title.toLocaleLowerCase('vi-VN'))) {
+          titles.add(seed.title.toLocaleLowerCase('vi-VN'));
+          normalizedScenarios.push(seed);
+          if (normalizedScenarios.length >= 12) break;
+        }
+      }
+    }
     const sources = response.sources || [];
     const now = Date.now();
     const feed: ThreatIntelligenceFeed = {

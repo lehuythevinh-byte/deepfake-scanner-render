@@ -1043,7 +1043,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                       </span>
                     )}
                     <span className="text-[10px] text-slate-400 font-mono">· {threatResult.scanMode.toUpperCase()}</span>
-                    {threatResult.engineUsed && <span className="text-[10px] text-emerald-300 font-mono">· AI: {{ gemini: 'Gemini', openai: 'OpenAI', deepseek: 'DeepSeek', heuristic: 'Quy tắc dự phòng' }[threatResult.engineUsed]}{threatResult.modelUsed ? ` · ${threatResult.modelUsed}` : ''}</span>}
+                    {threatResult.engineUsed && <span className="text-[10px] text-emerald-300 font-mono">· AI: {{ gemini: 'Gemini', openrouter: 'OpenRouter', openai: 'OpenAI', deepseek: 'DeepSeek', heuristic: 'Quy tắc dự phòng' }[threatResult.engineUsed]}{threatResult.modelUsed ? ` · ${threatResult.modelUsed}` : ''}</span>}
                     {threatResult.taskState && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 text-[10px] font-mono border border-slate-700/60">
                         <span>Trạng thái: {threatResult.taskState}</span>

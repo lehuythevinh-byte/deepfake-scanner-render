@@ -5,12 +5,14 @@ import { DEFAULT_SITE_CONFIG, SiteConfig } from '../lib/siteConfig';
 interface LandingPageProps {
   onTabChange: (tab: ActiveTab) => void;
   currentUser: AuthUser | null;
+  aiConfigured: boolean | null;
   siteConfig?: SiteConfig;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onTabChange,
   currentUser,
+  aiConfigured,
   siteConfig = DEFAULT_SITE_CONFIG,
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -285,7 +287,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <h4 className="text-base font-bold text-white mb-1.5">Hành Động An Toàn</h4>
               <p className="text-xs md:text-sm text-slate-400">
-                Thực hiện 4 bước Dừng lại - Kiểm chứng - Bảo vệ - Tìm người hỗ trợ để không bị lừa gạt hoặc tổn thất.
+                Thực hiện 4 bước Dừng lại - Kiểm chứng - Bảo vệ - Tìm sự trợ giúp để giảm nguy cơ bị lừa gạt hoặc tổn thất.
               </p>
             </div>
           </div>
@@ -331,8 +333,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <p className="text-xs text-slate-300">Bật xác thực 2 lớp (2FA), đặt mật khẩu gia đình bí mật, không gửi ảnh riêng tư.</p>
             </div>
             <div className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60">
-              <div className="text-emerald-400 font-bold text-xs uppercase mb-1">Bước 4: NHỜ HỖ TRỢ (SEEK HELP)</div>
-              <p className="text-xs text-slate-300">Nói ngay với cha mẹ, thầy cô, sử dụng công cụ hỗ trợ của nền tảng và gọi Tổng đài 111 (miễn phí).</p>
+              <div className="text-emerald-400 font-bold text-xs uppercase mb-1">Bước 4: TÌM SỰ TRỢ GIÚP</div>
+              <p className="text-xs text-slate-300">Nói ngay với cha mẹ, thầy cô, thông báo tài khoản giả mạo cho nền tảng và gọi Tổng đài 111 (miễn phí).</p>
             </div>
           </div>
         </div>

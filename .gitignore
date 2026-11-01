@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local backups
+*.backup-*
+*.before-*
+*.failed-patch-*
+*.bak

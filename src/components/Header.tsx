@@ -10,6 +10,7 @@ import {
 interface HeaderProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
+  aiConfigured: boolean | null;
   currentUser?: AuthUser | null;
   authLoading?: boolean;
   onLogout?: () => void;
@@ -43,7 +44,7 @@ const Brand: React.FC<{ onClick: () => void; siteConfig?: SiteConfig }> = ({ onC
   </button>
 );
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, currentUser = null, authLoading = false, onLogout, siteConfig = DEFAULT_SITE_CONFIG }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, aiConfigured, currentUser = null, authLoading = false, onLogout, siteConfig = DEFAULT_SITE_CONFIG }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -107,6 +108,9 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, currentU
         </nav>
 
         <div className="hidden lg:flex items-center gap-2">
+          <span title={aiConfigured ? 'Đã cấu hình API key AI' : 'Chế độ kiểm chứng thủ công'} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 text-[10px] text-slate-300 font-mono">
+            <span className={`w-1.5 h-1.5 rounded-full ${aiConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />{aiConfigured ? 'AI READY' : 'MANUAL'}
+          </span>
           <button onClick={() => go('account')} className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${activeTab === 'account' || activeTab === 'admin' ? 'border-[#55DDF2]/50 bg-[#172941] text-[#55DDF2]' : 'border-white/10 text-slate-200 hover:bg-white/5'}`}>
             {isAdmin ? <ShieldCheck className="w-4 h-4 text-emerald-400" /> : <UserRound className="w-4 h-4" />}{isAdmin ? 'Quản trị' : 'Tài khoản'}
           </button>
