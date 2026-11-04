@@ -35,7 +35,7 @@ const getValidGeminiModel = (): string => {
   ) {
     return envModel.replace(/^models\//, '');
   }
-  return 'gemini-3.1-flash-lite';
+  return 'gemini-3.8-flash';
 };
 
 const GEMINI_MODEL = getValidGeminiModel();
