@@ -174,6 +174,35 @@ function getAiErrorStatus(error: any): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
+function getProviderErrorMessage(error: any): string {
+  return [
+    error?.message,
+    error?.error?.message,
+    error?.response?.data?.error?.message,
+    error?.response?.data?.message,
+    error?.cause?.message,
+  ].filter((value) => typeof value === 'string' && value.trim()).join(' | ').slice(0, 1200);
+}
+
+/**
+ * Only retry a Gemini request without Search when the API explicitly rejects
+ * the Search/grounding tool. Do not mistake generic 429 quotas, 503 overloads,
+ * or unrelated errors containing the word "tool" for a grounding problem.
+ */
+function isGeminiGroundingFallbackError(error: any): boolean {
+  const status = getAiErrorStatus(error);
+  const message = getProviderErrorMessage(error).toLowerCase();
+  const code = String(error?.code || error?.status || error?.error?.status || '').toLowerCase();
+  const mentionsSearch = /google\s*search|google_search|googlesearch|grounding/.test(message)
+    || /google.?search|grounding/.test(code);
+  const explicitToolRejection = /not supported|unsupported|not available|unavailable|invalid.{0,40}tool|unknown.{0,40}tool|tool.{0,40}(?:not found|not supported|unsupported|invalid)/.test(message);
+  const searchQuota = /(?:google\s*search|google_search|googlesearch|grounding).{0,100}(?:quota|rate.?limit|resource.?exhausted|too many requests)/.test(message);
+
+  if (!mentionsSearch) return false;
+  if ((status === 400 || status === 403 || status === 404 || status === 422) && explicitToolRejection) return true;
+  return status === 429 && searchQuota;
+}
+
 function shouldFailoverAi(error: any): boolean {
   // A provider-specific failure should not block the other configured providers.
   if (error instanceof AiProviderError) return true;
@@ -313,9 +342,15 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
         lastError = err;
         const errorMessage = String(err?.message || '');
         const modelUnavailable = getAiErrorStatus(err) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(errorMessage);
-        // A search-tool quota/restriction can be isolated: retry this same model once without grounding.
-        if (options.webSearch && (getAiErrorStatus(err) === 429 || /quota|resource[_ ]exhausted|tool|grounding|unsupported/i.test(errorMessage))) {
-          console.warn(`[AI] Gemini web-search grounding unavailable on ${activeModel}; retrying once without the search tool.`);
+        // Retry without Search only for an explicit Google Search/grounding tool rejection.
+        // Generic 429/503 errors are provider capacity/quota failures: fail over promptly.
+        if (options.webSearch && isGeminiGroundingFallbackError(err)) {
+          console.warn('[AI] Gemini Search grounding was explicitly rejected; retrying once without Search.', JSON.stringify({
+            model: activeModel,
+            status: getAiErrorStatus(err) ?? null,
+            code: String(err?.code || err?.status || err?.error?.status || '').slice(0, 100),
+            message: getProviderErrorMessage(err).slice(0, 260),
+          }));
           try {
             const fallbackConfig = { ...config };
             delete fallbackConfig.tools;
@@ -328,15 +363,14 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
             lastError = retryErr;
             const retryMessage = String(retryErr?.message || '');
             const retryModelUnavailable = getAiErrorStatus(retryErr) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(retryMessage);
-            // Only rotate Gemini model names for a model-selection problem. For quota,
-            // overload, timeout, or network errors, hand off promptly to the next AI provider.
             if (retryModelUnavailable) continue;
             break;
           }
         } else if (modelUnavailable) {
           continue;
         } else {
-          // Avoid multiplying provider outages/timeouts across every Gemini model candidate.
+          // Do not retry the same model for overload/quota/network failures.
+          // The outer provider coordinator will cool down Gemini and fail over.
           break;
         }
       }
