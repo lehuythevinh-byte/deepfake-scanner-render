@@ -1,0 +1,45 @@
+name: Threat Intelligence 48-hour scheduler
+
+on:
+  schedule:
+    # Check every six hours; PostgreSQL enforces a minimum 48-hour interval between successful updates.
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deepfake-scanner-threat-intelligence
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Trigger server-side update (the database decides whether it is due)
+        env:
+          BASE_URL: ${{ secrets.DEEPFAKE_SCANNER_BASE_URL }}
+          CRON_SECRET: ${{ secrets.THREAT_INTELLIGENCE_CRON_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_URL}" || -z "${CRON_SECRET}" ]]; then
+            echo "Missing DEEPFAKE_SCANNER_BASE_URL or THREAT_INTELLIGENCE_CRON_SECRET repository secret."
+            exit 1
+          fi
+          response_file="$(mktemp)"
+          status_code="$(curl --silent --show-error --max-time 300 \
+            --output "${response_file}" --write-out '%{http_code}' \
+            --request POST \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            --header 'Content-Type: application/json' \
+            --data '{}' \
+            "${BASE_URL%/}/api/internal/threat-intelligence/update")"
+          cat "${response_file}"
+          rm -f "${response_file}"
+          if [[ "${status_code}" != "200" && "${status_code}" != "202" ]]; then
+            echo "Threat intelligence update endpoint returned HTTP ${status_code}."
+            exit 1
+          fi

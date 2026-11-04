@@ -277,7 +277,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <h4 className="text-base font-bold text-white mb-1.5">Phân Tích Đa Chiều</h4>
               <p className="text-xs md:text-sm text-slate-400">
-                Hệ thống rà soát dấu hiệu thị giác, kịch bản đòi tiền khẩn cấp, mã OTP và nguy cơ bắt nạt học đường.
+                Hệ thống rà soát dấu hiệu thị giác, yêu cầu chuyển tiền khẩn cấp, mã OTP và nguy cơ bắt nạt hoặc tống tiền trực tuyến.
               </p>
             </div>
 
@@ -302,13 +302,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/30">
-                CẨM NANG HỌC SINH & PHỤ HUYNH
+                CẨM NANG XÁC MINH NỘI DUNG
               </div>
               <h3 className="text-xl md:text-2xl font-bold text-white">
                 Quy Tắc 4 Bước Xử Lý Khi Nghi Ngờ Deepfake & Lừa Đảo
               </h3>
               <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-                Được đúc kết từ khảo sát thực tế và nghiên cứu khoa học an toàn số trường học.
+                Tổng hợp các bước thực hành để dừng lại, kiểm chứng nguồn, bảo vệ tài khoản và tìm hỗ trợ phù hợp.
               </p>
             </div>
             <button
@@ -330,11 +330,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60">
               <div className="text-blue-400 font-bold text-xs uppercase mb-1">Bước 3: BẢO VỆ (PROTECT)</div>
-              <p className="text-xs text-slate-300">Bật xác thực 2 lớp (2FA), đặt mật khẩu gia đình bí mật, không gửi ảnh riêng tư.</p>
+              <p className="text-xs text-slate-300">Bật xác thực nhiều lớp, dùng mật khẩu mạnh và không gửi dữ liệu riêng tư cho người chưa xác minh.</p>
             </div>
             <div className="p-4 rounded-xl bg-[#0e1728] border border-slate-700/60">
               <div className="text-emerald-400 font-bold text-xs uppercase mb-1">Bước 4: TÌM SỰ TRỢ GIÚP</div>
-              <p className="text-xs text-slate-300">Nói ngay với cha mẹ, thầy cô, thông báo tài khoản giả mạo cho nền tảng và gọi Tổng đài 111 (miễn phí).</p>
+              <p className="text-xs text-slate-300">Báo cho người đáng tin cậy, thông báo tài khoản giả mạo cho nền tảng; trường hợp liên quan trẻ em tại Việt Nam có thể gọi Tổng đài 111.</p>
             </div>
           </div>
         </div>
@@ -352,12 +352,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Chính Sách Bảo Vệ Quyền Riêng Tư & An Toàn Dữ Liệu
           </h3>
           <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-            Chúng tôi cam kết tôn trọng tuyệt đối quyền riêng tư của học sinh, phụ huynh và giáo viên:
+            Nền tảng hướng tới giảm thiểu dữ liệu được thu thập và giúp người dùng kiểm soát việc chia sẻ nội dung:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs text-slate-400">
             <div className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
               <strong className="text-slate-200 block mb-0.5">Không Lưu Ảnh Riêng Tư:</strong>
-              Các tệp tải lên chỉ xử lý tạm trong phiên quét và không lưu trữ trên máy chủ database.
+              Tệp được xử lý theo luồng của từng chức năng. Hãy kiểm tra thông báo lưu trữ và tùy chọn đồng ý trước khi gửi nội dung đi phân tích.
             </div>
             <div className="p-3 bg-[#0d1626] rounded-xl border border-slate-800">
               <strong className="text-slate-200 block mb-0.5">Zero-SSRF An Toàn:</strong>

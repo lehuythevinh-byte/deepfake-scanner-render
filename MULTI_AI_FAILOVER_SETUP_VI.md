@@ -28,7 +28,7 @@ Mỗi nhà cung cấp có API key riêng. Không có một key chung để dùng
 
 | Biến | Mặc định | Công dụng |
 |---|---|---|
-| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Gemini cho phân tích thường và Google Search grounding |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Gemini cho phân tích thường và Google Search grounding |
 | `OPENAI_MODEL` | `gpt-6.1-terra` | OpenAI cho phân tích thường |
 | `OPENAI_WEB_SEARCH_MODEL` | `gpt-6.1-terra` | OpenAI Responses API với web search khi cập nhật tình huống |
 | `DEEPSEEK_MODEL` | `deepseek-flash` | DeepSeek làm phương án dự phòng văn bản/ảnh |

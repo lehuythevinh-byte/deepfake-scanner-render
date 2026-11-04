@@ -29,7 +29,7 @@ export const FeedbackAdminPanel: React.FC = () => {
       <div className="flex items-center justify-between pb-3 border-b border-[#243956]">
         <h3 className="font-semibold text-white flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-[#55DDF2]" />
-          Phản hồi khảo sát & góp ý người dùng ({feedbacks.length})
+          Đánh giá trải nghiệm & góp ý người dùng ({feedbacks.length})
         </h3>
         <button
           onClick={() => void loadFeedbacks()}

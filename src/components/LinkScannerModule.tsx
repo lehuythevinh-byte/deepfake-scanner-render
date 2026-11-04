@@ -171,7 +171,7 @@ export const LinkScannerModule: React.FC<LinkScannerModuleProps> = ({ onTabChang
           </div>
         )}
 
-        {/* Presets for STEM educational practice */}
+        {/* Example URL checks */}
         <div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
             Mẫu liên kết thực tế để học tập & thử nghiệm:

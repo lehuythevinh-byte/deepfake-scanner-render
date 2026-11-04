@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, PhoneCall, ExternalLink, HeartHandshake, Lock } from 'lucide-react';
+import { Shield, PhoneCall, Lock, ScanSearch, Bot, Clock, UserRound, ShieldAlert } from 'lucide-react';
 import { ActiveTab } from '../types';
 import { DEFAULT_SITE_CONFIG, SiteConfig } from '../lib/siteConfig';
 
@@ -9,145 +9,45 @@ interface FooterProps {
   siteConfig?: SiteConfig;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, siteConfig = DEFAULT_SITE_CONFIG }) => {
-  return (
-    <footer className="bg-[#0b1322] border-t border-[#172941] text-slate-400 text-xs mt-16">
-      {/* 4-Step Quick Action Banner */}
-      <div className="bg-[#172941]/70 border-b border-[#1f3554] py-6 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#55DDF2]/10 border border-[#55DDF2]/30 flex items-center justify-center text-[#55DDF2]">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-bold text-white text-sm">QUY TRÌNH AN TOÀN SỐ 4 BƯỚC CHO HỌC SINH THCS</p>
-              <p className="text-[#A9D8F0] text-xs">Hãy biến 4 bước này thành phản xạ tự nhiên khi gặp bất kỳ thông tin bất thường nào</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap justify-center text-xs">
-            <span className="px-3 py-1.5 rounded bg-[#101C32] border border-slate-700 text-slate-200 font-semibold">1. DỪNG LẠI</span>
-            <span className="text-[#55DDF2]">→</span>
-            <span className="px-3 py-1.5 rounded bg-[#101C32] border border-slate-700 text-slate-200 font-semibold">2. KIỂM CHỨNG</span>
-            <span className="text-[#55DDF2]">→</span>
-            <span className="px-3 py-1.5 rounded bg-[#101C32] border border-slate-700 text-slate-200 font-semibold">3. BẢO VỆ</span>
-            <span className="text-[#55DDF2]">→</span>
-            <span className="px-3 py-1.5 rounded bg-[#CF5B65]/20 border border-[#CF5B65]/40 text-[#CF5B65] font-semibold">4. TÌM SỰ TRỢ GIÚP</span>
-          </div>
+export const Footer: React.FC<FooterProps> = ({ onTabChange, signedIn = false, siteConfig = DEFAULT_SITE_CONFIG }) => (
+  <footer className="mt-16 border-t border-[#172941] bg-[#081321] text-xs text-slate-400">
+    <div className="border-b border-[#1f3554] bg-gradient-to-r from-[#10243b] via-[#10283a] to-[#14213a] px-4 py-6">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200"><Shield size={20}/></span>
+          <div><p className="text-sm font-bold text-white">Đừng vội tin. Hãy kiểm tra.</p><p className="mt-1 text-[11px] text-slate-400">Phân tích dấu hiệu · Đối chiếu nguồn · Bảo vệ dữ liệu</p></div>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-semibold">
+          <span className="rounded-lg border border-slate-700 bg-[#0b192a] px-3 py-2 text-slate-200">1. Dừng lại</span><span className="text-cyan-300">→</span>
+          <span className="rounded-lg border border-slate-700 bg-[#0b192a] px-3 py-2 text-slate-200">2. Kiểm tra</span><span className="text-cyan-300">→</span>
+          <span className="rounded-lg border border-slate-700 bg-[#0b192a] px-3 py-2 text-slate-200">3. Xác minh</span><span className="text-cyan-300">→</span>
+          <span className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-rose-200">4. Ứng phó</span>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Col 1: About Project */}
-          <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#55DDF2]/20 flex items-center justify-center text-[#55DDF2]">
-                <Shield className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-white text-sm tracking-wide">{siteConfig.siteName}</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-slate-300">
-              Sản phẩm đề tài nghiên cứu khoa học: <strong>"Giải pháp giúp học sinh trung học cơ sở tránh một số tác động rủi ro từ Deepfake khi sử dụng mạng xã hội"</strong>.
-            </p>
-            <p className="text-[11px] text-slate-400">
-              Định hướng: Nghiên cứu ứng dụng, bảo vệ quyền trẻ em trên không gian mạng và phát triển năng lực tư duy phản biện số.
-            </p>
-          </div>
-
-          {/* Col 2: internal modules are listed for signed-in users only */}
-          {signedIn ? (
-          <div className="space-y-2">
-            <p className="font-semibold text-white uppercase tracking-wider text-[11px] text-[#55DDF2]">Hệ thống phân hệ</p>
-            <ul className="space-y-1.5 text-[11px]">
-              <li>
-                <button onClick={() => onTabChange('scanner')} className="hover:text-white transition-colors">
-                  AI Scanner (Phân tích tệp hình ảnh/video)
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onTabChange('evidence-lab')} className="hover:text-white transition-colors">
-                  Phòng kiểm chứng thông tin (Evidence Lab)
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onTabChange('simulator')} className="hover:text-white transition-colors">
-                  Mô phỏng tình huống (Safety Simulator)
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onTabChange('safebot')} className="hover:text-white transition-colors">
-                  Trợ lý an toàn số SafeBot AI
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onTabChange('research')} className="hover:text-white transition-colors">
-                  Trung tâm dữ liệu & Khảo sát học sinh
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          ) : (
-          <div className="space-y-2">
-            <p className="font-semibold uppercase tracking-wider text-[11px] text-[#55DDF2]">Bắt đầu</p>
-            <p className="text-[11px]">Tạo tài khoản miễn phí để sử dụng các công cụ phân tích an toàn số.</p>
-            <button onClick={() => onTabChange('register')} className="text-[11px] font-semibold text-[#55DDF2] hover:underline">Tạo tài khoản →</button>
-          </div>
-          )}
-
-          {/* Col 3: Hotlines */}
-          <div className="space-y-2">
-            <p className="font-semibold text-white uppercase tracking-wider text-[11px] text-[#55DDF2]">Kênh hỗ trợ khẩn cấp</p>
-            <div className="space-y-2 text-[11px]">
-              <div className="p-2.5 rounded-lg bg-[#172941]/50 border border-[#1f3554]">
-                <div className="flex items-center gap-2 font-bold text-white">
-                  <PhoneCall className="w-3.5 h-3.5 text-[#55DDF2]" />
-                  <span>Tổng đài 111 (Miễn phí 24/7)</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Tổng đài Quốc gia Bảo vệ Trẻ em tại Việt Nam</p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-[#172941]/50 border border-[#1f3554]">
-                <div className="flex items-center gap-2 font-bold text-white">
-                  <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Tổng đài 156 (Bộ TT&TT)</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Tiếp nhận phản ánh cuộc gọi rác, tin nhắn lừa đảo</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Col 4: Privacy & AI Disclaimer */}
-          <div className="space-y-2">
-            <p className="font-semibold text-white uppercase tracking-wider text-[11px] text-[#55DDF2]">Nguyên tắc & Cam kết</p>
-            <div className="p-3 rounded-lg bg-[#172941]/40 border border-[#1f3554] space-y-1.5 text-[10px] leading-relaxed text-slate-300">
-              <div className="flex items-center gap-1.5 text-[#41866C] font-semibold">
-                <Lock className="w-3 h-3" />
-                <span>Bảo vệ quyền riêng tư</span>
-              </div>
-              <p>
-                Website không lưu trữ dữ liệu cá nhân hay hình ảnh người dùng tải lên sau phiên phân tích. Không thu thập thông tin danh tính nhạy cảm.
-              </p>
-              <div className="pt-1 border-t border-slate-700/50 text-[10px] text-amber-300/90">
-                <strong>Giới hạn của AI:</strong> Kết quả AI chỉ mang tính tham khảo kỹ thuật, không thay thế việc kiểm chứng nguồn độc lập.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom copyright & attribution */}
-        <div className="mt-8 pt-6 border-t border-[#172941] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
-          <p>© 2026 {siteConfig.siteName} — Nền tảng Nghiên cứu Khoa học Ứng dụng & Giáo dục An toàn Số.</p>
-          <div className="flex items-center gap-4 text-[10px]">
-            <span>Phiên bản v2.6.4-Production</span>
-            <span>·</span>
-            <span>Hỗ trợ giáo dục THCS</span>
-            <span>·</span>
-            <button onClick={() => onTabChange('emergency')} className="text-[#CF5B65] hover:underline font-medium">
-              Hướng dẫn ứng phó khẩn
-            </button>
-          </div>
-        </div>
+    </div>
+    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-9 sm:px-6 md:grid-cols-4 lg:px-8">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-300/10 text-cyan-200"><ShieldAlert size={16}/></span><span className="text-sm font-bold tracking-wide text-white">{siteConfig.siteName}</span></div>
+        <p className="text-[11px] leading-5 text-slate-400">Nền tảng hỗ trợ phân tích nội dung số, sàng lọc dấu hiệu giả mạo và hướng dẫn xác minh rủi ro trực tuyến.</p>
       </div>
-    </footer>
-  );
-};
+      <div className="space-y-2">
+        <p className="font-semibold uppercase tracking-wider text-[11px] text-cyan-200">Không gian làm việc</p>
+        {signedIn ? <div className="flex flex-col items-start gap-2 text-[11px]">
+          <button onClick={() => onTabChange('scanner')} className="inline-flex items-center gap-2 hover:text-white"><ScanSearch size={13}/> Content Analysis</button>
+          <button onClick={() => onTabChange('safety-center')} className="inline-flex items-center gap-2 hover:text-white"><Bot size={13}/> Safety Center</button>
+          <button onClick={() => onTabChange('history')} className="inline-flex items-center gap-2 hover:text-white"><Clock size={13}/> Scan History</button>
+          <button onClick={() => onTabChange('account')} className="inline-flex items-center gap-2 hover:text-white"><UserRound size={13}/> User Account</button>
+        </div> : <div className="space-y-2"><p className="text-[11px]">Đăng nhập để sử dụng workspace và lưu lịch sử kiểm tra theo tài khoản.</p><button onClick={() => onTabChange('register')} className="text-[11px] font-semibold text-cyan-200 hover:underline">Tạo tài khoản →</button></div>}
+      </div>
+      <div className="space-y-2">
+        <p className="font-semibold uppercase tracking-wider text-[11px] text-cyan-200">Hỗ trợ khẩn cấp</p>
+        <div className="rounded-xl border border-slate-700 bg-[#0d1a2b] p-3"><div className="flex items-center gap-2 font-bold text-white"><PhoneCall className="h-3.5 w-3.5 text-cyan-300"/>Tổng đài 111</div><p className="mt-1 text-[10px] text-slate-400">Tổng đài Quốc gia Bảo vệ Trẻ em tại Việt Nam.</p><button onClick={() => onTabChange('safety-center')} className="mt-2 text-[10px] font-semibold text-cyan-200 hover:underline">Mở hướng dẫn an toàn →</button></div>
+      </div>
+      <div className="space-y-2">
+        <p className="font-semibold uppercase tracking-wider text-[11px] text-cyan-200">Quyền riêng tư & giới hạn</p>
+        <div className="rounded-xl border border-slate-700 bg-[#0d1a2b] p-3 text-[10px] leading-5 text-slate-300"><div className="mb-1 flex items-center gap-1.5 font-semibold text-emerald-200"><Lock size={12}/> Kiểm soát dữ liệu</div><p>Không gửi nội dung tới nhà cung cấp AI nếu chưa có thông báo và sự đồng ý phù hợp ở chức năng đó. Hãy xóa hoặc che thông tin cá nhân không cần thiết trước khi phân tích.</p><p className="mt-2 border-t border-slate-700 pt-2 text-amber-200">Kết quả là sàng lọc hỗ trợ xác minh, không phải chứng nhận thật/giả hoặc kết luận pháp lý.</p></div>
+      </div>
+    </div>
+    <div className="border-t border-[#172941] px-4 py-4 text-center text-[10px] text-slate-500">© 2026 {siteConfig.siteName} · Advanced Digital Trust & Safety Platform · V5 workspace</div>
+  </footer>
+);

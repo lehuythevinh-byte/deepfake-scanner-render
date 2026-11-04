@@ -2,24 +2,61 @@ services:
   - type: web
     name: deepfake-scanner-safety-center
     runtime: node
-    buildCommand: npm install --include=dev --no-audit --no-fund && npm run build
+    buildCommand: npm ci --include=dev --no-audit --no-fund && npm run lint && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 24.22.1
+      - key: APP_URL
+        value: https://deepfake-scanner-safety-center.onrender.com
+
+      # AI provider chain. At least one provider key must be configured.
+      - key: AI_PROVIDER_ORDER
+        value: gemini,openrouter,openai,deepseek
+      - key: AI_PROVIDER_COOLDOWN_MS
+        value: '90000'
+      - key: AI_QUOTA_COOLDOWN_MS
+        value: '900000'
+      - key: AI_REQUEST_TIMEOUT_MS
+        value: '30000'
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-3.1-flash-lite
-      - key: GEMINI_FALLBACK_MODEL
-        value: gemini-2.5-flash
-      - key: GEMINI_PRIMARY_TIMEOUT_MS
-        value: '18000'
-      - key: GEMINI_FALLBACK_TIMEOUT_MS
-        value: '10000'
+        value: gemini-3.8-flash
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_TEXT_MODEL
+        value: google/gemma-4-31b-it:free
+      - key: OPENROUTER_IMAGE_MODEL
+        value: google/gemma-4-31b-it:free
+      - key: OPENROUTER_DAILY_COOLDOWN_MS
+        value: '86400000'
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-6.1-terra
+      - key: OPENAI_WEB_SEARCH_MODEL
+        value: gpt-6.1-terra
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_MODEL
+        value: deepseek-flash
 
-# Hệ thống Quản trị & Tài khoản Người dùng (Cấu hình trên Render > Environment):
-# DATABASE_URL: Internal Database URL từ dịch vụ Render PostgreSQL (tạo miễn phí)
-# ADMIN_EMAIL: Địa chỉ email của quản trị viên đầu tiên
-# ADMIN_PASSWORD: Mật khẩu quản trị viên (tối thiểu 12 ký tự)
+      # PostgreSQL / Supabase. Copy the production database URL only to Render secrets.
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_CA_FILE
+        value: ''
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # Protected 48-hour threat-intelligence scheduler endpoint.
+      - key: THREAT_INTELLIGENCE_CRON_SECRET
+        sync: false
+      - key: THREAT_INTELLIGENCE_TIMEOUT_MS
+        value: '45000'

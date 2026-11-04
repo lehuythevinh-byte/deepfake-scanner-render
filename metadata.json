@@ -1,7 +1,8 @@
 {
   "name": "DEEPFAKE SCANNER — TRUNG TÂM AN TOÀN SỐ",
-  "description": "Website nghiên cứu khoa học: Giải pháp giúp học sinh trung học cơ sở tránh một số tác động rủi ro từ Deepfake khi sử dụng mạng xã hội.",
+  "description": "Nền tảng Digital Trust & Safety hỗ trợ phân tích hình ảnh, video, âm thanh, tin nhắn và đường dẫn; sàng lọc dấu hiệu giả mạo, lưu bằng chứng và hướng dẫn xác minh an toàn.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
-

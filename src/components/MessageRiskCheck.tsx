@@ -27,8 +27,9 @@ type AIAnalysis = {
   signals: { title: string; evidence: string; explanation: string; advice: string }[];
   immediateActions: string[];
   limitations: string;
+  sources?: ThreatSource[];
   intelligenceUpdatedAt?: string | null;
-  aiProvider?: 'gemini' | 'openai' | 'deepseek';
+  aiProvider?: 'gemini' | 'openrouter' | 'openai' | 'deepseek';
   aiModel?: string;
 };
 
@@ -57,20 +58,16 @@ export const MessageRiskCheck: React.FC = () => {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [feed, setFeed] = useState<ThreatFeed | null>(null);
   const [feedLoading, setFeedLoading] = useState(true);
-  const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [agreedToSend, setAgreedToSend] = useState(false);
   const [error, setError] = useState('');
   const [feedError, setFeedError] = useState('');
 
-  const loadFeed = useCallback(async (force = false) => {
-    if (force) setFeedRefreshing(true);
-    else setFeedLoading(true);
+  const loadFeed = useCallback(async () => {
+    setFeedLoading(true);
     setFeedError('');
     try {
-      const response = force
-        ? await fetch('/api/threat-intelligence/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}), cache: 'no-store' })
-        : await fetch('/api/threat-intelligence/scenarios', { credentials: 'same-origin', cache: 'no-store' });
+      const response = await fetch('/api/threat-intelligence/scenarios', { credentials: 'same-origin', cache: 'no-store' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'Chưa tải được tình huống mới từ AI.');
       setFeed(data as ThreatFeed);
@@ -78,15 +75,11 @@ export const MessageRiskCheck: React.FC = () => {
       setFeedError(err?.message || 'Không kết nối được dịch vụ cập nhật tình huống.');
     } finally {
       setFeedLoading(false);
-      setFeedRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     void loadFeed();
-    // The server only generates a new set once per 24-hour window; polling does not mean a new AI call every hour.
-    const timer = window.setInterval(() => void loadFeed(), 60 * 60 * 1000);
-    return () => window.clearInterval(timer);
   }, [loadFeed]);
 
   const handleAnalyze = async (event: FormEvent) => {
@@ -109,7 +102,7 @@ export const MessageRiskCheck: React.FC = () => {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ message: trimmed, consentExternalAI: true }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'AI chưa phân tích được nội dung này. Hãy thử lại sau.');
@@ -148,13 +141,8 @@ export const MessageRiskCheck: React.FC = () => {
                 <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold border border-cyan-500/30 bg-cyan-500/10 text-cyan-200"><Sparkles className="w-3 h-3" /> Không khóa vào bộ từ khóa cố định</span>
               </div>
               <h2 id="message-risk-title" className="text-lg md:text-xl font-bold text-white">Phân tích tin nhắn và chiêu trò mới</h2>
-              <p className="text-xs md:text-sm text-slate-400 mt-1.5 max-w-3xl leading-relaxed">AI đọc ngữ cảnh, cách gây áp lực và sự kết hợp giữa nhiều dấu hiệu — kể cả cách diễn đạt chưa có trong bộ mẫu. Danh sách tình huống được tạo lại từ thông tin web mới, định kỳ 24 giờ.</p>
+              <p className="text-xs md:text-sm text-slate-400 mt-1.5 max-w-3xl leading-relaxed">AI đọc ngữ cảnh và sự kết hợp giữa nhiều dấu hiệu. Kho tình báo được cập nhật qua lịch máy chủ 48 giờ; tình huống AI đề xuất không tự động được xem là sự việc đã xác minh.</p>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => void loadFeed(true)} disabled={feedRefreshing} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#55DDF2]/30 bg-[#55DDF2]/10 px-3 py-2 text-xs font-semibold text-[#a9eaf5] hover:bg-[#55DDF2]/15 disabled:opacity-60">
-              <RefreshCw className={`w-3.5 h-3.5 ${feedRefreshing ? 'animate-spin' : ''}`} /> {feedRefreshing ? 'Đang cập nhật…' : 'Cập nhật tình huống'}
-            </button>
           </div>
         </div>
       </div>
@@ -168,7 +156,7 @@ export const MessageRiskCheck: React.FC = () => {
           <textarea id="message-risk-input" value={message} onChange={(event) => { setMessage(event.target.value); setError(''); }} rows={8} maxLength={10000} placeholder="Dán tin nhắn, lời thoại được chép lại hoặc nội dung bài đăng. Có thể xóa tên, số điện thoại và thông tin cá nhân trước khi gửi…" className="w-full rounded-xl border border-slate-700 bg-[#0b1424] px-4 py-3 text-sm leading-relaxed text-slate-100 placeholder:text-slate-500 outline-none focus:border-[#55DDF2]/60 focus:ring-2 focus:ring-[#55DDF2]/10 resize-y" />
           <label className="flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 text-[11px] leading-relaxed text-amber-100/90 cursor-pointer">
             <input type="checkbox" checked={agreedToSend} onChange={(event) => setAgreedToSend(event.target.checked)} className="mt-0.5 accent-cyan-400" />
-            <span>Tôi hiểu nội dung sẽ được gửi đến máy chủ và một nhà cung cấp AI đã cấu hình (Gemini, OpenAI hoặc DeepSeek). Nếu nhà cung cấp đang lỗi/quá tải, máy chủ có thể lần lượt chuyển yêu cầu sang nhà cung cấp dự phòng khác. Không gửi mật khẩu, mã OTP, số giấy tờ hoặc thông tin riêng tư không cần thiết.</span>
+            <span>Tôi hiểu nội dung sẽ được gửi đến máy chủ và một nhà cung cấp AI đã cấu hình (Gemini, OpenRouter, OpenAI hoặc DeepSeek). Nếu nhà cung cấp đang lỗi/quá tải, máy chủ có thể lần lượt chuyển yêu cầu sang nhà cung cấp dự phòng khác. Không gửi mật khẩu, mã OTP, số giấy tờ hoặc thông tin riêng tư không cần thiết.</span>
           </label>
           {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
           <div className="flex flex-wrap gap-2">
@@ -206,6 +194,7 @@ export const MessageRiskCheck: React.FC = () => {
                 </div>)}
               </div>}
               {analysis.immediateActions?.length > 0 && <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-3.5"><h4 className="text-xs font-bold text-cyan-100 mb-2 flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Hành động ưu tiên</h4><ul className="list-disc list-inside space-y-1 text-[11px] text-slate-300">{analysis.immediateActions.map((action, index) => <li key={`${index}-${action}`}>{action}</li>)}</ul></div>}
+              {analysis.sources?.length ? <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3"><h4 className="text-[10px] font-bold uppercase tracking-wider text-cyan-200">Nguồn tình báo đã duyệt được truy xuất</h4><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">{analysis.sources.map((source, index) => <a key={`${source.url}-${index}`} href={source.url} target="_blank" rel="noopener noreferrer" className="break-all text-[10px] text-cyan-300 underline">{source.title || source.url} ↗</a>)}</div><p className="mt-2 text-[10px] text-slate-500">Nguồn tham khảo không chứng minh nội dung bạn gửi có liên quan đến sự kiện đó.</p></div> : null}
               {analysis.limitations && <p className="text-[10px] leading-relaxed text-slate-500">Giới hạn: {analysis.limitations}</p>}
             </div>
           )}
@@ -215,16 +204,16 @@ export const MessageRiskCheck: React.FC = () => {
       <div className="border-t border-white/5 p-5 md:p-7 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-[#55DDF2] text-[10px] uppercase tracking-[0.16em] font-bold"><Clock3 className="w-3.5 h-3.5" /> Tình huống được AI cập nhật</div>
-            <h3 className="text-base md:text-lg font-bold text-white mt-1">Tình huống mới và thủ thuật kết hợp</h3>
-            <p className="text-[11px] text-slate-400 mt-1">Không giới hạn ở một danh sách phổ biến. AI tìm nguồn web gần đây rồi tạo các tình huống để luyện kiểm chứng.</p>
+            <div className="flex items-center gap-2 text-[#55DDF2] text-[10px] uppercase tracking-[0.16em] font-bold"><Clock3 className="w-3.5 h-3.5" /> Tình huống trong kho tình báo</div>
+            <h3 className="text-base md:text-lg font-bold text-white mt-1">Tình huống mới và kịch bản phòng ngừa</h3>
+            <p className="text-[11px] text-slate-400 mt-1">Nguồn công khai được thu thập theo lịch máy chủ 48 giờ; từng kịch bản do AI đề xuất vẫn được gắn nhãn phòng ngừa cho đến khi có bằng chứng riêng và được kiểm duyệt.</p>
           </div>
           {feed?.updatedAt && <div className="text-[10px] text-slate-400">Cập nhật lần cuối: <strong className="text-slate-200">{dateLabel(feed.updatedAt)}</strong></div>}
         </div>
-        {feedLoading ? <div className="py-8 text-center text-xs text-slate-400"><RefreshCw className="w-4 h-4 animate-spin inline mr-2" />Đang lấy tình huống AI mới…</div> : feedError && !feed ? <div role="alert" className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-xs text-amber-100"><p>{feedError}</p><p className="mt-1 text-amber-100/70">Kiểm tra các API key AI trong Render Environment hoặc thử cập nhật lại sau.</p><button type="button" onClick={() => void loadFeed()} className="mt-3 underline">Thử lại</button></div> : null}
+        {feedLoading ? <div className="py-8 text-center text-xs text-slate-400"><RefreshCw className="w-4 h-4 animate-spin inline mr-2" />Đang tải kho tình báo…</div> : feedError && !feed ? <div role="alert" className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-xs text-amber-100"><p>{feedError}</p><p className="mt-1 text-amber-100/70">Kiểm tra trạng thái AI và scheduler phía máy chủ. Kịch bản đã lưu trước đó sẽ tiếp tục được giữ khi có lỗi tạm thời.</p><button type="button" onClick={() => void loadFeed()} className="mt-3 underline">Thử lại</button></div> : null}
         {feedError && feed && <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[10px] text-amber-100">Chưa lấy được bản mới; đang giữ bộ tình huống đã cập nhật lúc {dateLabel(feed.updatedAt)}. {feedError}</p>}
         {feed && <>
-          {feed.sourceStatus === 'web_grounded' ? <p className="text-[10px] text-emerald-300">Đã đối chiếu tìm kiếm web · Dự kiến cập nhật tiếp: {dateLabel(feed.nextRefreshAt)}</p> : <p className="text-[10px] text-amber-300">AI đã sinh tình huống nhưng lượt này chưa trả về nguồn web để xác minh độc lập.</p>}
+          {feed.sourceStatus === 'web_grounded' ? <p className="text-[10px] text-emerald-300">Có nguồn công khai trong lượt cập nhật · Dự kiến lần kế tiếp: {dateLabel(feed.nextRefreshAt)}</p> : <p className="text-[10px] text-amber-300">AI đã sinh tình huống nhưng lượt này chưa trả về nguồn web để xác minh độc lập.</p>}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {feed.scenarios.map((scenario) => <article key={scenario.id} className="rounded-xl border border-slate-700/80 bg-[#0b1424]/70 p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2"><span className={`rounded-full px-2 py-1 text-[9px] font-bold border ${scenario.evidenceType === 'reported_pattern' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : scenario.evidenceType === 'emerging_pattern' ? 'border-amber-500/30 bg-amber-500/10 text-amber-200' : 'border-violet-500/30 bg-violet-500/10 text-violet-200'}`}>{evidenceLabels[scenario.evidenceType]}</span><span className="text-[9px] text-slate-500">AI · {feed.model}</span></div>
@@ -238,7 +227,7 @@ export const MessageRiskCheck: React.FC = () => {
           {feed.sources?.length > 0 && <div className="pt-3 border-t border-white/5"><h4 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 flex items-center gap-2"><ExternalLink className="w-3.5 h-3.5" /> Nguồn web dùng để cập nhật</h4><div className="flex flex-wrap gap-x-4 gap-y-2">{feed.sources.slice(0, 8).map((source) => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#a9d8f0] hover:underline">{source.title || source.url} ↗</a>)}</div></div>}
         </>}
       </div>
-      <div className="px-5 md:px-7 py-3 bg-black/10 border-t border-white/5 flex items-start gap-2 text-[10px] leading-relaxed text-slate-500"><Info className="w-3.5 h-3.5 shrink-0 mt-0.5" /> Tình huống được AI tạo từ nguồn công khai, không phải danh sách đầy đủ mọi thủ thuật. Nhãn “dự báo” không đồng nghĩa đã có sự việc được xác minh. Không có kết quả cảnh báo cũng không chứng minh nội dung an toàn.</div>
+      <div className="px-5 md:px-7 py-3 bg-black/10 border-t border-white/5 flex items-start gap-2 text-[10px] leading-relaxed text-slate-500"><Info className="w-3.5 h-3.5 shrink-0 mt-0.5" /> Tình huống được tổng hợp từ nguồn công khai và/hoặc AI, không phải danh sách đầy đủ mọi thủ thuật. Nhãn “dự báo” không đồng nghĩa đã có sự việc được xác minh. Không có kết quả cảnh báo cũng không chứng minh nội dung an toàn.</div>
     </section>
   );
 };

@@ -44,7 +44,7 @@ Tài liệu này hướng dẫn cách sử dụng tập lệnh di chuyển dữ 
 - `user_id BIGINT REFERENCES app_users(id) ON DELETE SET NULL`: Liên kết tài khoản người quét.
 - `scan_mode TEXT`: Chế độ quét (`image`, `social_post`, `message_scam`, `video_frame`, `link`).
 - `engine TEXT`: Động cơ xử lý (`gemini-flash-lite`, `heuristic`).
-- `model TEXT`: Mô hình sử dụng (ví dụ: `gemini-3.1-flash-lite`).
+- `model TEXT`: Mô hình sử dụng (ví dụ: `gemini-3.8-flash`).
 - `duration_ms INTEGER`: Thời gian xử lý tính bằng mili-giây.
 - `report_id TEXT`: Mã định danh báo cáo quốc tế duy nhất (`REP-YYYYMMDD-HEX` hoặc `LNK-YYYYMMDD-HEX`).
 - `status TEXT`: Trạng thái tác vụ (`completed`, `insufficient_data`, `failed`).

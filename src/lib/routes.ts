@@ -12,7 +12,8 @@ export const TAB_PATHS: Record<ActiveTab, string> = {
   emergency: '/emergency',
   academy: '/academy',
   app: '/app',
-  scanner: '/app/scanner',
+  scanner: '/app/analyze',
+  'safety-center': '/app/safety-center',
   'link-scanner': '/app/link-scanner',
   safebot: '/app/safebot',
   history: '/app/history',
@@ -21,14 +22,27 @@ export const TAB_PATHS: Record<ActiveTab, string> = {
   research: '/app/research',
   account: '/account',
   admin: '/admin',
+  'v4-platform': '/app/v4',
 };
 
 // Legacy aliases kept so old bookmarks keep working.
 const PATH_ALIASES: Record<string, ActiveTab> = {
+  // V3/V4 deep links are preserved but now open the corresponding V5 workspace.
   '/scanner': 'scanner',
-  '/link-scanner': 'link-scanner',
+  '/app/scanner': 'scanner',
+  '/link-scanner': 'scanner',
+  '/app/link-scanner': 'scanner',
+  '/app/evidence-lab': 'scanner',
+  '/app/v4': 'scanner',
+  '/safebot': 'safety-center',
+  '/app/safebot': 'safety-center',
+  '/academy': 'safety-center',
+  '/app/academy': 'safety-center',
+  '/app/simulator': 'safety-center',
+  '/app/research': 'safety-center',
+  '/emergency': 'safety-center',
+  '/app/emergency': 'safety-center',
   '/history': 'history',
-  '/safebot': 'safebot',
 };
 
 const PATH_TO_TAB: Record<string, ActiveTab> = (() => {
@@ -41,7 +55,7 @@ const PATH_TO_TAB: Record<string, ActiveTab> = (() => {
 })();
 
 export const PUBLIC_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
-  'home', 'landing', 'features', 'how-it-works', 'safety-guide', 'login', 'register', 'emergency', 'academy',
+  'home', 'landing', 'features', 'how-it-works', 'safety-guide', 'login', 'register',
 ]);
 
 // Tabs that belong to the signed-in application shell (internal navigation).

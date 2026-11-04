@@ -1,0 +1,1 @@
+V5 does not include your private/local CA certificate. If the current V4 setup uses Supabase CA validation, copy certs/supabase-root.crt from your existing V4 folder into this directory. Keep the certificate file local and configure DATABASE_SSL_CA_FILE=certs/supabase-root.crt in .env. Never copy .env into the release ZIP or commit secrets.

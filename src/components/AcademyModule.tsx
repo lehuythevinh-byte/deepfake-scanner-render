@@ -27,7 +27,7 @@ export const AcademyModule: React.FC<AcademyModuleProps> = ({ onTabChange }) => 
   const categories = [
     { id: 'all', label: 'Tất cả chủ đề' },
     { id: 'foundations', label: '1. Kiến thức nền tảng' },
-    { id: 'youth_risks', label: '2. Rủi ro học sinh THCS' },
+    { id: 'identity_risks', label: '2. Rủi ro giả mạo & lừa đảo' },
     { id: 'detection_prevention', label: '3. Nhận biết & Phòng tránh' },
     { id: 'incident_response', label: '4. Hướng dẫn xử lý sự cố' },
   ];
@@ -46,11 +46,11 @@ export const AcademyModule: React.FC<AcademyModuleProps> = ({ onTabChange }) => 
       <div className="border-b border-[#172941] pb-6">
         <div className="flex items-center gap-2 text-xs text-[#55DDF2] font-bold tracking-wider uppercase mb-1">
           <BookOpen className="w-4 h-4" />
-          <span>THƯ VIỆN AN TOÀN SỐ DÀNH CHO HỌC SINH THCS</span>
+          <span>DIGITAL SAFETY KNOWLEDGE BASE</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Học Viện Deepfake: Kiến Thức & Kỹ Năng Số</h1>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Knowledge Base: Kiến thức & phương pháp xác minh</h1>
         <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl leading-relaxed">
-          Hệ thống bài học, cẩm nang phòng tránh rủi ro và các chỉ dẫn khoa học được thiết kế ngắn gọn, trực quan, phù hợp với lứa tuổi trung học cơ sở và phụ huynh.
+          Thư viện kiến thức về deepfake, giả mạo danh tính, lừa đảo trực tuyến và phương pháp xác minh độc lập. Nội dung tập trung vào dấu hiệu có thể quan sát và hành động bảo vệ thực tế.
         </p>
       </div>
 
@@ -206,7 +206,7 @@ export const AcademyModule: React.FC<AcademyModuleProps> = ({ onTabChange }) => 
             {activeArticle.actionItems.length > 0 && (
               <div className="p-4 rounded-xl bg-[#172941] border border-slate-700/60 space-y-2">
                 <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                  ✅ Danh sách hành động thực tế dành cho học sinh:
+                  ✅ Các bước thực hành và xác minh:
                 </h3>
                 <ul className="space-y-1.5 text-xs text-slate-200">
                   {activeArticle.actionItems.map((item, idx) => (

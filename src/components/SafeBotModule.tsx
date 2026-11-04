@@ -28,16 +28,16 @@ const SCRIPTED_KNOWLEDGE_BASE: Record<string, string> = {
 3. HỎI CÂU HỎI BÍ MẬT: Đặt câu hỏi chỉ người trong gia đình mới biết (ví dụ: món ăn sáng nay, tên thú cưng, sinh nhật bà...).
 4. BÁO CÁO: Chụp lại màn hình số tài khoản đối tượng yêu cầu chuyển tiền và tin nhắn để báo cho người lớn và cơ quan công an nếu cần.`,
 
-  blackmail_nudify: `Chào em! Thầy/cô hiểu em đang rất lo lắng và sợ hãi. Hãy hít thở sâu và ghi nhớ điều quan trọng nhất:
+  blackmail_nudify: `Mình hiểu bạn đang rất lo lắng và sợ hãi. Hãy hít thở sâu và ghi nhớ điều quan trọng nhất:
 EM HOÀN TOÀN KHÔNG CÓ LỖI! Bức ảnh đó là sản phẩm cắt ghép giả tạo do kẻ xấu thực hiện nhằm tống tiền hoặc uy hiếp em.
 
 Các bước hành động khẩn cấp:
 1. TUYỆT ĐỐI KHÔNG NỘP TIỀN: Không mua thẻ cào hay chuyển khoản. Kẻ tống tiền sẽ không dừng lại mà sẽ tiếp tục vòi thêm tiền.
 2. LƯU BẰNG CHỨNG: Chụp ảnh màn hình toàn bộ tin nhắn, tài khoản đe dọa và đường link (URL).
-3. NÓI VỚI NGƯỜI LỚN ĐÁNG TIN CẬY: Hãy chia sẻ ngay với cha mẹ hoặc thầy cô chủ nhiệm. Người lớn sẽ đứng ra bảo vệ và làm việc với cơ quan chức năng để xử lý kẻ xấu.
-4. GỌI TỔNG ĐÀI 111 (Miễn phí 24/7): Đây là Tổng đài Quốc gia Bảo vệ Trẻ em. Các chuyên gia sẽ tư vấn tâm lý, bảo mật danh tính và can thiệp pháp lý cho em ngay lập tức.`,
+3. TÌM NGƯỜI HỖ TRỢ ĐÁNG TIN CẬY: Chia sẻ với người thân, bạn bè tin cậy hoặc bộ phận an toàn của nền tảng; khi có nguy cơ phạm pháp, liên hệ cơ quan chức năng.
+4. HỖ TRỢ TRẺ EM: Nếu người bị hại là trẻ em, người giám hộ có thể liên hệ Tổng đài Quốc gia Bảo vệ Trẻ em 111 để được hướng dẫn. Với trường hợp khác, liên hệ cơ quan chức năng hoặc đơn vị hỗ trợ phù hợp.`,
 
-  verify_video: `Để kiểm chứng một video nghi vấn là Deepfake trên mạng xã hội, em hãy áp dụng các mẹo kỹ thuật và phương pháp tư duy sau:
+  verify_video: `Để kiểm chứng một video nghi vấn là Deepfake trên mạng xã hội, hãy áp dụng các mẹo kỹ thuật và phương pháp kiểm chứng sau:
 
 1. Quan sát thị giác kỹ lưỡng:
 - Mắt: Chớp mắt có tự nhiên không? Hai đồng tử có phản chiếu cùng một nguồn sáng không?
@@ -48,7 +48,7 @@ Các bước hành động khẩn cấp:
 - Sử dụng tính năng AI Scanner trên website này để rà soát dấu vết nén tạo sinh.
 3. Nguyên tắc số 1: "Nhìn thấy không đồng nghĩa với Sự thật". Đừng vội chia sẻ khi chưa có xác nhận từ người có thẩm quyền!`,
 
-  otp_hack: `Chào em! Nếu có bạn thân hoặc ai đó nhắn tin bảo: "Đọc cho tao 6 số vừa gửi về máy mày" hoặc nhờ bình chọn cuộc thi, em hãy nhớ:
+  otp_hack: `Nếu bạn bè hoặc người quen nhắn tin bảo: "Đọc cho tao 6 số vừa gửi về máy mày" hoặc nhờ bình chọn cuộc thi, hãy nhớ:
 
 1. ĐÓ LÀ BẪY ĐÁNH CẮP TÀI KHOẢN (HACK NICK): 6 số đó là mã OTP đăng nhập hoặc đổi mật khẩu Zalo, Facebook, Google của chính em! Nếu đọc cho họ, tài khoản của em sẽ bị cướp ngay lập tức.
 2. TÀI KHOẢN BẠN CỦA EM ĐÃ BỊ HACK HOẶC GIẢ MẠO: Kẻ xấu dùng nick đó để đi lừa tất cả mọi người trong danh sách bạn bè.
@@ -57,10 +57,9 @@ Các bước hành động khẩn cấp:
 - Gọi điện thoại trực tiếp ngoài đời hoặc gặp mặt để báo cho bạn mình biết tài khoản của bạn đang bị kẻ xấu lợi dụng.`,
 
   helpline_111: `Tổng đài Quốc gia Bảo vệ Trẻ em 111 là gì?
-- Đây là đường dây nóng công lập miễn phí 24/7 do Cục Trẻ em (Bộ LĐTBXH) quản lý.
-- Đối tượng hỗ trợ: Tất cả trẻ em và học sinh dưới 16 tuổi tại Việt Nam, cũng như phụ huynh và thầy cô giáo.
-- Các vấn đề được giải quyết: Bạo lực học đường, xâm hại, bắt nạt trực tuyến, tống tiền bằng hình ảnh cắt ghép, khủng hoảng tâm lý.
-- Cam kết: Bảo mật 100% danh tính học sinh, có sự tham gia của luật sư và chuyên gia tâm lý để can thiệp bảo vệ em an toàn.`,
+- Đây là kênh hỗ trợ về bảo vệ trẻ em tại Việt Nam.
+- Khi tình huống liên quan đến trẻ em, người dùng có thể liên hệ để được hướng dẫn về các bước hỗ trợ phù hợp.
+- Không nên hứa trước kết quả xử lý hoặc mức độ bảo mật tuyệt đối; hãy làm theo hướng dẫn chính thức của tổng đài.`,
 };
 
 export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiConfigured }) => {
@@ -68,12 +67,14 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Xin chào em! SafeBot là Trợ lý An toàn Số đồng hành cùng học sinh THCS trong việc phòng tránh rủi ro Deepfake, lừa đảo công nghệ cao và bảo vệ quyền riêng tư trên mạng xã hội. Em đang gặp băn khoăn hay cần hướng dẫn xử lý tình huống nào?',
+      content: 'Xin chào! SafeBot hỗ trợ bạn hiểu dấu hiệu deepfake, nhận biết lừa đảo, xác minh nội dung và bảo vệ tài khoản, dữ liệu cá nhân. Bạn đang cần kiểm tra hay xử lý tình huống nào?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
   const [inputPrompt, setInputPrompt] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [consentExternalAI, setConsentExternalAI] = useState(false);
+  const [consentError, setConsentError] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -85,13 +86,18 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
     { text: 'Làm gì khi có tin nhắn giọng mẹ nhờ chuyển tiền gấp?', key: 'money_scam' },
     { text: 'Ảnh của em bị cắt ghép bôi nhọ thì phải làm sao?', key: 'blackmail_nudify' },
     { text: 'Làm thế nào để nhận diện video giả mạo?', key: 'verify_video' },
-    { text: 'Bạn cùng lớp nhắn tin xin mã OTP 6 số?', key: 'otp_hack' },
+    { text: 'Một người quen nhắn tin xin mã OTP 6 số?', key: 'otp_hack' },
     { text: 'Tổng đài 111 có thể giúp em những việc gì?', key: 'helpline_111' },
   ];
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputPrompt;
     if (!text.trim() || isLoading) return;
+    if (aiConfigured !== false && !consentExternalAI) {
+      setConsentError('Hãy đồng ý trước khi gửi câu hỏi đến nhà cung cấp AI bên ngoài.');
+      return;
+    }
+    setConsentError('');
 
     const userMessage: ChatMessage = {
       id: String(Date.now()),
@@ -114,6 +120,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
             role: m.role,
             content: m.content,
           })),
+          consentExternalAI: consentExternalAI,
         }),
       });
 
@@ -129,7 +136,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
         setMessages((prev) => [...prev, botReply]);
       } else {
         // Fallback to offline script if AI not configured or error
-        let fallbackReply = 'Thầy/cô và SafeBot khuyên em luôn giữ bình tĩnh. Hãy áp dụng quy trình 4 bước: DỪNG LẠI (không chuyển tiền/không gửi mã) → KIỂM CHỨNG (gọi điện thoại trực tiếp) → BẢO VỆ (đổi mật khẩu) → BÁO CÁO (nói với bố mẹ hoặc gọi Tổng đài 111).';
+        let fallbackReply = 'SafeBot khuyên bạn giữ bình tĩnh. Hãy áp dụng quy trình 4 bước: DỪNG LẠI (không chuyển tiền/không gửi mã) → KIỂM CHỨNG (gọi điện thoại trực tiếp) → BẢO VỆ (đổi mật khẩu) → BÁO CÁO (liên hệ người thân hoặc đơn vị hỗ trợ phù hợp; nếu người bị ảnh hưởng là trẻ em, có thể gọi Tổng đài 111).';
 
         const lowerText = text.toLowerCase();
         if (lowerText.includes('tiền') || lowerText.includes('giọng') || lowerText.includes('chuyển khoản')) {
@@ -174,7 +181,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
       {
         id: 'welcome',
         role: 'assistant',
-        content: 'Cuộc trò chuyện đã được làm mới. Em cần hỗ trợ vấn đề an toàn số nào khác không?',
+        content: 'Cuộc trò chuyện đã được làm mới. Bạn cần hỗ trợ vấn đề an toàn số nào?',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -187,11 +194,11 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
         <div>
           <div className="flex items-center gap-2 text-xs text-[#55DDF2] font-bold tracking-wider uppercase mb-1">
             <Bot className="w-4 h-4" />
-            <span>CỐ VẤN AN TOÀN SỐ DÀNH CHO HỌC SINH</span>
+            <span>AI SAFETY ASSISTANT</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">SafeBot AI: Trợ Lý Hướng Dẫn Phòng Vệ</h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-            Luôn lắng nghe, bảo mật và hướng dẫn các bước ứng phó thực tế khi học sinh gặp nguy cơ trên mạng.
+            Hỗ trợ nhận diện dấu hiệu deepfake, lừa đảo, xác minh nội dung và lựa chọn bước ứng phó phù hợp.
           </p>
         </div>
 
@@ -262,7 +269,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
                 <div className={`text-[10px] pt-1 flex items-center justify-between ${
                   isBot ? 'text-slate-400 border-t border-slate-700/40' : 'text-slate-700'
                 }`}>
-                  <span>{isBot ? 'SafeBot Digital Assistant' : 'Em'}</span>
+                  <span>{isBot ? 'SafeBot Digital Assistant' : 'Bạn'}</span>
                   <span>{msg.timestamp}</span>
                 </div>
               </div>
@@ -287,6 +294,14 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Explicit external-AI opt-in */}
+      {aiConfigured !== false && <label className="flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-[11px] leading-5 text-slate-300">
+        <input type="checkbox" className="mt-1 accent-cyan-400" checked={consentExternalAI} onChange={(event) => { setConsentExternalAI(event.target.checked); setConsentError(''); }} />
+        <span>Tôi đồng ý gửi nội dung câu hỏi và ngữ cảnh hội thoại đến máy chủ và nhà cung cấp AI đã cấu hình để tạo câu trả lời. Không gửi mật khẩu, OTP hoặc dữ liệu nhạy cảm không cần thiết.</span>
+      </label>}
+      {aiConfigured === false && <p className="rounded-xl border border-slate-700 bg-slate-900/50 p-3 text-[11px] text-slate-400">AI chưa được cấu hình. SafeBot chỉ hiển thị hướng dẫn có sẵn; câu hỏi không được gửi sang nhà cung cấp AI.</p>}
+      {consentError && <p role="alert" className="text-[11px] text-amber-200">{consentError}</p>}
+
       {/* Input Bar */}
       <div className="p-2 rounded-2xl bg-[#172941] border border-slate-700 flex items-center gap-2 shadow-lg">
         <input
@@ -294,7 +309,7 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
           value={inputPrompt}
           onChange={(e) => setInputPrompt(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-          placeholder="Nhập câu hỏi hoặc tình huống em đang gặp..."
+          placeholder="Nhập câu hỏi hoặc tình huống bạn đang gặp..."
           className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none"
         />
         <button
@@ -315,13 +330,13 @@ export const SafeBotModule: React.FC<SafeBotModuleProps> = ({ onTabChange, aiCon
       <div className="p-3 rounded-xl bg-[#CF5B65]/10 border border-[#CF5B65]/30 flex items-center justify-between text-xs text-slate-300">
         <div className="flex items-center gap-2 text-[#CF5B65] font-semibold">
           <PhoneCall className="w-4 h-4" />
-          <span>Nếu em đang bị đe dọa vũ lực hoặc tống tiền nguy hiểm:</span>
+          <span>Nếu bạn đang bị đe dọa hoặc tống tiền:</span>
         </div>
         <button
-          onClick={() => onTabChange('emergency')}
+          onClick={() => onTabChange('safety-center')}
           className="text-xs text-white font-bold underline hover:text-[#55DDF2]"
         >
-          Xem danh bạ Tổng đài 111 & Công an →
+          Xem hướng dẫn ứng phó →
         </button>
       </div>
     </div>

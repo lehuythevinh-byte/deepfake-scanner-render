@@ -47,22 +47,22 @@ export const SCAN_STAGES = [
   {
     id: 2,
     title: 'Bước 2: Trích xuất dấu vết thị giác & siêu dữ liệu',
-    description: 'Rà soát tính nhất quán ánh sáng, đường biên khuôn mặt, kết cấu da và văn bản chữ OCR.',
+    description: 'Chuẩn bị dữ liệu hình ảnh, văn bản và metadata khả dụng trong phạm vi công cụ.',
   },
   {
     id: 3,
     title: 'Bước 3: AI suy luận kịch bản mở từ ngữ cảnh và tín hiệu mới',
-    description: 'Truy vấn tức thì nhận diện mạo danh người nổi tiếng, trộm OTP, tin nhắn đe dọa, lừa tiền.',
+    description: 'Đối chiếu nội dung với các dấu hiệu mạo danh, lấy cắp thông tin và thao túng.',
   },
   {
     id: 4,
-    title: 'Bước 4: Đánh giá 6 tầng nguy cơ & chỉ dẫn an toàn THCS',
-    description: 'Phân tích đa chiều về tính xác thực, bẫy lừa đảo, rủi ro học đường và các điểm chưa thể xác minh.',
+    title: 'Bước 4: Đối chiếu dấu hiệu và giới hạn phân tích',
+    description: 'Tách biệt dấu hiệu kỹ thuật, nguy cơ lừa đảo và những điểm chưa thể xác minh.',
   },
   {
     id: 5,
-    title: 'Bước 5: Hoàn tất kết quả phân tích an toàn số',
-    description: 'Tổng hợp dữ liệu, phân loại nhãn khoa học chuẩn mực và khuyến nghị quy trình 4 bước phòng vệ.',
+    title: 'Bước 5: Hoàn tất kết quả sàng lọc',
+    description: 'Hiển thị kết quả, bằng chứng được trả về và hướng dẫn xác minh tiếp theo.',
   },
 ];
 
@@ -107,14 +107,13 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
   const [dynamicScenariosNextRefreshAt, setDynamicScenariosNextRefreshAt] = useState<string | null>(null);
   const [dynamicScenarioLoading, setDynamicScenarioLoading] = useState(false);
   const [dynamicScenarioError, setDynamicScenarioError] = useState('');
+  const [consentExternalAI, setConsentExternalAI] = useState(false);
 
-  const loadDynamicScenarios = async (force = false) => {
+  const loadDynamicScenarios = async () => {
     setDynamicScenarioLoading(true);
     setDynamicScenarioError('');
     try {
-      const response = force
-        ? await fetch('/api/threat-intelligence/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}), cache: 'no-store' })
-        : await fetch('/api/threat-intelligence/scenarios', { credentials: 'same-origin', cache: 'no-store' });
+      const response = await fetch('/api/threat-intelligence/scenarios', { credentials: 'same-origin', cache: 'no-store' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'Không tải được tình huống AI.');
       setDynamicScenarios(Array.isArray(data.scenarios) ? data.scenarios : []);
@@ -128,11 +127,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
     }
   };
 
-  useEffect(() => {
-    void loadDynamicScenarios();
-    const timer = window.setInterval(() => void loadDynamicScenarios(), 60 * 60 * 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+  useEffect(() => { void loadDynamicScenarios(); }, []);
 
   // AI Speed optimization & 5-step progression states
   const [currentProgressStep, setCurrentProgressStep] = useState<number>(1);
@@ -302,10 +297,10 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
       setPostPlatform('Facebook');
       setAccountName('VTV News Tin Nóng 24h (Tài khoản không tích xanh)');
       setAccountHandle('vtv_tinnong_online');
-      setPostCaption('THÔNG BÁO KHẨN CẤP: Học sinh toàn quốc được nghỉ học 1 tháng từ ngày mai! Nhấn ngay vào liên kết http://moet-nghihoc-khan2026.xyz để xem danh sách trường áp dụng.');
+      setPostCaption('THÔNG BÁO KHẨN CẤP: Tài khoản của bạn sẽ bị khóa trong 24 giờ. Truy cập đường dẫn trong tin nhắn để xác minh ngay.');
       setPostLink('http://moet-nghihoc-khan2026.xyz/xem-danh-sach');
-      setRelatedComments('Nhiều bạn học sinh đang tag nhau vào bình luận rủ nhau đi chơi.');
-      setContextualNotes('Bài đăng đang lan truyền nhanh chóng trên các hội nhóm học sinh.');
+      setRelatedComments('Nhiều tài khoản đang chia sẻ lại thông báo nhưng chưa dẫn nguồn chính thức.');
+      setContextualNotes('Bài đăng đang lan truyền trong nhiều nhóm cộng đồng nhưng chưa có xác nhận từ đơn vị được nêu tên.');
 
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, 600, 400);
@@ -349,9 +344,9 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
       });
     } else if (sampleType === 'otp_theft_msg') {
       setScanMode('message_scam');
-      setSenderName('Minh Hoàng (Bạn cùng lớp)');
+      setSenderName('Minh Hoàng (Người quen)');
       setSenderPlatform('Messenger');
-      setMessageText('Ê Hoàng ơi, tao đang tham gia bình chọn ảnh thi STEM trường mình, tao gửi mã bình chọn về số điện thoại mày rồi đó, đọc cho tao 6 số đó liền nha để tao kịp nộp trước giờ chót!');
+      setMessageText('Bạn ơi, mình đang tham gia bình chọn trực tuyến. Mã xác nhận vừa gửi về điện thoại bạn, đọc cho mình 6 số ngay để kịp thời hạn nhé!');
       setExtractedLinks('');
       setContextualNotes('Ngay sau đó máy nhận được tin nhắn SMS chứa mã kích hoạt Zalo.');
 
@@ -370,29 +365,15 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
           handleFileSelection(file);
         }
       });
-    } else if (sampleType === 'authentic_study') {
-      setScanMode('image');
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 0, 600, 400);
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 18px sans-serif';
-      ctx.fillText('ẢNH TÀI LIỆU HỌC TẬP CHÂN THỰC', 60, 190);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '13px sans-serif';
-      ctx.fillText('Ảnh chụp bài làm nhóm môn Khoa học tự nhiên lớp 8', 60, 230);
-
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const file = new File([blob], 'authentic_study_doc.png', { type: 'image/png' });
-          handleFileSelection(file);
-          setContextualNotes('Ảnh chụp bài tập nhóm từ bàn học gửi cho bạn cùng lớp.');
-        }
-      });
     }
   };
 
   // Run the multi-layered scan with 5 visual stages and client-side compression
   const handleStartScan = async () => {
+    if (!consentExternalAI) {
+      setScanError('Hãy xác nhận đồng ý gửi nội dung đến máy chủ và nhà cung cấp AI trước khi phân tích.');
+      return;
+    }
     setIsScanning(true);
     setScanError(null);
     setThreatResult(null);
@@ -408,7 +389,6 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
       setScanDurationSeconds((performance.now() - startTime) / 1000);
     }, 100);
 
-    let progressInterval: any = null;
 
     try {
       let base64Data = '';
@@ -428,23 +408,16 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
       setCurrentProgressStep(2);
       setProcessingStep('Bước 2/5: Đang trích xuất đặc trưng thị giác, OCR và siêu dữ liệu...');
 
-      // Brief delay for visual smoothness of step transition
-      await new Promise((resolve) => setTimeout(resolve, 80));
-
       setCurrentProgressStep(3);
       setProgressPercent(48);
-      setProcessingStep('Bước 3/5: AI đang phân tích kịch bản mở, gồm cả biến thể mới...');
-
-      // Incremental progress ticker while awaiting AI server response
-      progressInterval = setInterval(() => {
-        setProgressPercent((prev) => (prev < 86 ? prev + 3 : prev));
-      }, 220);
+      setProcessingStep('Bước 3/5: Đang chờ phản hồi phân tích từ máy chủ...');
 
       const response = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scanMode,
+          consentExternalAI: true,
           imageBase64: base64Data,
           mimeType: fileMime,
           fileName: selectedFile?.name || 'input_content',
@@ -466,7 +439,6 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
         }),
       });
 
-      if (progressInterval) clearInterval(progressInterval);
 
       const result = await response.json();
 
@@ -478,8 +450,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
 
       setCurrentProgressStep(4);
       setProgressPercent(92);
-      setProcessingStep('Bước 4/5: Đang đánh giá 6 tầng nguy cơ & tổng hợp chỉ dẫn an toàn THCS...');
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      setProcessingStep('Bước 4/5: Đang kiểm tra cấu trúc và tổng hợp các trường kết quả...');
 
       setCurrentProgressStep(5);
       setProgressPercent(100);
@@ -494,7 +465,6 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
       setScanError('Chưa kết nối được máy chủ. Bạn kiểm tra mạng rồi thử lại nhé.');
     } finally {
       clearInterval(timerInterval);
-      if (progressInterval) clearInterval(progressInterval);
       setIsScanning(false);
     }
   };
@@ -512,7 +482,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
             Social Threat Scanner: Giám Định Deepfake & Chiêu Trò Mạng Xã Hội
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl leading-relaxed">
-            Hệ thống phân tích nhiều lớp dành cho học sinh THCS: không chỉ tìm dấu vết ảnh do AI tạo ra, mà còn nhận biết nguy cơ mạo danh, bẫy chuyển tiền, trộm OTP, bắt nạt trực tuyến và tin giả chưa kiểm chứng.
+            Hệ thống phân tích nhiều lớp giúp sàng lọc dấu hiệu ảnh tổng hợp, mạo danh, lừa đảo, thao túng trực tuyến và nội dung chưa được kiểm chứng.
           </p>
         </div>
 
@@ -616,7 +586,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
           <div className="p-6 rounded-2xl bg-[#172941]/80 border border-[#1f3554] space-y-5">
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <span>1. Dữ liệu đầu vào: {scanMode === 'image' ? 'Ảnh cần kiểm tra' : scanMode === 'social_post' ? 'Bài đăng MXH' : 'Tin nhắn chat'}</span>
+                <span>1. Dữ liệu đầu vào: {scanMode === 'image' ? 'Ảnh cần kiểm tra' : scanMode === 'social_post' ? 'Bài đăng / ngữ cảnh' : 'Tin nhắn chat'}</span>
               </h2>
               <span className="text-[10px] text-slate-400">Tối đa 20MB</span>
             </div>
@@ -775,7 +745,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                       type="text"
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
-                      placeholder="Ví dụ: Mẹ, Bạn cùng lớp, Cô giáo..."
+                      placeholder="Ví dụ: người thân, đồng nghiệp, nhân viên hỗ trợ..."
                       className="w-full text-xs rounded-xl bg-[#101C32] border border-slate-700 p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#55DDF2]"
                     />
                   </div>
@@ -814,7 +784,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                 rows={2}
                 value={contextualNotes}
                 onChange={(e) => setContextualNotes(e.target.value)}
-                placeholder="Ai gửi cho em? Em có đang bị thúc ép không? Bạn bè nói gì về nội dung này?..."
+                placeholder="Ai gửi nội dung này? Có yêu cầu tiền, OTP hoặc hành động gấp không? Bạn đã xác minh qua kênh độc lập chưa?..."
                 className="w-full text-xs rounded-xl bg-[#101C32] border border-slate-700 p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#55DDF2] resize-none"
               />
             </div>
@@ -838,14 +808,6 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                     >
                       <span>Mẫu A1: Chân dung nghi hoán đổi mặt (Face Swap)</span>
                       <span className="text-[10px] text-amber-400 font-mono">Ảnh giả</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => loadModeSample('authentic_study')}
-                      className="text-left px-3 py-2 rounded-lg bg-[#101C32] border border-slate-700 hover:border-[#55DDF2] text-slate-300 hover:text-white flex items-center justify-between"
-                    >
-                      <span>Mẫu A2: Ảnh tài liệu học tập bình thường</span>
-                      <span className="text-[10px] text-emerald-400 font-mono">Chân thực</span>
                     </button>
                   </>
                 )}
@@ -874,7 +836,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                       onClick={() => loadModeSample('otp_theft_msg')}
                       className="text-left px-3 py-2 rounded-lg bg-[#101C32] border border-slate-700 hover:border-[#55DDF2] text-slate-300 hover:text-white flex items-center justify-between"
                     >
-                      <span>Mẫu C2: Bạn thân nhờ bình chọn thi STEM xin mã OTP</span>
+                      <span>Mẫu C2: Người quen nhờ đọc mã xác nhận</span>
                       <span className="text-[10px] text-amber-400 font-mono">Trộm nick</span>
                     </button>
                   </>
@@ -889,6 +851,11 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                 <span className="leading-relaxed">{scanError}</span>
               </div>
             )}
+
+            <label className="flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-[11px] leading-5 text-slate-300">
+              <input type="checkbox" className="mt-1 accent-cyan-400" checked={consentExternalAI} onChange={(event) => setConsentExternalAI(event.target.checked)} />
+              <span>Tôi đồng ý gửi tệp hoặc nội dung đã nhập đến máy chủ và nhà cung cấp AI được cấu hình để phân tích. Không gửi mật khẩu, OTP hoặc thông tin riêng tư không cần thiết.</span>
+            </label>
 
             {/* Run Analysis Button */}
             <button
@@ -913,11 +880,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
               )}
             </button>
 
-            {/* Privacy pledge */}
-            <p className="text-[10px] text-slate-400 flex items-center justify-center gap-1.5 text-center">
-              <Lock className="w-3 h-3 text-[#41866C]" />
-              <span>Bảo mật: Nội dung được gửi đến một nhà cung cấp AI đã cấu hình; nếu gặp lỗi/quá tải, máy chủ có thể chuyển tuần tự sang nhà cung cấp dự phòng. Không gửi mật khẩu, OTP hoặc dữ liệu riêng tư.</span>
-            </p>
+            <p className="text-[10px] leading-5 text-slate-500">Chỉ gửi nội dung sau khi bạn bật đồng ý ở trên. Khi dịch vụ AI lỗi hoặc hết hạn mức, hệ thống thông báo trạng thái thay vì giả lập kết quả phân tích.</p>
           </div>
         </div>
 
@@ -1083,7 +1046,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
               {threatResult.isHeuristicNotice && (
                 <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-xs leading-relaxed text-amber-100" role="status">
                   <p className="font-bold mb-1">Chế độ dự phòng — chưa có kết quả giám định AI</p>
-                  <p>Máy chủ đang sử dụng quy tắc nhận diện từ văn bản. Phân tích hình ảnh bằng AI chưa hoàn tất; trạng thái này không chứng minh ảnh thật hay giả. Hãy dùng Evidence Lab và xác minh qua nguồn độc lập.</p>
+                  <p>Máy chủ đang sử dụng quy tắc nhận diện từ văn bản. Phân tích hình ảnh bằng AI chưa hoàn tất; trạng thái này không chứng minh ảnh thật hay giả. Hãy xem phần Bằng chứng trong kết quả và xác minh qua nguồn độc lập.</p>
                 </div>
               )}
               {threatResult.matchedScenarioCodes && threatResult.matchedScenarioCodes.length > 0 && (
@@ -1254,38 +1217,38 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                 )}
               </div>
 
-              {/* 4. Rủi ro đối với học sinh (Youth Safety, Bullying, Blackmail) (Collapsible) */}
+              {/* 4. Bảo vệ người dùng dễ bị tổn thương & quyền riêng tư (Collapsible) */}
               <div className={`rounded-xl border overflow-hidden ${
-                threatResult.youthRisks.detected
+                threatResult.personalSafetyRisks.detected
                   ? 'bg-[#CF5B65]/10 border-[#CF5B65]/40 text-white'
                   : 'bg-[#101C32] border-slate-800'
               }`}>
                 <button
                   type="button"
-                  onClick={() => toggleSection('youth')}
+                  onClick={() => toggleSection('personal-safety')}
                   className="w-full p-4 flex items-center justify-between text-left hover:bg-black/20 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-[#CF5B65]" />
                     <h4 className="text-xs font-bold text-[#CF5B65] uppercase tracking-wider">
-                      4. Cảnh báo bảo vệ an toàn học sinh
+                      4. Bảo vệ người dùng dễ bị tổn thương & quyền riêng tư
                     </h4>
                     <span className="text-[10px] font-mono text-[#CF5B65] font-bold ml-2">
-                      ({threatResult.youthRisks.riskLevel === 'high' ? 'NGUY CƠ CAO' : 'THEO DÕI'})
+                      ({threatResult.personalSafetyRisks.riskLevel === 'high' ? 'NGUY CƠ CAO' : 'THEO DÕI'})
                     </span>
                   </div>
-                  {collapsedSections['youth'] ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
+                  {collapsedSections['personal-safety'] ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
                 </button>
 
-                {!collapsedSections['youth'] && (
+                {!collapsedSections['personal-safety'] && (
                   <div className="p-4 pt-0 space-y-3 border-t border-slate-800/60">
                     <p className="text-xs sm:text-sm font-semibold text-slate-100 leading-relaxed pt-3">
-                      {threatResult.youthRisks.studentGuidance}
+                      {threatResult.personalSafetyRisks.safetyGuidance}
                     </p>
-                    {threatResult.youthRisks.emergencyNotice && (
+                    {threatResult.personalSafetyRisks.emergencyNotice && (
                       <div className="p-2.5 rounded-lg bg-[#CF5B65]/20 text-xs text-white flex items-center justify-between">
-                        <span>{threatResult.youthRisks.emergencyNotice}</span>
-                        <a href="tel:111" className="font-bold underline text-white ml-2">Gọi 111 ngay</a>
+                        <span>{threatResult.personalSafetyRisks.emergencyNotice}</span>
+                        <a href="tel:111" className="font-bold underline text-white ml-2">Gọi 111 (nếu liên quan đến trẻ em)</a>
                       </div>
                     )}
                   </div>
@@ -1330,6 +1293,12 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                         ))}
                       </div>
                     )}
+
+                    {threatResult.sourcesAndEvidence.intelligenceReferences?.length ? <div className="space-y-1 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3">
+                      <span className="text-[10px] font-mono uppercase text-cyan-200 font-bold">Nguồn tình báo đã được quản trị viên duyệt (bối cảnh tham khảo):</span>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">{threatResult.sourcesAndEvidence.intelligenceReferences.map((source, idx) => <a key={`${source.url}-${idx}`} href={source.url} target="_blank" rel="noopener noreferrer" className="break-all text-[10px] text-cyan-300 underline">{source.title || source.url} ↗</a>)}</div>
+                      <p className="text-[10px] text-slate-500">Các nguồn này là bối cảnh tình báo đã duyệt, không phải bằng chứng trực tiếp chứng minh file đang kiểm tra là giả.</p>
+                    </div> : null}
 
                     {/* Unverified Gaps */}
                     <div className="space-y-1 pt-1">
@@ -1427,7 +1396,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                 <span className="text-xs uppercase font-bold text-[#55DDF2] tracking-wider">HỆ THỐNG AN TOÀN SỐ PHÂN TẦNG</span>
                 <h3 className="text-xl font-bold text-white mt-1">Social Threat Scanner hoạt động như thế nào?</h3>
                 <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                  Thay vì chỉ dựa vào một chỉ số thị giác đơn lẻ, hệ thống kết hợp giữa phân tích đa phương tiện (ảnh/video), nhận dạng ký tự (OCR), rà soát bẫy lừa đảo và đối chiếu kịch bản nhằm bảo vệ học sinh một cách toàn diện nhất.
+                  Thay vì chỉ dựa vào một chỉ số thị giác đơn lẻ, hệ thống kết hợp giữa phân tích đa phương tiện (ảnh/video), nhận dạng ký tự (OCR), rà soát bẫy lừa đảo và đối chiếu kịch bản nhằm hỗ trợ người dùng xem xét dấu hiệu và xác minh nội dung.
                 </p>
               </div>
 
@@ -1452,15 +1421,15 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
                   <span className="text-[10px] font-mono font-bold text-blue-400">TẦNG 3: MẠO DANH & ĐỜI TƯ</span>
                   <h4 className="text-xs font-bold text-white">Xác minh tài khoản & Danh tính</h4>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Phát hiện các tài khoản clone sao chép họ tên bạn bè, thầy cô hoặc người nổi tiếng để khai thác lòng tin của học sinh.
+                    Phát hiện tài khoản giả mạo sao chép tên, hình ảnh cá nhân, đồng nghiệp, người thân hoặc người nổi tiếng để khai thác lòng tin.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-[#101C32] border border-slate-700/60 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold text-[#CF5B65]">TẦNG 4: BẢO VỆ HỌC SINH</span>
+                  <span className="text-[10px] font-mono font-bold text-[#CF5B65]">TẦNG 4: BẢO VỆ NGƯỜI DÙNG</span>
                   <h4 className="text-xs font-bold text-white">Chống bắt nạt & Tống tiền</h4>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Cảnh báo khẩn cấp các hành vi ghép ảnh bôi nhọ, đe dọa phát tán ảnh nhạy cảm; kích hoạt đường dây nóng 111 bảo vệ tức thì.
+                    Cảnh báo các hành vi ghép ảnh bôi nhọ, đe dọa phát tán ảnh nhạy cảm; hướng dẫn tìm hỗ trợ phù hợp, trong đó có Tổng đài 111 nếu nạn nhân là trẻ em.
                   </p>
                 </div>
               </div>
@@ -1489,7 +1458,7 @@ export const ScannerModule: React.FC<ScannerModuleProps> = ({ onTabChange }) => 
               <button onClick={() => setShowScenariosModal(false)} className="p-2 rounded-full bg-[#172941] text-slate-400 hover:text-white transition-colors" aria-label="Đóng tình huống AI"><X className="w-5 h-5" /></button>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => void loadDynamicScenarios(true)} disabled={dynamicScenarioLoading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#55DDF2]/10 border border-[#55DDF2]/30 text-[#a9eaf5] text-xs font-semibold disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${dynamicScenarioLoading ? 'animate-spin' : ''}`} /> {dynamicScenarioLoading ? 'Đang cập nhật…' : 'Cập nhật từ web ngay'}</button>
+              <button onClick={() => void loadDynamicScenarios()} disabled={dynamicScenarioLoading} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#55DDF2]/10 border border-[#55DDF2]/30 text-[#a9eaf5] text-xs font-semibold disabled:opacity-60"><RefreshCw className={`w-3.5 h-3.5 ${dynamicScenarioLoading ? 'animate-spin' : ''}`} /> {dynamicScenarioLoading ? 'Đang tải…' : 'Tải snapshot đã lưu'}</button>
             </div>
             {dynamicScenarioError && <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-100">{dynamicScenarioError}</div>}
             {dynamicScenarioLoading && !dynamicScenarios.length ? <div className="py-10 text-center text-sm text-slate-400">AI đang tìm và tổng hợp các tình huống…</div> : null}

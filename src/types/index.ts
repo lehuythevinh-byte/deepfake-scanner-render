@@ -6,6 +6,7 @@ export type ActiveTab =
   | 'safety-guide'
   | 'app'
   | 'scanner'
+  | 'safety-center'
   | 'link-scanner'
   | 'history'
   | 'evidence-lab'
@@ -16,6 +17,7 @@ export type ActiveTab =
   | 'emergency'
   | 'account'
   | 'admin'
+  | 'v4-platform'
   | 'login'
   | 'register';
 
@@ -92,11 +94,11 @@ export interface ImpersonationRiskSection {
   explanation: string;
 }
 
-export interface YouthRiskSection {
+export interface PersonalSafetyRiskSection {
   detected: boolean;
   riskLevel: 'low' | 'medium' | 'high';
   riskTypes: ('bullying' | 'blackmail' | 'privacy_breach' | 'financial_loss' | 'psychological_pressure' | 'misinformation')[];
-  studentGuidance: string;
+  safetyGuidance: string;
   emergencyNotice?: string;
 }
 
@@ -108,6 +110,7 @@ export interface SourcesAndEvidenceSection {
     isDeceptiveOrShortened: boolean;
   }>;
   unverifiedGaps: string[];
+  intelligenceReferences?: Array<{ title: string; url: string }>;
 }
 
 export interface ActionGuidanceSection {
@@ -134,7 +137,7 @@ export interface ThreatScanResult {
   imageAuthenticity: ImageAuthenticitySection;
   scamRisks: ScamRiskSection;
   impersonationRisks: ImpersonationRiskSection;
-  youthRisks: YouthRiskSection;
+  personalSafetyRisks: PersonalSafetyRiskSection;
   sourcesAndEvidence: SourcesAndEvidenceSection;
   actionGuidance: ActionGuidanceSection;
   scientificDisclaimer: string;
@@ -147,7 +150,7 @@ export type ScanResult = ThreatScanResult;
 
 export interface AcademyArticle {
   id: string;
-  category: 'foundations' | 'youth_risks' | 'detection_prevention' | 'incident_response';
+  category: 'foundations' | 'identity_risks' | 'detection_prevention' | 'incident_response';
   categoryLabel: string;
   title: string;
   readTime: string;
@@ -161,44 +164,7 @@ export interface AcademyArticle {
   references: string[];
 }
 
-export interface SimulatorChoice {
-  id: string;
-  text: string;
-  isSafe: boolean;
-  feedback: string;
-  actionGuidance: string;
-}
 
-export interface SimulatorScenario {
-  id: string;
-  code: string;
-  title: string;
-  targetSkill: string;
-  context: string;
-  simulatedSender: string;
-  simulatedMessage: string;
-  mediaType?: 'audio' | 'video' | 'image' | 'text';
-  mediaDescription?: string;
-  question: string;
-  choices: SimulatorChoice[];
-  keyPrinciple: string;
-}
-
-export interface SurveyResponseData {
-  id: string;
-  timestamp: string;
-  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Giáo viên / Phụ huynh';
-  hasHeardDeepfake: 'Có' | 'Chưa' | 'Nghe thoáng qua';
-  encounteredSuspicious: 'Đã từng gặp' | 'Chưa từng' | 'Không chắc chắn';
-  mainInformationSources: string[];
-  checksSourceBeforeSharing: 'Thường xuyên' | 'Thỉnh thoảng' | 'Hiếm khi' | 'Không bao giờ';
-  knowsVerificationSteps: 'Biết rõ quy trình' | 'Biết một vài cách' | 'Chưa biết cách nào';
-  understandsAiLimitations: boolean;
-  actionWhenUrgentRequest: string;
-  wantsToUseScanner: boolean;
-  mostValuedFeature: string;
-  satisfactionScore: number; // 1-5
-}
 
 export interface ChatMessage {
   id: string;

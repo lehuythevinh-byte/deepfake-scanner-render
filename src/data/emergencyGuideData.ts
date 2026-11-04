@@ -27,7 +27,7 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
       'Áp dụng quy tắc "30 giây dừng lại" để hạ nhiệt cảm xúc tò mò hoặc tức giận.',
       'Kiểm tra tài khoản gốc đăng bài: Tài khoản tạo bao lâu? Có tích xanh hoặc thông tin xác minh không? Đã từng đăng nội dung gì?',
       'Tìm kiếm độc lập (Lateral Reading): Mở báo chí chính thống (VTV, Báo Tuổi Trẻ, Thanh Niên) xem có bài viết xác nhận không.',
-      'Sử dụng công cụ AI Scanner & Evidence Lab trên website này như một nguồn tham khảo kỹ thuật số.',
+      'Sử dụng Content Analysis và phần Bằng chứng trong kết quả như nguồn tham khảo kỹ thuật số.',
       'Bấm nút "Báo cáo" (Report) trên mạng xã hội với lý do Thông tin sai lệch / Giả mạo.',
     ],
     supportChannels: [
@@ -47,7 +47,7 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
     id: 'impersonation-scam',
     scenarioTitle: '2. Nghi ngờ lừa đảo, mạo danh giọng nói / video call đòi tiền',
     urgencyLevel: 'high',
-    summary: 'Nhận được tin nhắn, cuộc gọi thoại hoặc video call ngắn với giọng nói/mặt giống người thân, giáo viên hoặc bạn bè đòi chuyển tiền, nạp thẻ hoặc gửi mã OTP.',
+    summary: 'Nhận được tin nhắn, cuộc gọi thoại hoặc video call có hình ảnh/giọng nói giống người thân, đồng nghiệp hoặc người quen và yêu cầu chuyển tiền, cung cấp mã OTP hay thông tin nhạy cảm.',
     doNotList: [
       'Tuyệt đối KHÔNG chuyển tiền vào bất kỳ số tài khoản ngân hàng nào theo yêu cầu.',
       'Tuyệt đối KHÔNG đọc mã OTP, mã xác thực SMS, mật khẩu cho bất kỳ ai.',
@@ -56,8 +56,8 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
     immediateSteps: [
       'Cúp máy hoặc dừng nhắn tin ngay lập tức. Giữ bình tĩnh.',
       'Lấy điện thoại gọi trực tiếp vào SỐ ĐIỆN THOẠI DI ĐỘNG (qua sóng viễn thông SIM) của người đó trong danh bạ để hỏi rõ.',
-      'Nếu không gọi được, gọi cho bố/mẹ, người thân khác trong gia đình hoặc giáo viên chủ nhiệm.',
-      'Đặt câu hỏi xác thực bảo mật riêng: "Chỉ người trong nhà mới biết" (như tên thú cưng, món ăn sáng nay, mật khẩu gia đình).',
+      'Nếu không gọi được, liên hệ một người thân hoặc đầu mối đáng tin cậy khác bằng số liên hệ đã lưu trước đó.',
+      'Đặt câu hỏi xác minh riêng đã thống nhất trước; không tiết lộ câu trả lời hoặc mã bí mật trong cuộc trò chuyện đáng ngờ.',
       'Chụp ảnh màn hình số tài khoản đối tượng gửi và tin nhắn để làm bằng chứng.',
     ],
     supportChannels: [
@@ -75,9 +75,9 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
   },
   {
     id: 'unauthorized-image-abuse',
-    scenarioTitle: '3. Hình ảnh cá nhân bị cắt ghép, bôi nhọ hoặc bắt nạt trực tuyến',
+    scenarioTitle: '3. Hình ảnh cá nhân bị cắt ghép, bôi nhọ hoặc phát tán trái phép',
     urgencyLevel: 'critical',
-    summary: 'Bạn phát hiện ảnh của mình bị ghép vào thân hình người khác, gắn vào bối cảnh nhạy cảm, bị chế giễu hoặc bị lan truyền trong các nhóm chat.',
+    summary: 'Bạn phát hiện ảnh của mình bị ghép vào bối cảnh nhạy cảm, bị chế giễu hoặc bị phát tán trái phép trên mạng.',
     doNotList: [
       'Không tự đổ lỗi cho bản thân! Bạn là nạn nhân của hành vi phi pháp, bạn hoàn toàn không có lỗi.',
       'Không trả đũa bằng cách ghép ảnh lại hay chửi bới xúc phạm kẻ bắt nạt.',
@@ -86,9 +86,9 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
     ],
     immediateSteps: [
       'Chụp ảnh màn hình đầy đủ: Giữ nguyên ngày giờ, tên tài khoản, nội dung đe dọa, đường link URL bài viết.',
-      'Lên tiếng chia sẻ NGAY LẬP TỨC với cha mẹ, thầy cô giáo chủ nhiệm hoặc chuyên viên tư vấn tâm lý trường học.',
+      'Tìm hỗ trợ từ người đáng tin cậy, đơn vị tư vấn chuyên môn hoặc cơ quan có thẩm quyền; tránh tự đối đầu với người đe dọa.',
       'Sử dụng tính năng báo cáo vi phạm quyền riêng tư và quấy rối trên nền tảng (Meta, TikTok, Zalo).',
-      'Nhờ người lớn đại diện làm việc với ban giám hiệu nhà trường để có biện pháp bảo vệ học sinh.',
+      'Nếu người bị hại là trẻ em, liên hệ người giám hộ và cơ quan bảo vệ trẻ em; các trường hợp khác nên báo cáo nền tảng và cơ quan chức năng phù hợp.',
     ],
     supportChannels: [
       {
@@ -97,8 +97,8 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
         note: 'Hỗ trợ tâm lý khẩn cấp, bảo vệ danh tính, can thiệp pháp lý cho trẻ em dưới 16 tuổi',
       },
       {
-        name: 'Phòng Tư vấn Tâm lý Học đường',
-        contact: 'Thầy cô phụ trách tại trường THCS',
+        name: 'Dịch vụ tư vấn tâm lý phù hợp',
+        contact: 'Đơn vị tư vấn hoặc hỗ trợ tâm lý tại địa phương',
         note: 'Hỗ trợ trực tiếp trong môi trường sư phạm',
       },
     ],
@@ -112,13 +112,13 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
       'Tuyệt đối KHÔNG nộp tiền, KHÔNG mua thẻ cào gửi cho kẻ tống tiền.',
       'Tuyệt đối KHÔNG một mình đi gặp đối tượng ở bất kỳ địa điểm nào.',
       'Không làm theo các yêu cầu quái đản tiếp theo của kẻ đe dọa.',
-      'Không giấu giếm gia đình: Kẻ xấu chỉ mạnh khi bạn đơn độc và sợ hãi.',
+      'Đừng tự cô lập: tìm một người đáng tin cậy hoặc dịch vụ hỗ trợ phù hợp để được đồng hành.',
     ],
     immediateSteps: [
       'Ưu tiên hàng đầu: An toàn tính mạng và sức khỏe tinh thần của bản thân.',
       'Lưu trữ toàn bộ lịch sử trò chuyện, tài khoản ngân hàng nhận tiền, đường link và file ghi âm.',
-      'Đưa cha mẹ cùng đến Công an Phường/Xã nơi em cư trú để nộp đơn trình báo và đề nghị bảo vệ.',
-      'Gọi ngay Tổng đài 111 để được cán bộ bảo vệ trẻ em đồng hành hỗ trợ quy trình pháp lý.',
+      'Liên hệ cơ quan công an tại địa phương để trình báo và đề nghị hướng dẫn bảo vệ. Nếu người bị hại là trẻ em, người giám hộ có thể đi cùng.',
+      'Nếu người bị hại là trẻ em, có thể liên hệ Tổng đài 111 để được hướng dẫn về bảo vệ trẻ em.',
     ],
     supportChannels: [
       {
@@ -129,7 +129,7 @@ export const EMERGENCY_GUIDES: EmergencyGuideItem[] = [
       {
         name: 'Tổng đài Quốc gia Bảo vệ Trẻ em',
         contact: '111 (Miễn phí 24/7)',
-        note: 'Cơ quan thường trực can thiệp khẩn cấp bảo vệ học sinh',
+        note: 'Đường dây bảo vệ trẻ em; chỉ dùng khi sự việc liên quan đến trẻ em',
       },
     ],
   },

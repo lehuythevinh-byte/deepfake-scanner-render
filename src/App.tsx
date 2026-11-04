@@ -4,29 +4,38 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { LandingPage } from './components/LandingPage';
 import { UserDashboard } from './components/UserDashboard';
-import { ScannerModule } from './components/ScannerModule';
-import { LinkScannerModule } from './components/LinkScannerModule';
-import { EvidenceLabModule } from './components/EvidenceLabModule';
-import { AcademyModule } from './components/AcademyModule';
-import { SimulatorModule } from './components/SimulatorModule';
-import { SafeBotModule } from './components/SafeBotModule';
-import { ResearchDashboardModule } from './components/ResearchDashboardModule';
 import { EmergencyModule } from './components/EmergencyModule';
 import { AccountModule } from './components/AccountModule';
 import { HistoryModule } from './components/HistoryModule';
+import { ContentAnalysisWorkspace, SafetyCenterWorkspace } from './components/V5WorkspaceModule';
 import { SurveyModal } from './components/SurveyModal';
 import { TAB_PATHS, pathToTab, isPublicTab, loginUrlFor, getSafeNextTab } from './lib/routes';
 import { DEFAULT_SITE_CONFIG, SiteConfig } from './lib/siteConfig';
 
 const VALID_HASH_TABS = new Set<string>(Object.keys(TAB_PATHS));
 
-// URL -> tab. Pathname wins; legacy "#tab" links keep working.
+// V3/V4 routes remain valid but open the matching V5 workspace.
+function normalizeV5Tab(tab: ActiveTab): ActiveTab {
+  const aliases: Partial<Record<ActiveTab, ActiveTab>> = {
+    'link-scanner': 'scanner',
+    'evidence-lab': 'scanner',
+    'v4-platform': 'scanner',
+    'safebot': 'safety-center',
+    'academy': 'safety-center',
+    'simulator': 'safety-center',
+    'research': 'safety-center',
+    'emergency': 'safety-center',
+  };
+  return aliases[tab] || tab;
+}
+
+// URL -> tab. Pathname wins; legacy "#tab" and V3/V4 bookmarks keep working.
 function resolveInitialTab(): ActiveTab {
   if (typeof window === 'undefined') return 'home';
   const fromPath = pathToTab(window.location.pathname);
-  if (fromPath) return fromPath;
+  if (fromPath) return normalizeV5Tab(fromPath);
   const hash = window.location.hash.replace('#', '').toLowerCase();
-  if (hash && VALID_HASH_TABS.has(hash)) return hash as ActiveTab;
+  if (hash && VALID_HASH_TABS.has(hash)) return normalizeV5Tab(hash as ActiveTab);
   return 'home';
 }
 
@@ -99,7 +108,8 @@ export default function App() {
   }, []);
 
   // Navigation = real URLs (history API). Guarding is applied when rendering AND enforced again by the backend.
-  const handleTabChange = useCallback((tab: ActiveTab) => {
+  const handleTabChange = useCallback((requestedTab: ActiveTab) => {
+    const tab = normalizeV5Tab(requestedTab);
     const target = TAB_PATHS[tab] ?? '/';
     if (window.location.pathname !== target || window.location.search || window.location.hash) {
       window.history.pushState({}, '', target);
@@ -219,44 +229,19 @@ export default function App() {
           />
         )}
 
-        {/* Threat Scanner (Image & Video frame sampling) */}
+        {/* V5 unified Content Analysis workspace: image, video, audio, message and supporting forensic tools */}
         {activeTab === 'scanner' && (
-          <ScannerModule onTabChange={handleTabChange} />
+          <ContentAnalysisWorkspace user={currentUser} aiConfigured={aiConfigured} onTabChange={handleTabChange} />
         )}
 
-        {/* Link Safety Scanner */}
-        {activeTab === 'link-scanner' && (
-          <LinkScannerModule onTabChange={handleTabChange} />
+        {/* V5 Safety Center: knowledge, AI assistant, approved threat advisories and incident response */}
+        {activeTab === 'safety-center' && (
+          <SafetyCenterWorkspace user={currentUser} aiConfigured={aiConfigured} onTabChange={handleTabChange} />
         )}
 
         {/* Scan History */}
         {activeTab === 'history' && (
           <HistoryModule user={currentUser} onTabChange={handleTabChange} />
-        )}
-
-        {/* Forensic Evidence Lab */}
-        {activeTab === 'evidence-lab' && (
-          <EvidenceLabModule onTabChange={handleTabChange} />
-        )}
-
-        {/* Academy & STEM Knowledge Base */}
-        {activeTab === 'academy' && (
-          <AcademyModule onTabChange={handleTabChange} />
-        )}
-
-        {/* Interactive Scenario Simulator */}
-        {activeTab === 'simulator' && (
-          <SimulatorModule onTabChange={handleTabChange} />
-        )}
-
-        {/* SafeBot AI Chat */}
-        {activeTab === 'safebot' && (
-          <SafeBotModule onTabChange={handleTabChange} aiConfigured={aiConfigured} />
-        )}
-
-        {/* Research Dashboard & Survey Data */}
-        {activeTab === 'research' && (
-          <ResearchDashboardModule onTabChange={handleTabChange} />
         )}
 
         {/* Emergency Response & Hotlines */}

@@ -1,7 +1,7 @@
 {
-  "name": "deepfake-scanner-safety-center",
+  "name": "deepfake-scanner-v5-digital-trust",
   "private": true,
-  "version": "1.0.0",
+  "version": "5.0.1",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -11,7 +11,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "verify:v5": "node scripts/verify-v5.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -37,5 +38,8 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"
+  },
+  "optionalDependencies": {
+    "@contentauth/c2pa-node": "0.9.11"
   }
 }

@@ -79,10 +79,10 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ open, maxCommentLength
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" role="presentation">
-      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="survey-title"
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="feedback-title"
         className="w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-[#55DDF2]/20 bg-[#0d1830] shadow-2xl shadow-cyan-500/10 outline-none">
         <div className="sticky top-0 flex justify-end p-3 bg-[#0d1830]/95 backdrop-blur z-10">
-          <button onClick={onClose} disabled={busy} aria-label="Đóng khảo sát" className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} disabled={busy} aria-label="Đóng đánh giá trải nghiệm" className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#55DDF2]"><X className="w-5 h-5" /></button>
         </div>
         <div className="px-5 sm:px-7 pb-6 -mt-4">
           {done ? (
@@ -93,7 +93,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ open, maxCommentLength
             </div>
           ) : (
             <>
-              <h2 id="survey-title" className="text-xl sm:text-2xl font-bold text-white">Bạn đánh giá DEEPFAKE SCANNER như thế nào?</h2>
+              <h2 id="feedback-title" className="text-xl sm:text-2xl font-bold text-white">Bạn đánh giá DEEPFAKE SCANNER như thế nào?</h2>
               <p className="mt-2 text-sm text-slate-400 leading-relaxed">Ý kiến của bạn giúp chúng tôi cải thiện chất lượng phân tích, tốc độ xử lý và trải nghiệm an toàn số.</p>
 
               <fieldset className="mt-6">
@@ -129,8 +129,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({ open, maxCommentLength
                     <div className="flex flex-wrap gap-2">{IMPROVE.map(([k, l]) => <button type="button" key={k} aria-pressed={improve.includes(k)} onClick={() => toggle(improve, setImprove, k)} className={chip(improve.includes(k))}>{l}</button>)}</div>
                   </div>
                   <div>
-                    <label htmlFor="survey-comment" className="text-sm font-semibold text-slate-200">Bạn muốn chúng tôi cải thiện điều gì? <span className="font-normal text-slate-500">(tùy chọn)</span></label>
-                    <textarea id="survey-comment" value={comment} onChange={(e) => setComment(e.target.value.slice(0, maxCommentLength))} rows={3}
+                    <label htmlFor="feedback-comment" className="text-sm font-semibold text-slate-200">Bạn muốn chúng tôi cải thiện điều gì? <span className="font-normal text-slate-500">(tùy chọn)</span></label>
+                    <textarea id="feedback-comment" value={comment} onChange={(e) => setComment(e.target.value.slice(0, maxCommentLength))} rows={3}
                       placeholder="Hãy chia sẻ đề xuất hoặc vấn đề bạn gặp phải…"
                       className="mt-2 w-full rounded-xl border border-[#35506d] bg-[#0a1327] px-3 py-2.5 text-sm text-white outline-none focus:border-[#55DDF2]" />
                     <div className="text-right text-[11px] text-slate-500">{comment.length}/{maxCommentLength}</div>
