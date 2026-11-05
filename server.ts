@@ -116,7 +116,7 @@ const AI_REQUEST_TIMEOUT_MS = parseBoundedTimeout(process.env.AI_REQUEST_TIMEOUT
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-6.1-terra').trim();
 const OPENAI_WEB_SEARCH_MODEL = (process.env.OPENAI_WEB_SEARCH_MODEL || 'gpt-6.1-terra').trim();
 const DEEPSEEK_MODEL = (process.env.DEEPSEEK_MODEL || 'deepseek-flash').trim();
-const OPENROUTER_TEXT_MODEL = (process.env.OPENROUTER_TEXT_MODEL || process.env.OPENROUTER_MODEL || '').trim() || 'cohere/north-mini-code:free';
+const OPENROUTER_TEXT_MODEL = (process.env.OPENROUTER_TEXT_MODEL || process.env.OPENROUTER_MODEL || '').trim() || 'dots-studio/dots-3-note-preview:free';
 const OPENROUTER_IMAGE_MODEL = (process.env.OPENROUTER_IMAGE_MODEL || '').trim() || 'dots-studio/dots-3-note-preview:free';
 const OPENROUTER_DAILY_COOLDOWN_MS = parseBoundedTimeout(process.env.OPENROUTER_DAILY_COOLDOWN_MS, 86400000, 60000, 86400000);
 
@@ -280,6 +280,89 @@ function extractOpenAiWebSources(payload: any): { title: string; url: string }[]
   return found.slice(0, 8);
 }
 
+type OpenRouterStreamResult = {
+  text: string;
+  usage: any;
+  model?: string;
+  responseId?: string;
+};
+
+async function readOpenRouterStream(response: Response): Promise<OpenRouterStreamResult> {
+  if (!response.body) throw new AiProviderError('openrouter', 'OPENROUTER_STREAM_BODY_MISSING', 502, 'stream_body_missing');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let text = '';
+  let usage: any = null;
+  let model: string | undefined;
+  let responseId: string | undefined;
+
+  const processLine = (rawLine: string): void => {
+    const line = rawLine.trim();
+    // OpenRouter sends SSE keep-alive comments; they are not JSON events.
+    if (!line || line.startsWith(':') || !line.startsWith('data:')) return;
+    const data = line.slice(5).trim();
+    if (!data || data === '[DONE]') return;
+
+    let chunk: any;
+    try {
+      chunk = JSON.parse(data);
+    } catch {
+      return;
+    }
+
+    if (chunk?.error) {
+      const message = String(chunk.error.message || 'OPENROUTER_STREAM_ERROR').slice(0, 220);
+      const rawStatus = Number(chunk.error.code || chunk.error.status);
+      const status = Number.isFinite(rawStatus) && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 502;
+      throw new AiProviderError('openrouter', message, status, String(chunk.error.type || chunk.error.code || 'stream_error'));
+    }
+
+    model = typeof chunk?.model === 'string' ? chunk.model : model;
+    responseId = typeof chunk?.id === 'string' ? chunk.id : responseId;
+    if (chunk?.usage) usage = chunk.usage;
+
+    const delta = chunk?.choices?.[0]?.delta?.content;
+    if (typeof delta === 'string') {
+      text += delta;
+    } else if (Array.isArray(delta)) {
+      for (const part of delta) {
+        if (typeof part?.text === 'string') text += part.text;
+      }
+    }
+
+    if (chunk?.choices?.[0]?.finish_reason === 'error') {
+      throw new AiProviderError('openrouter', 'OPENROUTER_STREAM_FINISHED_WITH_ERROR', 502, 'stream_finish_error');
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+      for (const line of lines) processLine(line);
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) processLine(buffer);
+  } catch (error: any) {
+    if (error instanceof AiProviderError) throw error;
+    throw new AiProviderError(
+      'openrouter',
+      error?.name === 'TimeoutError' || error?.name === 'AbortError' ? 'AI_PROVIDER_TIMEOUT' : shortAiError(error),
+      undefined,
+      error?.name || 'stream_read_error'
+    );
+  } finally {
+    try { reader.releaseLock(); } catch { /* stream is already closed */ }
+  }
+
+  return { text: text.trim(), usage, model, responseId };
+}
+
 async function requestAiProvider(provider: AiProvider, options: AiGenerateOptions): Promise<AiGenerateResult> {
   const model = getProviderModel(provider, options);
   const timeoutMs = options.timeoutMs || AI_REQUEST_TIMEOUT_MS;
@@ -439,6 +522,7 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
     body = {
       model,
       messages: chatMessages,
+      ...(provider === 'openrouter' ? { stream: true, stream_options: { include_usage: true } } : {}),
       ...(provider === 'openai' ? { max_completion_tokens: options.maxOutputTokens || 2500 } : { max_tokens: options.maxOutputTokens || 2500 }),
       ...(provider === 'openrouter' && options.imageDataUri ? {
         reasoning: { effort: 'low' },
@@ -446,11 +530,9 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       ...(options.temperature !== undefined && (provider === 'openrouter' || !/^gpt-[56]/i.test(model)) ? { temperature: options.temperature } : {}),
       ...(options.jsonMode && (provider !== 'openrouter' || Boolean(options.imageDataUri)) ? { response_format: { type: 'json_object' } } : {}),
       ...(provider === 'openrouter' ? {
-        // Route image analysis through the AtlasCloud FP8 endpoint tested for vision input.
-        // Keep text chat pinned to Cohere. These are separate provider routes and cooldowns.
-        provider: options.imageDataUri
-          ? { only: ['atlas-cloud/fp8'], allow_fallbacks: false }
-          : { only: ['cohere'], allow_fallbacks: false, data_collection: 'deny' },
+        // Pin Dots3 text and vision requests to the AtlasCloud FP8 endpoint.
+        // Do not silently route to a different provider.
+        provider: { only: ['atlas-cloud/fp8'], allow_fallbacks: false, data_collection: 'deny' },
       } : {}),
     };
   }
@@ -474,45 +556,46 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
     const message = error?.name === 'TimeoutError' || error?.name === 'AbortError' ? 'AI_PROVIDER_TIMEOUT' : shortAiError(error);
     throw new AiProviderError(provider, message, undefined, error?.name || 'network_error');
   }
-  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const providerMessage = String(payload?.error?.message || payload?.message || `HTTP ${response.status}`).slice(0, 220);
-    throw new AiProviderError(provider, providerMessage, response.status, String(payload?.error?.code || payload?.error?.type || ''), parseProviderRetryAfter(response));
+    const errorPayload = await response.json().catch(() => ({}));
+    const providerMessage = String(errorPayload?.error?.message || errorPayload?.message || `HTTP ${response.status}`);
+    throw new AiProviderError(provider, providerMessage, response.status, String(errorPayload?.error?.code || errorPayload?.error?.type || ''), parseProviderRetryAfter(response));
   }
+
+  if (provider === 'openrouter') {
+    const streamed = await readOpenRouterStream(response);
+    if (!streamed.text) {
+      console.error('[OpenRouter] Empty streaming response diagnostic', {
+        requestedModel: model,
+        returnedModel: streamed.model ?? null,
+        responseId: streamed.responseId ?? null,
+        usage: streamed.usage ?? null,
+      });
+      throw new AiProviderError(provider, 'AI_EMPTY_RESPONSE', 502, 'empty_stream_response');
+    }
+    const reasoningTokens = streamed.usage?.completion_tokens_details?.reasoning_tokens
+      ?? streamed.usage?.completionTokensDetails?.reasoningTokens
+      ?? null;
+    console.info('[OpenRouter] stream completed', JSON.stringify({
+      requestedModel: model,
+      returnedModel: streamed.model || model,
+      responseId: streamed.responseId ?? null,
+      promptTokens: streamed.usage?.prompt_tokens ?? streamed.usage?.promptTokens ?? null,
+      completionTokens: streamed.usage?.completion_tokens ?? streamed.usage?.completionTokens ?? null,
+      reasoningTokens,
+    }));
+    return {
+      text: streamed.text,
+      provider,
+      model: streamed.model || model,
+      sources: [],
+      raw: { id: streamed.responseId, model: streamed.model || model, usage: streamed.usage },
+    };
+  }
+
+  const payload = await response.json().catch(() => ({}));
   const text = extractTextFromProviderResponse(payload);
   if (!text) {
-    if (provider === 'openrouter' && options.imageDataUri) {
-      const choice = Array.isArray(payload?.choices) ? payload.choices[0] : undefined;
-      const message = choice?.message;
-      const content = message?.content;
-
-      console.error('[OpenRouter] Empty response diagnostic', {
-        requestedModel: model,
-        returnedModel: payload?.model ?? null,
-        responseId: payload?.id ?? null,
-        choicesCount: Array.isArray(payload?.choices) ? payload.choices.length : null,
-        finishReason: choice?.finish_reason ?? null,
-        messageKeys: message && typeof message === 'object' ? Object.keys(message) : [],
-        contentType: Array.isArray(content) ? 'array' : typeof content,
-        contentLength: typeof content === 'string' ? content.length : Array.isArray(content) ? content.length : null,
-        contentIsNull: content === null,
-        contentKeys: content && typeof content === 'object' && !Array.isArray(content) ? Object.keys(content) : [],
-        reasoningTokens: payload?.usage?.completion_tokens_details?.reasoning_tokens ?? null,
-        hasReasoning: Boolean(message?.reasoning || message?.reasoning_details),
-        toolCallCount: Array.isArray(message?.tool_calls) ? message.tool_calls.length : 0,
-        usage: payload?.usage ? {
-          promptTokens: payload.usage.prompt_tokens ?? null,
-          completionTokens: payload.usage.completion_tokens ?? null,
-          totalTokens: payload.usage.total_tokens ?? null,
-        } : null,
-        error: payload?.error ? {
-          code: payload.error.code ?? null,
-          type: payload.error.type ?? null,
-          message: String(payload.error.message ?? '').slice(0, 180),
-        } : null,
-      });
-    }
-
     throw new AiProviderError(provider, 'AI_EMPTY_RESPONSE', 502, 'empty_response');
   }
   return { text, provider, model, sources: provider === 'openai' && options.webSearch ? extractOpenAiWebSources(payload) : [], raw: payload };
