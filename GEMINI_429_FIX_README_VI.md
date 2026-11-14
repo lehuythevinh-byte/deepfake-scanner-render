@@ -1,29 +1,38 @@
-# Bản vá Gemini 429 – Deepfake Scanner
+# Sửa lỗi Gemini 429 – Deepfake Scanner
 
-Bản vá cấu hình Gemini theo thứ tự:
-- Model chính: \`gemini-3.5-flash-lite\`
-- Model dự phòng: \`gemini-3.1-flash-lite\`
+## Cập nhật V2
 
-Backend chỉ chuyển sang model dự phòng khi model chính trả về lỗi model không khả dụng (404) hoặc quota/rate limit (429). Các lỗi khác sẽ chuyển sang cơ chế failover nhà cung cấp AI hiện có, thay vì thử hàng loạt model không liên quan.
+- Model chính: `gemini-3.5-flash-lite`.
+- Model dự phòng: `gemini-3.1-flash-lite`.
+- Chỉ thử model dự phòng đã cấu hình sau lỗi 404 (model không khả dụng) hoặc 429 (rate/quota).
+- Không lặp qua danh sách model không được cấu hình.
+- Log quota có cấu trúc: HTTP status, reason, quotaMetric, quotaId và retryDelayMs nếu Google trả về.
+- Log không ghi API key, prompt, nội dung ảnh hoặc raw response.
+- `AI_PROVIDER_ORDER` là allowlist thật. Cấu hình Render hiện chỉ cho phép Gemini để không gọi lại OpenAI 401 hoặc DeepSeek 402 chưa được khắc phục.
+- Lỗi 429 kích hoạt cooldown 15 phút theo cấu hình Render; 401/402/403 kích hoạt cooldown tối đa 24 giờ. Khi chỉ còn một provider, cooldown vẫn được tôn trọng, không gửi lặp API liên tục.
+- `GEMINI_SEARCH_GROUNDING_ENABLED=false` mặc định. Khi không có tìm kiếm web đang hoạt động, AI phải ghi rõ tình huống là `proactive_scenario`, giả định phòng ngừa chưa được xác minh.
 
 ## Render Environment
 
-Đặt các biến sau trong Render:
-\`\`\`env
+```env
+AI_PROVIDER_ORDER=gemini
 GEMINI_MODEL=gemini-3.5-flash-lite
 GEMINI_FALLBACK_MODEL=gemini-3.1-flash-lite
-AI_QUOTA_COOLDOWN_MS=300000
-AI_PROVIDER_COOLDOWN_MS=60000
-\`\`\`
+GEMINI_SEARCH_GROUNDING_ENABLED=false
+AI_QUOTA_COOLDOWN_MS=900000
+AI_AUTH_BILLING_COOLDOWN_MS=86400000
+AI_REQUEST_TIMEOUT_MS=30000
+```
 
-Giữ \`GEMINI_API_KEY\` trong Render Environment; tuyệt đối không commit API key vào GitHub.
+Giữ `GEMINI_API_KEY` trong Render Environment; tuyệt đối không commit API key lên GitHub. Không cần đổi API key nếu chưa xác định đúng nguyên nhân lỗi.
 
-## Chẩn đoán
+## Kiểm tra sau deploy
 
-Log \`[AI] Gemini model request failed\` chỉ ghi các trường chẩn đoán được cho phép: HTTP status, trạng thái/mã lỗi từ provider, quota metric, quota ID, service, method, consumer và retry delay. Log không ghi API key, prompt, nội dung người dùng hay dữ liệu ảnh.
-
-Log \`[AI] request succeeded\` cho biết provider và model thực tế đã trả kết quả. Nếu tất cả provider đều lỗi, giao diện vẫn phải báo rõ chế độ dự phòng heuristic; heuristic không phải kết quả giám định ảnh bằng AI.
+1. Dùng một yêu cầu văn bản ngắn và một ảnh thử nghiệm.
+2. Kiểm tra log `[Gemini] model attempt failed` để xem status, quotaMetric, quotaId và retryDelayMs (các trường có thể null nếu Google không trả chi tiết).
+3. Khi thành công, kiểm tra log `[AI] request succeeded` để xác nhận provider và model thực tế.
+4. Nếu Gemini vẫn trả 429 ở cả hai model, đối chiếu đúng Google AI Studio Project của API key, usage tier, quota, billing/spend cap và Search grounding. Mã nguồn không thể tự tăng quota.
 
 ## Giới hạn
 
-Bản vá không thể tăng quota của Google hoặc bảo đảm mọi request đều thành công. Nó giới hạn model fallback có chủ đích và giúp log thể hiện nguyên nhân 429 cụ thể để kiểm tra project, billing và quota.
+Bản vá giảm request thừa và cải thiện chẩn đoán; không thể cấp quota, sửa billing của Google, hay bảo đảm API luôn khả dụng. Khi toàn bộ provider được cho phép đều lỗi, giao diện phải tiếp tục báo rõ heuristic fallback; heuristic không phải phân tích pixel ảnh bằng AI.
