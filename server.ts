@@ -118,6 +118,10 @@ function getProviderCooldownKey(provider: AiProvider, options: AiGenerateOptions
 const AI_PROVIDER_COOLDOWN_MS = parseBoundedTimeout(process.env.AI_PROVIDER_COOLDOWN_MS, 90000, 15000, 900000);
 const AI_QUOTA_COOLDOWN_MS = parseBoundedTimeout(process.env.AI_QUOTA_COOLDOWN_MS, 900000, 60000, 900000);
 const AI_REQUEST_TIMEOUT_MS = parseBoundedTimeout(process.env.AI_REQUEST_TIMEOUT_MS, 30000, 8000, 60000);
+// Keep invalid credentials / unpaid providers dormant instead of retrying them on every request.
+const AI_AUTH_BILLING_COOLDOWN_MS = parseBoundedTimeout(process.env.AI_AUTH_BILLING_COOLDOWN_MS, 86400000, 60000, 86400000);
+// Search grounding may have a separate zero quota from text/image generation. Disabled unless explicitly enabled.
+const GEMINI_SEARCH_GROUNDING_ENABLED = process.env.GEMINI_SEARCH_GROUNDING_ENABLED === 'true';
 const OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-6.1-terra').trim();
 const OPENAI_WEB_SEARCH_MODEL = (process.env.OPENAI_WEB_SEARCH_MODEL || 'gpt-6.1-terra').trim();
 const DEEPSEEK_MODEL = (process.env.DEEPSEEK_MODEL || 'deepseek-flash').trim();
@@ -138,9 +142,7 @@ function getConfiguredAiProviders(): AiProvider[] {
   for (const provider of requested) {
     if (['gemini', 'openrouter', 'openai', 'deepseek'].includes(provider) && configured[provider] && !validOrder.includes(provider)) validOrder.push(provider);
   }
-  for (const provider of ['gemini', 'openrouter', 'openai', 'deepseek'] as AiProvider[]) {
-    if (configured[provider] && !validOrder.includes(provider)) validOrder.push(provider);
-  }
+  // Strict allowlist: only providers explicitly listed in AI_PROVIDER_ORDER are eligible.
   return validOrder;
 }
 
@@ -156,13 +158,15 @@ class AiProviderError extends Error {
   status?: number;
   code?: string;
   retryAfterMs?: number;
-  constructor(provider: AiProvider, message: string, status?: number, code?: string, retryAfterMs?: number) {
+  diagnostic?: GeminiQuotaDiagnostic;
+  constructor(provider: AiProvider, message: string, status?: number, code?: string, retryAfterMs?: number, diagnostic?: GeminiQuotaDiagnostic) {
     super(message);
     this.name = 'AiProviderError';
     this.provider = provider;
     this.status = status;
     this.code = code;
     this.retryAfterMs = retryAfterMs;
+    this.diagnostic = diagnostic;
   }
 }
 
@@ -226,48 +230,40 @@ function shortAiError(error: any): string {
  * Keep diagnostic logs useful without printing request content, images, or API keys.
  * Google error details may include quota metric, consumer/project, and retry delay.
  */
-function getSafeAiErrorDiagnostics(error: any): Record<string, any> {
-  let payload: any = error?.response?.data ?? error?.error ?? error?.cause?.response?.data ?? null;
-  const rawMessage = typeof error?.message === 'string' ? error.message : '';
-  if (!payload && rawMessage) {
-    const jsonStart = rawMessage.indexOf('{');
-    if (jsonStart >= 0) {
-      try { payload = JSON.parse(rawMessage.slice(jsonStart)); } catch { /* provider message is not embedded JSON */ }
+// Allowlisted Gemini quota diagnostics; raw provider payloads, prompts and media are never logged.
+type GeminiQuotaDiagnostic = {
+  reason?: string;
+  quotaMetric?: string;
+  quotaId?: string;
+  retryDelayMs?: number;
+};
+function getGeminiQuotaDiagnostic(error: any): GeminiQuotaDiagnostic {
+  let payload: any = error?.error || error?.response?.data?.error || error?.response?.data || null;
+  if (!payload || typeof payload !== 'object') {
+    const message = String(error?.message || '');
+    const pos = message.indexOf('{');
+    if (pos >= 0) {
+      try { payload = JSON.parse(message.slice(pos)); } catch { /* SDK message may not be JSON */ }
     }
   }
-  const body = payload?.error ?? payload;
-  const detailEntries = Array.isArray(body?.details) ? body.details : [];
-  const safeDetails = detailEntries.slice(0, 5).map((entry: any) => {
-    const metadata = entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
-    const safeMetadata: Record<string, string> = {};
-    const allowedMetadata: [string, string][] = [
-      ['quota_metric', 'quotaMetric'], ['quotaMetric', 'quotaMetric'],
-      ['quota_id', 'quotaId'], ['quotaId', 'quotaId'],
-      ['quota_location', 'quotaLocation'], ['quotaLocation', 'quotaLocation'],
-      ['service', 'service'], ['method', 'method'], ['consumer', 'consumer'],
-    ];
-    for (const [sourceKey, targetKey] of allowedMetadata) {
-      const value = metadata[sourceKey];
-      if (typeof value === 'string' && value.length <= 240) safeMetadata[targetKey] = value;
-    }
-    const type = String(entry?.['@type'] || entry?.type || '').slice(0, 120);
-    const reason = typeof entry?.reason === 'string' ? entry.reason.slice(0, 120) : undefined;
-    const retryDelay = typeof entry?.retryDelay === 'string' ? entry.retryDelay.slice(0, 80)
-      : typeof entry?.retry_delay === 'string' ? entry.retry_delay.slice(0, 80) : undefined;
-    return {
-      type: type || undefined,
-      reason,
-      domain: typeof entry?.domain === 'string' ? entry.domain.slice(0, 120) : undefined,
-      metadata: Object.keys(safeMetadata).length ? safeMetadata : undefined,
-      retryDelay,
-    };
-  }).filter((entry: any) => entry.type || entry.reason || entry.domain || entry.metadata || entry.retryDelay);
+  const body = payload?.error && typeof payload.error === 'object' ? payload.error : payload;
+  const details = Array.isArray(body?.details) ? body.details : [];
+  const quotaFailure = details.find((part: any) =>
+    /QuotaFailure/.test(String(part?.['@type'] || '')) || Array.isArray(part?.violations));
+  const violation = quotaFailure?.violations?.[0] || null;
+  const retryInfo = details.find((part: any) =>
+    /RetryInfo/.test(String(part?.['@type'] || '')) || typeof part?.retryDelay === 'string');
+  const rawDelay = String(retryInfo?.retryDelay || '');
+  const match = rawDelay.match(/^(\d+(?:\.\d+)?)s$/);
+  const safeField = (value: any): string | undefined => {
+    const text = typeof value === 'string' ? value : '';
+    return /^[a-zA-Z0-9_.\/-]{1,180}$/.test(text) ? text : undefined;
+  };
   return {
-    httpStatus: getAiErrorStatus(error) ?? null,
-    providerStatus: typeof body?.status === 'string' ? body.status.slice(0, 100) : null,
-    providerCode: typeof body?.code === 'number' || typeof body?.code === 'string' ? body.code : null,
-    providerMessage: typeof body?.message === 'string' ? body.message.slice(0, 240) : null,
-    details: safeDetails,
+    reason: safeField(details.find((part: any) => typeof part?.reason === 'string')?.reason || body?.status),
+    quotaMetric: safeField(violation?.quotaMetric || quotaFailure?.quotaMetric),
+    quotaId: safeField(violation?.quotaId || quotaFailure?.quotaId),
+    retryDelayMs: match ? Math.min(86400000, Math.max(1000, Number(match[1]) * 1000)) : undefined,
   };
 }
 
@@ -421,8 +417,11 @@ async function readOpenRouterStream(response: Response): Promise<OpenRouterStrea
 async function requestAiProvider(provider: AiProvider, options: AiGenerateOptions): Promise<AiGenerateResult> {
   const model = getProviderModel(provider, options);
   const timeoutMs = options.timeoutMs || AI_REQUEST_TIMEOUT_MS;
-  const providerInstruction = options.webSearch && provider === 'deepseek'
-    ? `${options.systemPrompt}\n\nGIỚI HẠN NHÀ CUNG CẤP: Nhà cung cấp hiện tại không có công cụ tìm kiếm web trong luồng này. Không được nói đã tra cứu tin mới, không tự tạo nguồn/URL hoặc khẳng định xu hướng mới đã xảy ra. Mọi tình huống được tạo phải gắn proactive_scenario và được mô tả là giả định phòng ngừa chưa xác minh.`
+  const searchUnavailable = options.webSearch && (
+    provider === 'deepseek' || (provider === 'gemini' && !GEMINI_SEARCH_GROUNDING_ENABLED)
+  );
+  const providerInstruction = searchUnavailable
+    ? `${options.systemPrompt}\n\nGIỚI HẠN NGUỒN: Yêu cầu này KHÔNG có tìm kiếm web đang hoạt động. Không nói đã tra cứu thông tin mới, không tự tạo nguồn hoặc khẳng định xu hướng mới đã xảy ra. Mọi tình huống phải được gắn proactive_scenario và ghi rõ chỉ là giả định phòng ngừa chưa xác minh.`
     : options.systemPrompt;
   const systemPrompt = options.responseSchema && provider !== 'gemini'
     ? `${providerInstruction}\n\nĐỊNH DẠNG ĐẦU RA: Chỉ trả về JSON hợp lệ theo schema sau, không có Markdown: ${JSON.stringify(toStandardJsonSchema(options.responseSchema))}`
@@ -460,7 +459,7 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       if (options.temperature !== undefined) config.temperature = options.temperature;
       if (options.jsonMode) config.responseMimeType = 'application/json';
       if (options.responseSchema) config.responseSchema = options.responseSchema;
-      if (options.webSearch) config.tools = [{ googleSearch: {} }];
+      if (options.webSearch && GEMINI_SEARCH_GROUNDING_ENABLED) config.tools = [{ googleSearch: {} }];
 
       let response: any;
       try {
@@ -471,11 +470,15 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
         });
       } catch (err: any) {
         lastError = err;
-        console.warn('[AI] Gemini model request failed', JSON.stringify({
+        const quotaDiagnostic = getGeminiQuotaDiagnostic(err);
+        console.warn('[Gemini] model attempt failed', JSON.stringify({
           model: activeModel,
           status: getAiErrorStatus(err) ?? null,
-          code: String(err?.code || err?.status || err?.error?.status || '').slice(0, 100),
-          diagnostics: getSafeAiErrorDiagnostics(err),
+          code: quotaDiagnostic.reason || String(err?.code || '').slice(0, 50) || null,
+          quotaMetric: quotaDiagnostic.quotaMetric || null,
+          quotaId: quotaDiagnostic.quotaId || null,
+          retryDelayMs: quotaDiagnostic.retryDelayMs || null,
+          searchGroundingRequested: Boolean(options.webSearch && GEMINI_SEARCH_GROUNDING_ENABLED),
         }));
         const errorMessage = String(err?.message || '');
         const modelUnavailable = getAiErrorStatus(err) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(errorMessage);
@@ -538,7 +541,9 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       provider,
       lastError ? shortAiError(lastError) : 'AI_EMPTY_RESPONSE',
       getAiErrorStatus(lastError) || 502,
-      String(lastError?.code || lastError?.status || 'gemini_error')
+      String(lastError?.code || lastError?.status || 'gemini_error'),
+      getGeminiQuotaDiagnostic(lastError).retryDelayMs,
+      getGeminiQuotaDiagnostic(lastError)
     );
   }
 
@@ -666,19 +671,14 @@ async function generateAiWithFailover(options: AiGenerateOptions): Promise<AiGen
   if (!providers.length) throw new Error(configuredProviders.length ? 'AI_WEB_SEARCH_PROVIDER_NOT_CONFIGURED' : 'AI_NOT_CONFIGURED');
   const now = Date.now();
   const cooldownKeyFor = (provider: AiProvider) => getProviderCooldownKey(provider, options);
-  let ordered = providers.filter((provider) => (providerCooldowns.get(cooldownKeyFor(provider))?.until || 0) <= now);
+  const ordered = providers.filter((provider) => (providerCooldowns.get(cooldownKeyFor(provider))?.until || 0) <= now);
   if (!ordered.length) {
-    if (providers.length === 1) {
-      providerCooldowns.delete(cooldownKeyFor(providers[0]));
-      ordered = [providers[0]];
-    } else {
-      const nextAvailableAt = Math.min(...providers.map((provider) => providerCooldowns.get(cooldownKeyFor(provider))?.until || now));
-      const cooldownError = new Error('AI_ALL_PROVIDERS_COOLDOWN');
-      (cooldownError as any).status = 503;
-      (cooldownError as any).retryAfterMs = Math.max(1000, nextAvailableAt - now);
-      noteAiOutcome(false, cooldownError);
-      throw cooldownError;
-    }
+    const nextAvailableAt = Math.min(...providers.map((provider) => providerCooldowns.get(cooldownKeyFor(provider))?.until || now));
+    const cooldownError = new Error('AI_ALL_PROVIDERS_COOLDOWN');
+    (cooldownError as any).status = 503;
+    (cooldownError as any).retryAfterMs = Math.max(1000, nextAvailableAt - now);
+    noteAiOutcome(false, cooldownError);
+    throw cooldownError;
   }
   const failures: string[] = [];
   for (const provider of ordered) {
@@ -702,17 +702,25 @@ async function generateAiWithFailover(options: AiGenerateOptions): Promise<AiGen
       failures.push(`${provider}:${status || error?.code || 'error'}`);
       console.warn('[AI] provider failed; trying next configured provider', JSON.stringify({
         provider, status: status ?? null, code: error?.code || null,
-        elapsedMs: Math.round(performance.now() - startedAt), message: reason,
+        elapsedMs: Math.round(performance.now() - startedAt),
+        quotaMetric: error?.diagnostic?.quotaMetric || null,
+        quotaId: error?.diagnostic?.quotaId || null,
+        retryDelayMs: error?.retryAfterMs || null,
+        // Do not log raw provider messages: some providers echo credentials or input context.
       }));
       noteAiOutcome(false, error);
       if (shouldFailoverAi(error)) {
-        const defaultCooldown = providers.length === 1 ? 5000 : (status === 429 ? AI_QUOTA_COOLDOWN_MS : status === 503 || status === 502 || status === 500 ? AI_PROVIDER_COOLDOWN_MS : 30000);
-        const cooldown = providers.length === 1 ? 5000 : (error?.retryAfterMs || defaultCooldown);
+        const authOrBillingFailure = status === 401 || status === 402 || status === 403;
+        const defaultCooldown = authOrBillingFailure ? AI_AUTH_BILLING_COOLDOWN_MS
+          : status === 429 ? AI_QUOTA_COOLDOWN_MS
+          : [500, 502, 503, 504].includes(status || 0) ? AI_PROVIDER_COOLDOWN_MS : 30000;
+        const cooldown = Math.max(defaultCooldown, Number(error?.retryAfterMs) || 0);
         const isOpenRouterDailyLimit = provider === 'openrouter' && /(daily|per day|day limit|requests per day|daily limit)/i.test(reason);
         const routeCooldown = isOpenRouterDailyLimit
           ? Math.max(error?.retryAfterMs || 0, OPENROUTER_DAILY_COOLDOWN_MS)
           : cooldown;
-        const routeCooldownMax = isOpenRouterDailyLimit ? OPENROUTER_DAILY_COOLDOWN_MS : 900000;
+        const routeCooldownMax = authOrBillingFailure || isOpenRouterDailyLimit || Number(error?.retryAfterMs) > 900000
+          ? 86400000 : 900000;
         providerCooldowns.set(cooldownKeyFor(provider), { until: Date.now() + Math.min(routeCooldownMax, routeCooldown), reason: String(error?.code || status || 'unavailable') });
         continue;
       }
@@ -1866,6 +1874,12 @@ app.get('/api/admin/system-status', async (req, res) => {
       aiModel: aiRuntime.lastModel || (aiConfigured ? `${configuredProviders[0]}:${getProviderModel(configuredProviders[0])}` : null),
       aiProvider: aiRuntime.lastProvider,
       aiAvailableProviders: configuredProviders,
+      aiProviderCooldowns: configuredProviders.map((provider) => {
+        const until = providerCooldowns.get(provider)?.until || 0;
+        return { provider, temporarilyDisabled: until > Date.now(), retryAt: until > Date.now() ? new Date(until).toISOString() : null };
+      }),
+      geminiModels: configuredProviders.includes('gemini') ? GEMINI_MODEL_CANDIDATES : [],
+      geminiSearchGroundingEnabled: GEMINI_SEARCH_GROUNDING_ENABLED,
       aiLastSuccessAt: aiRuntime.lastOkAt ? new Date(aiRuntime.lastOkAt).toISOString() : null,
       aiLastFailureAt: aiRuntime.lastFailAt ? new Date(aiRuntime.lastFailAt).toISOString() : null,
       aiLastFailureStatus: aiRuntime.lastFailStatus,
