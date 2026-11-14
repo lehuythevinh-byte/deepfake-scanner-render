@@ -46,7 +46,9 @@ Mở `http://localhost:3000`. Nếu cổng 3000 hoặc cổng WebSocket HMR 2467
 - `OPENROUTER_TEXT_MODEL=cohere/north-mini-code:free`.
 - `OPENROUTER_IMAGE_MODEL=dots-studio/dots-3-note-preview:free`.
 - `AI_PROVIDER_ORDER` kiểm soát thứ tự failover.
-- `DATABASE_URL` kết nối PostgreSQL. Cẩn thận: nếu dùng lại URL Supabase đang dùng trên Render, local và production sẽ thao tác trên cùng dữ liệu.
+- `DATABASE_URL` kết nối PostgreSQL/Supabase; `DATABASE_SSL=require` bật TLS cho Supabase cả khi chạy local. Trên Render, `render.yaml` khai báo sẵn hai biến, nhưng giá trị `DATABASE_URL` phải được nhập riêng trong **Dashboard → Environment** (không lưu mật khẩu trong GitHub).
+- Không commit `.env` và không chia sẻ URL có mật khẩu. Nếu local PostgreSQL không hỗ trợ TLS, chỉ trên máy local mới đặt `DATABASE_SSL=disable`.
+- Nếu dùng cùng một URL Supabase trên local và Render, cả hai môi trường sẽ thao tác trên cùng dữ liệu.
 
 ## Kiểm tra và triển khai
 ```bash

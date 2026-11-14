@@ -10,6 +10,10 @@ services:
         value: production
       - key: GEMINI_API_KEY
         sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: require
       - key: GEMINI_MODEL
         value: gemini-3.8-flash
       - key: GEMINI_FALLBACK_MODEL

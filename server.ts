@@ -675,7 +675,13 @@ const dbPool = DATABASE_URL
       max: 5,
       connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 30000,
-      ssl: process.env.DATABASE_SSL === 'disable' ? false : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined),
+      // Supabase requires TLS in local and hosted environments.
+      // Set DATABASE_SSL=disable only for a trusted local PostgreSQL instance without TLS.
+      ssl: process.env.DATABASE_SSL === 'disable'
+        ? false
+        : (process.env.DATABASE_SSL === 'require' || process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : undefined),
     })
   : null;
 
