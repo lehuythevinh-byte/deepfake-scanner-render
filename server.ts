@@ -35,10 +35,15 @@ const getValidGeminiModel = (): string => {
   ) {
     return envModel.replace(/^models\//, '');
   }
-  return 'gemini-3.8-flash';
+  return 'gemini-3.5-flash-lite';
 };
 
 const GEMINI_MODEL = getValidGeminiModel();
+// Use only the explicitly configured secondary model after a model-specific 404 or quota 429.
+// Do not fan out requests across models or retry the same model repeatedly.
+const GEMINI_FALLBACK_MODEL = (process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite').trim().replace(/^models\//, '');
+const GEMINI_MODEL_CANDIDATES = [GEMINI_MODEL, GEMINI_FALLBACK_MODEL]
+  .filter((value, index, values) => /^gemini-[a-z0-9.-]+$/i.test(value) && values.indexOf(value) === index);
 // Gemini 3.x uses thinkingLevel and ignores/rejects legacy sampling controls on current API versions.
 // Keep a single request-config path for primary and fallback models to avoid avoidable 400s.
 function getModelCompatibleConfig(model: string, baseConfig: any): any {
@@ -214,6 +219,56 @@ function shouldFailoverAi(error: any): boolean {
 
 function shortAiError(error: any): string {
   return String(error?.message || error || 'Unknown AI error').replace(/[\r\n]+/g, ' ').trim().slice(0, 260);
+}
+
+
+/**
+ * Keep diagnostic logs useful without printing request content, images, or API keys.
+ * Google error details may include quota metric, consumer/project, and retry delay.
+ */
+function getSafeAiErrorDiagnostics(error: any): Record<string, any> {
+  let payload: any = error?.response?.data ?? error?.error ?? error?.cause?.response?.data ?? null;
+  const rawMessage = typeof error?.message === 'string' ? error.message : '';
+  if (!payload && rawMessage) {
+    const jsonStart = rawMessage.indexOf('{');
+    if (jsonStart >= 0) {
+      try { payload = JSON.parse(rawMessage.slice(jsonStart)); } catch { /* provider message is not embedded JSON */ }
+    }
+  }
+  const body = payload?.error ?? payload;
+  const detailEntries = Array.isArray(body?.details) ? body.details : [];
+  const safeDetails = detailEntries.slice(0, 5).map((entry: any) => {
+    const metadata = entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+    const safeMetadata: Record<string, string> = {};
+    const allowedMetadata: [string, string][] = [
+      ['quota_metric', 'quotaMetric'], ['quotaMetric', 'quotaMetric'],
+      ['quota_id', 'quotaId'], ['quotaId', 'quotaId'],
+      ['quota_location', 'quotaLocation'], ['quotaLocation', 'quotaLocation'],
+      ['service', 'service'], ['method', 'method'], ['consumer', 'consumer'],
+    ];
+    for (const [sourceKey, targetKey] of allowedMetadata) {
+      const value = metadata[sourceKey];
+      if (typeof value === 'string' && value.length <= 240) safeMetadata[targetKey] = value;
+    }
+    const type = String(entry?.['@type'] || entry?.type || '').slice(0, 120);
+    const reason = typeof entry?.reason === 'string' ? entry.reason.slice(0, 120) : undefined;
+    const retryDelay = typeof entry?.retryDelay === 'string' ? entry.retryDelay.slice(0, 80)
+      : typeof entry?.retry_delay === 'string' ? entry.retry_delay.slice(0, 80) : undefined;
+    return {
+      type: type || undefined,
+      reason,
+      domain: typeof entry?.domain === 'string' ? entry.domain.slice(0, 120) : undefined,
+      metadata: Object.keys(safeMetadata).length ? safeMetadata : undefined,
+      retryDelay,
+    };
+  }).filter((entry: any) => entry.type || entry.reason || entry.domain || entry.metadata || entry.retryDelay);
+  return {
+    httpStatus: getAiErrorStatus(error) ?? null,
+    providerStatus: typeof body?.status === 'string' ? body.status.slice(0, 100) : null,
+    providerCode: typeof body?.code === 'number' || typeof body?.code === 'string' ? body.code : null,
+    providerMessage: typeof body?.message === 'string' ? body.message.slice(0, 240) : null,
+    details: safeDetails,
+  };
 }
 
 function parseProviderRetryAfter(response: Response): number | undefined {
@@ -392,14 +447,7 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
       }
       return { role: message.role === 'assistant' ? 'model' : 'user', parts };
     });
-    const candidateModels = [
-      model,
-      'gemini-3-flash-preview',
-      'gemini-3.5-flash',
-      'gemini-3.6-flash',
-      'gemini-3.8-flash',
-      'gemini-flash-latest',
-    ].filter((m, idx, arr) => Boolean(m) && arr.indexOf(m) === idx);
+    const candidateModels = GEMINI_MODEL_CANDIDATES;
 
     let lastError: any = null;
     for (const activeModel of candidateModels) {
@@ -423,6 +471,12 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
         });
       } catch (err: any) {
         lastError = err;
+        console.warn('[AI] Gemini model request failed', JSON.stringify({
+          model: activeModel,
+          status: getAiErrorStatus(err) ?? null,
+          code: String(err?.code || err?.status || err?.error?.status || '').slice(0, 100),
+          diagnostics: getSafeAiErrorDiagnostics(err),
+        }));
         const errorMessage = String(err?.message || '');
         const modelUnavailable = getAiErrorStatus(err) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(errorMessage);
         // Retry without Search only for an explicit Google Search/grounding tool rejection.
@@ -446,10 +500,15 @@ async function requestAiProvider(provider: AiProvider, options: AiGenerateOption
             lastError = retryErr;
             const retryMessage = String(retryErr?.message || '');
             const retryModelUnavailable = getAiErrorStatus(retryErr) === 404 || /(?:model|model name).{0,50}(?:not found|not available|unsupported|does not exist)|unknown model/i.test(retryMessage);
-            if (retryModelUnavailable) continue;
+            if (retryModelUnavailable || getAiErrorStatus(retryErr) === 429) continue;
             break;
           }
-        } else if (modelUnavailable) {
+        } else if (modelUnavailable || getAiErrorStatus(err) === 429) {
+          // A 429 or model-specific 404 moves once to the configured alternate model.
+          console.warn('[AI] Gemini primary model unavailable/quota limited; checking configured fallback', JSON.stringify({
+            model: activeModel,
+            status: getAiErrorStatus(err) ?? null,
+          }));
           continue;
         } else {
           // Do not retry the same model for overload/quota/network failures.
