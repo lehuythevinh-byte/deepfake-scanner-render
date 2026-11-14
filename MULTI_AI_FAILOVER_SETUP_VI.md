@@ -2,74 +2,48 @@
 
 ## Cách hoạt động
 
-- Hệ thống **không gọi Gemini, OpenAI và DeepSeek cùng lúc**.
-- Mỗi yêu cầu bắt đầu với nhà cung cấp đầu tiên trong `AI_PROVIDER_ORDER` đang có API key hợp lệ và không ở thời gian tạm nghỉ (cooldown).
-- Khi một nhà cung cấp trả lỗi API, hết quota (`429`), quá tải (`5xx`), lỗi xác thực/thanh toán, timeout hoặc trả JSON không hợp lệ, máy chủ tạm bỏ qua nhà cung cấp đó và thử nhà cung cấp tiếp theo.
-- Khi hết cooldown, nhà cung cấp đứng trước được ưu tiên lại tự động.
-- Nếu tất cả nhà cung cấp đang cooldown, máy chủ trả `503` và thời gian chờ dự kiến; không liên tục gọi lại các API đang lỗi.
-- API key chỉ được lưu ở server/Render Environment. Không đưa key vào React, trình duyệt hoặc Git.
+- Máy chủ không gọi Gemini, OpenAI, DeepSeek và OpenRouter cùng lúc.
+- `AI_PROVIDER_ORDER` là allowlist: chỉ provider được liệt kê và có key hợp lệ mới được phép chạy.
+- Khi provider lỗi, máy chủ chuyển sang provider tiếp theo trong allowlist.
+- Lỗi 429 kích hoạt cooldown quota; lỗi 401/402/403 kích hoạt cooldown xác thực/thanh toán dài hơn.
+- Nếu tất cả provider trong allowlist đang cooldown, máy chủ trả 503 kèm thời gian chờ ước tính thay vì liên tục gọi API đang lỗi.
+- API key chỉ được lưu trên server/Render Environment; không đưa key vào React, trình duyệt hoặc Git.
 
-## Biến môi trường trên Render
+## Cấu hình Render hiện tại
 
-Mở Render → dịch vụ `deepfake-scanner-safety-center` → Environment. Thêm các key riêng cho nhà cung cấp muốn sử dụng:
-
-| Key | Giá trị |
+| Biến | Giá trị |
 |---|---|
-| `GEMINI_API_KEY` | API key được tạo trong Google AI Studio |
-| `OPENAI_API_KEY` | API key của OpenAI API Platform |
-| `DEEPSEEK_API_KEY` | API key của DeepSeek Platform |
-| `AI_PROVIDER_ORDER` | `gemini,openai,deepseek` |
+| `AI_PROVIDER_ORDER` | `gemini` |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` |
+| `GEMINI_FALLBACK_MODEL` | `gemini-3.1-flash-lite` |
+| `GEMINI_SEARCH_GROUNDING_ENABLED` | `false` |
+| `AI_QUOTA_COOLDOWN_MS` | `900000` |
+| `AI_AUTH_BILLING_COOLDOWN_MS` | `86400000` |
 
-Mỗi nhà cung cấp có API key riêng. Không có một key chung để dùng cả ba. Cấu hình key một lần trên Render; sau đó không cần thay key mỗi khi hệ thống chuyển AI. Nếu chỉ cấu hình hai key, hệ thống chỉ failover giữa hai nhà cung cấp đó.
+OpenAI và DeepSeek chưa nằm trong allowlist hiện tại vì các key/tài khoản đã trả 401/402. Có thể giữ các key ở Render nhưng backend sẽ không gọi chúng cho đến khi được thêm vào `AI_PROVIDER_ORDER`. Chỉ bật provider sau khi đã kiểm tra key, quyền API và trạng thái thanh toán.
 
-**Lưu ý về OpenAI:** OpenAI API Platform có billing riêng với gói ChatGPT. Đăng ký ChatGPT Plus/Pro không tự cấp API key hoặc tự thanh toán các yêu cầu API. Xem hướng dẫn billing chính thức: https://help.openai.com/en/articles/9039756-managing-billing-for-chatgpt-and-the-api-platform
+## Bật provider dự phòng sau này
 
-## Model mặc định và thứ tự
+Ví dụ, sau khi xác minh OpenAI hoạt động, đổi allowlist thành:
 
-| Biến | Mặc định | Công dụng |
-|---|---|---|
-| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Gemini cho phân tích thường và Google Search grounding |
-| `OPENAI_MODEL` | `gpt-6.1-terra` | OpenAI cho phân tích thường |
-| `OPENAI_WEB_SEARCH_MODEL` | `gpt-6.1-terra` | OpenAI Responses API với web search khi cập nhật tình huống |
-| `DEEPSEEK_MODEL` | `deepseek-flash` | DeepSeek làm phương án dự phòng văn bản/ảnh |
-| `AI_PROVIDER_ORDER` | `gemini,openai,deepseek` | Thứ tự ưu tiên và dự phòng |
-
-Nếu Gemini trả `429`, hệ thống tạm nghỉ Gemini rồi thử OpenAI; nếu OpenAI cũng lỗi, hệ thống thử DeepSeek. Các yêu cầu tiếp theo cũng áp dụng cùng cơ chế, không cần đổi `GEMINI_API_KEY` thành key khác.
-
-## Cooldown và timeout
-
-| Biến | Mặc định | Ý nghĩa |
-|---|---:|---|
-| `AI_PROVIDER_COOLDOWN_MS` | `90000` | Tạm bỏ qua provider khi gặp lỗi máy chủ/quá tải, khoảng 90 giây |
-| `AI_QUOTA_COOLDOWN_MS` | `900000` | Tạm bỏ qua provider khi gặp `429`, khoảng 15 phút |
-| `AI_REQUEST_TIMEOUT_MS` | `30000` | Timeout cho mỗi lần gọi provider thường, 30 giây |
-| `THREAT_INTELLIGENCE_TIMEOUT_MS` | `45000` | Timeout cho cập nhật tình huống có tìm kiếm web |
-
-Cooldown hiện được lưu trong bộ nhớ của tiến trình Node.js. Khi Render khởi động lại, lịch sử cooldown trong tiến trình được làm mới; API vẫn được thử lại và cơ chế failover tiếp tục hoạt động.
-
-## Khác biệt của cập nhật tình huống có nguồn web
-
-- Gemini sử dụng Google Search grounding.
-- OpenAI sử dụng Responses API với công cụ `web_search`.
-- DeepSeek trong tích hợp này không thực hiện tìm kiếm web. Nếu hệ thống phải chuyển đến DeepSeek, tình huống sẽ được gắn `AI-only / dự báo`, không trình bày như sự kiện đã được nguồn web xác minh.
-
-## Áp dụng patch vào repository
-
-Giải nén patch ZIP vào thư mục gốc của repository, cho phép ghi đè đúng các file trong ZIP. Sau đó chạy:
-
-```bash
-npm run build
+```env
+AI_PROVIDER_ORDER=gemini,openai
 ```
 
-Nếu build thành công:
+Sau khi xác minh DeepSeek:
 
-```bash
-git status --short
-git diff --check
-git add server.ts .env.example README.md src/types/index.ts src/components/AccountModule.tsx src/components/ScannerModule.tsx src/components/MessageRiskCheck.tsx src/components/SystemStatusPanel.tsx MULTI_AI_FAILOVER_SETUP_VI.md
-git --no-pager diff --cached --stat
-git commit -m "Add sequential multi-AI failover"
-git push
+```env
+AI_PROVIDER_ORDER=gemini,openai,deepseek
 ```
 
-Sau đó đưa commit vào nhánh mà Render theo dõi (hiện là `main`) thông qua Pull Request, rồi kiểm tra Render → Events/Deploys.
+Tên provider hợp lệ: `gemini`, `openrouter`, `openai`, `deepseek`.
+
+## Giới hạn về nguồn web
+
+- Google Search grounding chỉ được bật khi đặt `GEMINI_SEARCH_GROUNDING_ENABLED=true`.
+- Mặc định grounding tắt vì quota Search có thể tách biệt với quota sinh văn bản/ảnh.
+- Khi không có tìm kiếm web hoặc không thu được nguồn, các tình huống an toàn phải được gắn `proactive_scenario` và mô tả là giả định phòng ngừa chưa xác minh; không được trình bày như tin mới đã kiểm chứng.
+
+## Lưu ý
+
+Cooldown được lưu trong bộ nhớ tiến trình Node.js. Khi Render khởi động lại, bộ nhớ cooldown được làm mới; API có thể được thử lại theo chính sách mới. Code có thể giảm request thừa nhưng không thể cấp quota, sửa API key hoặc nạp số dư cho nhà cung cấp.
