@@ -46,7 +46,8 @@ Mở `http://localhost:3000`. Nếu cổng 3000 hoặc cổng WebSocket HMR 2467
 - `OPENROUTER_TEXT_MODEL=cohere/north-mini-code:free`.
 - `OPENROUTER_IMAGE_MODEL=dots-studio/dots-3-note-preview:free`.
 - `AI_PROVIDER_ORDER` kiểm soát thứ tự failover.
-- `DATABASE_URL` kết nối PostgreSQL/Supabase; `DATABASE_SSL=require` bật TLS cho Supabase cả khi chạy local. Trên Render, `render.yaml` khai báo sẵn hai biến, nhưng giá trị `DATABASE_URL` phải được nhập riêng trong **Dashboard → Environment** (không lưu mật khẩu trong GitHub).
+- `DATABASE_URL` kết nối PostgreSQL/Supabase; `DATABASE_SSL=require` bật TLS cho Supabase cả khi chạy local. Trên Render, `render.yaml` khai báo sẵn các biến kết nối, nhưng giá trị `DATABASE_URL` phải được nhập riêng trong **Dashboard → Environment** (không lưu mật khẩu trong GitHub).
+- Render Web Service dùng `DATABASE_POOLER_MODE=transaction`: ứng dụng tự đổi cổng Shared Pooler của Supabase từ `5432` (session) sang `6543` (transaction) mà không thay đổi project ref, hostname, username hoặc mật khẩu. Mã nguồn chỉ dùng các truy vấn và transaction thông thường; không dùng named prepared statements hay session-level commands.
 - Không commit `.env` và không chia sẻ URL có mật khẩu. Nếu local PostgreSQL không hỗ trợ TLS, chỉ trên máy local mới đặt `DATABASE_SSL=disable`.
 - Nếu dùng cùng một URL Supabase trên local và Render, cả hai môi trường sẽ thao tác trên cùng dữ liệu.
 
