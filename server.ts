@@ -669,11 +669,29 @@ async function generateAiWithFailover(options: AiGenerateOptions): Promise<AiGen
 // PostgreSQL-backed accounts, signed opaque sessions, and admin APIs.
 // The scanner remains available when DATABASE_URL is absent; account features then return a clear 503.
 const DATABASE_URL = (process.env.DATABASE_URL || '').trim();
+const DATABASE_POOLER_MODE = (process.env.DATABASE_POOLER_MODE || 'session').trim().toLowerCase();
+
+// Render web services use Supabase Shared Pooler transaction mode by default.
+// The supplied project-specific host/user/password are retained; only the port
+// changes from 5432 (session) to 6543 (transaction) when explicitly requested.
+const EFFECTIVE_DATABASE_URL = (() => {
+  if (!DATABASE_URL || DATABASE_POOLER_MODE !== 'transaction') return DATABASE_URL;
+  try {
+    const connectionUrl = new URL(DATABASE_URL);
+    if (connectionUrl.hostname.endsWith('.pooler.supabase.com') && connectionUrl.port === '5432') {
+      connectionUrl.port = '6543';
+    }
+    return connectionUrl.toString();
+  } catch {
+    return DATABASE_URL;
+  }
+})();
+
 const dbPool = DATABASE_URL
   ? new Pool({
-      connectionString: DATABASE_URL,
+      connectionString: EFFECTIVE_DATABASE_URL,
       max: 5,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
       // Supabase requires TLS in local and hosted environments.
       // Set DATABASE_SSL=disable only for a trusted local PostgreSQL instance without TLS.
